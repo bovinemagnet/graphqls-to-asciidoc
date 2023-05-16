@@ -19,3 +19,12 @@
 
 # Go workspace file
 go.work
+
+dist/
+bin/
+# The binary if built in the base dir.
+graphqls-to-asciidoc
+
+# Test output file
+test.adoc
+test.graphqls
