@@ -28,3 +28,4 @@ graphqls-to-asciidoc
 # Test output file
 test.adoc
 test.graphqls
+test.md
