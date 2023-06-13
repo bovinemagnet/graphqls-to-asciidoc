@@ -3,15 +3,31 @@ A tweet
 This schema came from an example found here https://github.com/marmelab/GraphQL-example/blob/master/schema.graphql
 """
 type Tweet {
+
+    """
+    The tweet ID
+    """
     id: ID!
-    # The tweet text. No more than 140 characters!
+    """
+    The tweet text. No more than 140 characters!
+    """
     body: String
-    # When the tweet was published
+    """
+    When the tweet was published
+    """
     date: Date
-    # Who published the tweet
+    """
+    Who published the tweet
+    """
     Author: User
-    # Views, retweets, likes, etc
+    """
+    Views, retweets, likes, etc
+    """
     Stats: Stat
+    """
+    The tweet's sentiment
+    """
+    sentiment: Sentiment
 }
 
 """
@@ -109,6 +125,28 @@ scalar Date
 
 
 """
+A sentiment enum
+"""
+enum Sentiment {
+    """
+    The tweet is happy.
+    """
+    HAPPY
+    """
+    The tweet is sad.
+    """
+    SAD
+    """
+    The tweet is indifferent.
+    """
+    INDIFFERENT
+    """
+    The tweet is something else.
+    """
+    OTHER
+}
+
+"""
 The root query
 """
 type Query {
@@ -136,6 +174,10 @@ type Query {
     Get meta information about the list of notifications
     """
     NotificationsMeta: Meta
+    """
+    Get a tweet's sentiment by its ID
+    """
+    TweetSentiment(id: ID!): Sentiment
 }
 
 """

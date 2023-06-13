@@ -1,7 +1,7 @@
 = GraphQL Documentation
 :toc: left
-:revdate: Wed, 14 Jun 2023 09:07:18 AEST
-:commandline: /tmp/go-build1776199779/b001/exe/main test/schema.graphql
+:revdate: Wed, 14 Jun 2023 09:28:39 AEST
+:commandline: /tmp/go-build2204171879/b001/exe/main test/schema.graphql
 
 
 
@@ -126,6 +126,24 @@ Get meta information about the list of notifications
 *Return:* <<Meta,`Meta`>>
 
 
+[[query_TweetSentiment]]
+=== TweetSentiment
+
+.query_TweetSentiment
+[source, graphql]
+----
+TweetSentiment(id: ID!): Sentiment
+----
+
+Get a tweet's sentiment by its ID
+
+*Query Name:* _TweetSentiment_
+
+*Return:* `Sentiment`
+
+.Arguments
+* `id : ID!`
+
 
 == Types
 
@@ -192,11 +210,12 @@ Get meta information about the list of notifications
 |===
 
 | Type | Field | Description
-| `ID!` | id | 
-| `String` | body | 
-| `Date` | date | 
-| <<User,`User`>> | Author | 
-| <<Stat,`Stat`>> | Stats | 
+| `ID!` | id | The tweet ID
+| `String` | body | The tweet text. No more than 140 characters!
+| `Date` | date | When the tweet was published
+| <<User,`User`>> | Author | Who published the tweet
+| <<Stat,`Stat`>> | Stats | Views, retweets, likes, etc
+| `Sentiment` | sentiment | The tweet's sentiment
 |===
 
 
@@ -220,5 +239,21 @@ Get meta information about the list of notifications
 
 
 == Enumerations
+
+[[sentiment]]
+=== Sentiment
+
+.enum_sentiment
+[cols="2*a", options="header"]
+|===
+
+| Value | Description
+| HAPPY | The tweet is happy.
+| SAD | The tweet is sad.
+| INDIFFERENT | The tweet is indifferent.
+| OTHER | The tweet is something else.
+|===
+
+
 
 
