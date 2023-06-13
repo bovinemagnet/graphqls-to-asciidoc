@@ -1,0 +1,159 @@
+"""
+A tweet
+This schema came from an example found here https://github.com/marmelab/GraphQL-example/blob/master/schema.graphql
+"""
+type Tweet {
+    id: ID!
+    # The tweet text. No more than 140 characters!
+    body: String
+    # When the tweet was published
+    date: Date
+    # Who published the tweet
+    Author: User
+    # Views, retweets, likes, etc
+    Stats: Stat
+}
+
+"""
+A Twitter user
+"""
+type User {
+    """
+    The user ID
+    """
+    id: ID!
+    """
+    The user's Twitter handle
+    """
+    username: String
+    """
+    The user's real name
+    """
+    first_name: String
+    """
+    The user's real name
+    """
+    last_name: String
+    """
+    The user's real full name
+    """
+    full_name: String
+    """
+    The user's name, that is deprecated
+    """
+    name: String @deprecated
+    """
+    The user's avatar URL
+    """
+    avatar_url: Url
+}
+
+"""
+Stats about a tweet, such as number of views, likes, retweets, etc
+"""
+type Stat {
+    """
+    The number of views
+    """
+    views: Int
+    """
+    The number of likes
+    """
+    likes: Int
+    """
+    The number of retweets
+    """
+    retweets: Int
+    """
+    The number of responses
+    """
+    responses: Int
+}
+
+"""
+A notification for a user
+"""
+type Notification {
+    """
+    The notification ID
+    """
+    id: ID
+    """
+    The notification date
+    """
+    date: Date
+    """
+    The notification type
+    """
+    type: String
+}
+
+"""
+Meta information about the query
+"""
+type Meta {
+    """
+    The total number of items
+    """
+    count: Int
+}
+
+"""
+A URL string scalar
+"""
+scalar Url
+"""
+A date string scalar
+"""
+scalar Date
+
+
+"""
+The root query
+"""
+type Query {
+    """
+    Get a tweet by its ID
+    """
+    Tweet(id: ID!): Tweet
+    """
+    Get a list of tweets
+    """
+    Tweets(limit: Int, skip: Int, sort_field: String, sort_order: String): [Tweet]
+    """
+    Get meta information about the list of tweets
+    """
+    TweetsMeta: Meta
+    """
+    Get a user by its ID
+    """
+    User(id: ID!): User
+    """
+    Get a list of users
+    """
+    Notifications(limit: Int): [Notification]
+    """
+    Get meta information about the list of notifications
+    """
+    NotificationsMeta: Meta
+}
+
+"""
+The root mutation
+"""
+type Mutation {
+    """
+    Create a new tweet
+    """
+    createTweet (
+        body: String
+    ): Tweet
+    """
+    Delete a tweet
+    """
+    deleteTweet(id: ID!): Tweet
+    """
+    Mark a tweet as read
+    """
+    markTweetRead(id: ID!): Boolean
+}
