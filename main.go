@@ -93,6 +93,7 @@ func printTypes(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Def
 
 			if t.Description != "" {
 				printAsciiDocTags(t.Description)
+				fmt.Println()
 			}
 
 			printObjectFields(t, definitionsMap)
@@ -114,6 +115,7 @@ func printEnums(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Def
 
 			if t.Description != "" {
 				printAsciiDocTags(t.Description)
+				fmt.Println()
 			}
 
 			printEnumValues(t)
@@ -226,6 +228,9 @@ func printAsciiDocTags(description string) {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "# tag::") || strings.HasPrefix(trimmed, "# end::") {
 			fmt.Println(trimmed[1:]) // remove the '#' as AsciiDoc comments start with '//' not '#'
+		} else if !strings.HasPrefix(trimmed, "# ") {
+			// If it is not a comment, then print the line.
+			fmt.Println(trimmed)
 		}
 	}
 }

@@ -118,6 +118,7 @@ type Meta {
 A URL string scalar
 """
 scalar Url
+
 """
 A date string scalar
 """
