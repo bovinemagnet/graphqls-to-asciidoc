@@ -1,7 +1,7 @@
 = GraphQL Documentation
 :toc: left
-:revdate: Wed, 14 Jun 2023 09:28:39 AEST
-:commandline: /tmp/go-build2204171879/b001/exe/main test/schema.graphql
+:revdate: Wed, 14 Jun 2023 09:46:58 AEST
+:commandline: /tmp/go-build2981827330/b001/exe/main test/schema.graphql
 
 
 
@@ -17,6 +17,7 @@ Last generated _{revdate}_
 
 [[query]]
 
+The root query
 
 
 [[query_Tweet]]
@@ -150,6 +151,8 @@ Get a tweet's sentiment by its ID
 [[meta]]
 === Meta
 
+Meta information about the query
+
 .type_Meta
 [cols="2a,4a,6a", options="header"]
 |===
@@ -161,6 +164,8 @@ Get a tweet's sentiment by its ID
 
 [[mutation]]
 === Mutation
+
+The root mutation
 
 .type_Mutation
 [cols="2a,4a,6a", options="header"]
@@ -176,6 +181,8 @@ Get a tweet's sentiment by its ID
 [[notification]]
 === Notification
 
+A notification for a user
+
 .type_Notification
 [cols="2a,4a,6a", options="header"]
 |===
@@ -189,6 +196,8 @@ Get a tweet's sentiment by its ID
 
 [[stat]]
 === Stat
+
+Stats about a tweet, such as number of views, likes, retweets, etc
 
 .type_Stat
 [cols="2a,4a,6a", options="header"]
@@ -204,6 +213,9 @@ Get a tweet's sentiment by its ID
 
 [[tweet]]
 === Tweet
+
+A tweet
+This schema came from an example found here https://github.com/marmelab/GraphQL-example/blob/master/schema.graphql
 
 .type_Tweet
 [cols="2a,4a,6a", options="header"]
@@ -221,6 +233,8 @@ Get a tweet's sentiment by its ID
 
 [[user]]
 === User
+
+A Twitter user
 
 .type_User
 [cols="2a,4a,6a", options="header"]
@@ -242,6 +256,8 @@ Get a tweet's sentiment by its ID
 
 [[sentiment]]
 === Sentiment
+
+A sentiment enum
 
 .enum_sentiment
 [cols="2*a", options="header"]
