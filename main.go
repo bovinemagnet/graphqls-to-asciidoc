@@ -227,7 +227,7 @@ func printAsciiDocTags(description string) {
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "# tag::") || strings.HasPrefix(trimmed, "# end::") {
-			fmt.Println(trimmed[1:]) // remove the '#' as AsciiDoc comments start with '//' not '#'
+			fmt.Println("//" + trimmed[1:]) // remove the '#' as AsciiDoc comments start with '//' not '#'
 		} else if !strings.HasPrefix(trimmed, "# ") {
 			// If it is not a comment, then print the line.
 			fmt.Println(trimmed)

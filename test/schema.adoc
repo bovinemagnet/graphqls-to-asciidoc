@@ -1,7 +1,7 @@
 = GraphQL Documentation
 :toc: left
-:revdate: Wed, 14 Jun 2023 09:46:58 AEST
-:commandline: /tmp/go-build2981827330/b001/exe/main test/schema.graphql
+:revdate: Wed, 14 Jun 2023 10:13:24 AEST
+:commandline: /tmp/go-build2261766731/b001/exe/main test/schema.graphql
 
 
 
@@ -257,7 +257,18 @@ A Twitter user
 [[sentiment]]
 === Sentiment
 
+// tag::SENTIMENT_DES[]
 A sentiment enum
+
+.Values
+- `HAPPY`: A happy one
+- `SAD`: A sad one
+- `INDIFFERENT`: An indifferent one
+- `OTHER`: Something else
+
+This is just to demonstrate how to document an enum with asciidoc tags in the description.
+
+// end::SENTIMENT_DES[]
 
 .enum_sentiment
 [cols="2*a", options="header"]

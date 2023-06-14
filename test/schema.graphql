@@ -124,9 +124,19 @@ A date string scalar
 """
 scalar Date
 
-
 """
+# tag::SENTIMENT_DES[]
 A sentiment enum
+
+.Values
+- `HAPPY`: A happy one
+- `SAD`: A sad one
+- `INDIFFERENT`: An indifferent one
+- `OTHER`: Something else
+
+This is just to demonstrate how to document an enum with asciidoc tags in the description.
+
+# end::SENTIMENT_DES[]
 """
 enum Sentiment {
     """
@@ -146,6 +156,7 @@ enum Sentiment {
     """
     OTHER
 }
+
 
 """
 The root query
