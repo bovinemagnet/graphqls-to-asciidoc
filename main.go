@@ -79,6 +79,9 @@ func main() {
 	printEnums(sortedDefs, definitionsMap)
 	fmt.Println()
 
+	printInputs(sortedDefs, definitionsMap)
+	fmt.Println()
+
 }
 
 /**
@@ -95,6 +98,7 @@ func printTypes(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Def
 				printAsciiDocTags(t.Description)
 				fmt.Println()
 			}
+			fmt.Println("\n")
 
 			printObjectFields(t, definitionsMap)
 
@@ -110,15 +114,47 @@ func printEnums(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Def
 	fmt.Println("== Enumerations\n")
 	for _, t := range sortedDefs {
 		if t.Kind == ast.Enum {
+			fmt.Println("\n")
+
 			fmt.Printf(CROSS_REF, camelToSnake(t.Name)) // Add anchor
-			fmt.Printf("=== %s\n\n", t.Name)
+			fmt.Println("\n")
+
+			fmt.Printf(L3_TAG, t.Name)
+			//fmt.Printf("=== %s\n\n", t.Name)
+			fmt.Println("\n")
 
 			if t.Description != "" {
 				printAsciiDocTags(t.Description)
 				fmt.Println()
 			}
+			fmt.Println("\n")
 
 			printEnumValues(t)
+
+			fmt.Println("\n")
+		}
+	}
+}
+
+func printInputs(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) {
+	fmt.Println("== Inputs\n")
+	for _, t := range sortedDefs {
+		if t.Kind == ast.InputObject {
+			fmt.Println("\n")
+
+			fmt.Printf(CROSS_REF, camelToSnake(t.Name)) // Add anchor
+			fmt.Println("\n")
+
+			fmt.Printf(L3_TAG, t.Name)
+			fmt.Println("\n")
+
+			if t.Description != "" {
+				printAsciiDocTags(t.Description)
+				fmt.Println()
+			}
+			fmt.Println("\n")
+
+			printObjectFields(t, definitionsMap)
 
 			fmt.Println("\n")
 		}
@@ -207,11 +243,10 @@ func printObjectFields(t *ast.Definition, definitionsMap map[string]*ast.Definit
  */
 func printEnumValues(t *ast.Definition) {
 	if len(t.EnumValues) > 0 {
-		fmt.Printf(".enum_%s\n", camelToSnake(t.Name))
+		fmt.Printf("\n.enum_%s\n", camelToSnake(t.Name))
 		fmt.Println("[cols=\"2*a\", options=\"header\"]")
 		fmt.Println(TABLE_SE)
 		fmt.Println("| Value | Description")
-
 		for _, v := range t.EnumValues {
 			fmt.Printf("| %s | %s\n", v.Name, v.Description)
 		}
@@ -312,10 +347,10 @@ func printQueryDetails(t *ast.Definition, definitionsMap map[string]*ast.Definit
 	if len(t.Fields) > 0 {
 		for _, f := range t.Fields {
 			fmt.Println()
-			fmt.Printf("[[query_%s]]\n", f.Name)
+			fmt.Printf("[[query_%s]]\n", strings.ToLower(f.Name))
 			fmt.Println("===", f.Name)
 			fmt.Println()
-			fmt.Printf(".query_%s\n", f.Name)
+			fmt.Printf(".query_%s\n", strings.ToLower(f.Name))
 			fmt.Println("[source, graphql]")
 			fmt.Println("----")
 			fmt.Printf("%s(%s): %s\n", f.Name, getArgsMethodTypeString(f.Arguments), f.Type.String())

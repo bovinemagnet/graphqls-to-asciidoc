@@ -31,7 +31,7 @@ type Tweet {
 }
 
 """
-A Twitter user
+A Twitter user. They can publish tweets, and have followers
 """
 type User {
     """
@@ -115,12 +115,45 @@ type Meta {
 }
 
 """
+A message
+"""
+type Message {
+    """
+    The message's content
+    """
+    content: String
+    """
+    The message's author
+    """
+    author: String 
+}
+
+
+"""
+Example of an input type
+"""
+input MessageInput {
+  """
+  The message's content
+  """
+  content: String
+  """
+  The message's author
+  """
+  author: String
+}
+
+"""
+# tag::SCALAR_URL_DES[]
 A URL string scalar
+# end::SCALAR_URL_DES[]
 """
 scalar Url
 
 """
+# tag::SCALAR_DATE_DES[]
 A date string scalar
+# end::SCALAR_DATE_DES[]
 """
 scalar Date
 
@@ -157,6 +190,24 @@ enum Sentiment {
     OTHER
 }
 
+"""
+# tag::ENUM_DIRECTION_DES[]
+
+The direction UP or Down
+
+# end::ENUM_DIRECTION_DES[]
+"""
+enum Direction {
+    """
+    The Up direction.
+    """
+    UP
+    """
+    The Down direction.
+    """
+    DOWN
+}
+
 
 """
 The root query
@@ -190,6 +241,27 @@ type Query {
     Get a tweet's sentiment by its ID
     """
     TweetSentiment(id: ID!): Sentiment
+
+    """
+    1: Get a tweet's sentiment by its IDs (plural)
+    """
+    TweetSentiments1(id: [ID]): [Sentiment]
+
+    """
+    2: Get a tweet's sentiment by its IDs (plural)
+    """
+    TweetSentiments2(id: [ID!]): [Sentiment]
+
+    """
+    3: Get a tweet's sentiment by its IDs (plural)
+    """
+    TweetSentiments3(id: [ID]!): [Sentiment]
+
+    """
+    4: Get a tweet's sentiment by its IDs (plural)
+    """
+    TweetSentiments4(id: [ID!]!): [Sentiment]
+
 }
 
 """
@@ -210,4 +282,10 @@ type Mutation {
     Mark a tweet as read
     """
     markTweetRead(id: ID!): Boolean
+
+    """
+    Create a new message example.
+    """
+    createMessage(input: MessageInput): Message
+
 }
