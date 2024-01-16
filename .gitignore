@@ -24,6 +24,7 @@ dist/
 bin/
 # The binary if built in the base dir.
 graphqls-to-asciidoc
+main
 
 # Test output file
 test.adoc
