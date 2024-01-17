@@ -14,11 +14,20 @@ import (
 	"github.com/vektah/gqlparser/v2/parser"
 )
 
+var Version = "development"
+
 const (
 	// AsciiDoc tags
-	CROSS_REF = "[[%s]]\n"
-	L3_TAG    = "=== %s\n\n"
-	TABLE_SE  = "|===\n"
+	CROSS_REF       = "[[%s]]\n"
+	L2_TAG          = "== %s\n\n"
+	L3_TAG          = "=== %s\n\n"
+	TYPES_TAG       = "== Types\n"
+	ENUM_TAG        = "== Enumerations\n"
+	INPUT_TAG       = "== Inputs\n"
+	TABLE_SE        = "|===\n"
+	TABLE_OPTIONS_2 = "[width=\"90%\", cols=\"2a,6a\" options=\"header\" orientation=\"landscape\" grid=\"none\" stripes=\"even\"  , frame=\"topbot\"]"
+	TABLE_OPTIONS_3 = "[width=\"90%\", cols=\"2a,2a,6a\" options=\"header\" orientation=\"landscape\" grid=\"none\" stripes=\"even\" , frame=\"topbot\"]"
+	TABLE_OPTIONS_4 = "[width=\"90%\", cols=\"2a,5a,6a,4a\" options=\"header\" orientation=\"landscape\" grid=\"none\" stripes=\"even\" , frame=\"topbot\"]"
 )
 
 func main() {
@@ -88,7 +97,7 @@ func main() {
  * Print the type details
  */
 func printTypes(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) {
-	fmt.Println("== Types\n")
+	fmt.Println(TYPES_TAG)
 	for _, t := range sortedDefs {
 		if (t.Kind == ast.Object && t.Name != "Query") || t.Kind == ast.Interface {
 			fmt.Printf(CROSS_REF, camelToSnake(t.Name)) // Add anchor
@@ -111,7 +120,7 @@ func printTypes(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Def
  * Print the enumeration details
  */
 func printEnums(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) {
-	fmt.Println("== Enumerations\n")
+	fmt.Println(ENUM_TAG)
 	for _, t := range sortedDefs {
 		if t.Kind == ast.Enum {
 			fmt.Println("\n")
@@ -137,7 +146,7 @@ func printEnums(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Def
 }
 
 func printInputs(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) {
-	fmt.Println("== Inputs\n")
+	fmt.Println(INPUT_TAG)
 	for _, t := range sortedDefs {
 		if t.Kind == ast.InputObject {
 			fmt.Println("\n")
@@ -212,9 +221,16 @@ func printQueries(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.D
 func printObjectFields(t *ast.Definition, definitionsMap map[string]*ast.Definition) {
 	if len(t.Fields) > 0 {
 		if t.Name != "Query" {
-			fmt.Printf(".type_%s\n", t.Name) // Add header to table
+			if t.IsInputType() {
+				fmt.Printf(".input_%s\n", strings.ToLower(t.Name)) // Add input tag to table
+				fmt.Printf(".input: %s\n", t.Name)                 // Add input header to table
+			} else {
+				fmt.Printf("[[type_%s]]\n", strings.ToLower(t.Name)) // Add type tag to table
+				fmt.Printf(".type: %s\n", t.Name)                    // Add type header to table
+			}
 		}
-		fmt.Println("[cols=\"2a,4a,6a\", options=\"header\"]")
+		//fmt.Println("[cols=\"2a,4a,6a\", options=\"header\"]")
+		fmt.Println(TABLE_OPTIONS_3)
 		fmt.Println(TABLE_SE)
 		if t.Name == "Query" {
 			fmt.Println("| Return | Function | Description")
@@ -228,9 +244,11 @@ func printObjectFields(t *ast.Definition, definitionsMap map[string]*ast.Definit
 			typeName = processTypeName(typeName, definitionsMap)
 
 			if t.Name == "Query" {
+				// if it is the query type
 				fmt.Printf("| %s | %s | %s\n", typeName, f.Name, f.Description)
 			} else {
-				fmt.Printf("| %s | %s | %s\n", typeName, f.Name, f.Description)
+				// if it is not the query type
+				fmt.Printf("| %s | %s | %s %s %s \n", typeName, f.Name, f.Description, isRequiredType(typeName), isArrayType(typeName))
 			}
 		}
 
@@ -244,7 +262,8 @@ func printObjectFields(t *ast.Definition, definitionsMap map[string]*ast.Definit
 func printEnumValues(t *ast.Definition) {
 	if len(t.EnumValues) > 0 {
 		fmt.Printf("\n.enum_%s\n", camelToSnake(t.Name))
-		fmt.Println("[cols=\"2*a\", options=\"header\"]")
+		fmt.Println(TABLE_OPTIONS_2)
+		//fmt.Println("[cols=\"2*a\", options=\"header\"]")
 		fmt.Println(TABLE_SE)
 		fmt.Println("| Value | Description")
 		for _, v := range t.EnumValues {
@@ -275,7 +294,8 @@ func printAsciiDocTags(description string) {
  */
 func printQuery(t *ast.Definition, definitionsMap map[string]*ast.Definition) {
 	if len(t.Fields) > 0 {
-		fmt.Println("[cols=\"2a,4a,6a,4a\", options=\"header\"]")
+		fmt.Println(TABLE_OPTIONS_4)
+		//fmt.Println("[cols=\"2a,4a,6a,4a\", options=\"header\"]")
 		fmt.Println(TABLE_SE)
 		if t.Name == "Query" {
 			fmt.Println("| Return | Function | Description | params")
@@ -330,10 +350,11 @@ func getArgsMethodTypeString(args ast.ArgumentDefinitionList) string {
 	var argsStrings []string
 
 	for _, arg := range args {
-		argString := fmt.Sprintf("%s: %s", arg.Name, arg.Type.String())
+		argString := fmt.Sprintf("  %s: %s", arg.Name, arg.Type.String())
 		if arg.DefaultValue != nil {
 			argString += fmt.Sprintf(" = %s", arg.DefaultValue.String())
 		}
+		argString += "\n"
 		argsStrings = append(argsStrings, argString)
 	}
 
@@ -350,10 +371,10 @@ func printQueryDetails(t *ast.Definition, definitionsMap map[string]*ast.Definit
 			fmt.Printf("[[query_%s]]\n", strings.ToLower(f.Name))
 			fmt.Println("===", f.Name)
 			fmt.Println()
-			fmt.Printf(".query_%s\n", strings.ToLower(f.Name))
+			fmt.Printf(".query: %s\n", f.Name)
 			fmt.Println("[source, graphql]")
 			fmt.Println("----")
-			fmt.Printf("%s(%s): %s\n", f.Name, getArgsMethodTypeString(f.Arguments), f.Type.String())
+			fmt.Printf("%s(\n%s\n): %s\n", f.Name, getArgsMethodTypeString(f.Arguments), f.Type.String())
 			fmt.Println("----")
 			fmt.Println()
 			fmt.Println(f.Description)
@@ -373,6 +394,22 @@ func printQueryDetails(t *ast.Definition, definitionsMap map[string]*ast.Definit
 			}
 
 		}
+	}
+}
+
+func isRequiredType(typeName string) string {
+	if strings.Contains(typeName, "!") {
+		return "+ \n`Required: True` "
+	} else {
+		return " "
+	}
+}
+
+func isArrayType(typeName string) string {
+	if strings.Contains(typeName, "[") && strings.Contains(typeName, "]") {
+		return "+ \n`Array: True` "
+	} else {
+		return " "
 	}
 }
 
