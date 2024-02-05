@@ -223,9 +223,13 @@ func printObjectFields(t *ast.Definition, definitionsMap map[string]*ast.Definit
 	if len(t.Fields) > 0 {
 		if t.Name != "Query" {
 			if t.IsInputType() {
+				fmt.Printf("// tag::input_%s[]\n", t.Name) // Add type tag to table
+
 				fmt.Printf(".input_%s\n", strings.ToLower(t.Name)) // Add input tag to table
 				fmt.Printf(".input: %s\n", t.Name)                 // Add input header to table
 			} else {
+				fmt.Printf("// tag::type_%s[]\n", t.Name) // Add type tag to table
+
 				fmt.Printf("[[type_%s]]\n", strings.ToLower(t.Name)) // Add type tag to table
 				fmt.Printf(".type: %s\n", t.Name)                    // Add type header to table
 			}
@@ -254,6 +258,13 @@ func printObjectFields(t *ast.Definition, definitionsMap map[string]*ast.Definit
 		}
 
 		fmt.Println(TABLE_SE)
+
+		if t.IsInputType() {
+			fmt.Printf("// end::input_%s[]\n", t.Name) // Add input tag to table
+		} else {
+			fmt.Printf("// end::type_%s[]\n", t.Name) // Add type tag to table
+		}
+
 	}
 }
 
@@ -295,6 +306,7 @@ func printAsciiDocTags(description string) {
  */
 func printQuery(t *ast.Definition, definitionsMap map[string]*ast.Definition) {
 	if len(t.Fields) > 0 {
+		//fmt.Println("// tag::query-arguments[]")
 		fmt.Println(TABLE_OPTIONS_4)
 		//fmt.Println("[cols=\"2a,4a,6a,4a\", options=\"header\"]")
 		fmt.Println(TABLE_SE)
@@ -318,10 +330,19 @@ func printQuery(t *ast.Definition, definitionsMap map[string]*ast.Definition) {
 				fmt.Println(" ")
 				fmt.Println(" ")
 			} else {
-				fmt.Printf("| %s | %s | %s | %s \n", typeName, f.Name, f.Description, getArgsString(f.Arguments))
+//				fmt.Printf("| %s | %s | %s | %s \n", typeName, f.Name, f.Description, getArgsString(f.Arguments))
+				// Replace "{" with a space
+				stringWithoutBraces := strings.Replace(getArgsString(f.Arguments), "{", " ", -1)
+				// Replace "}" with a space
+				stringWithoutBraces = strings.Replace(stringWithoutBraces, "}", " ", -1)
+			
+				fmt.Printf("| %s | %s | %s | %s \n", typeName, f.Name, f.Description, stringWithoutBraces)
+
 			}
 		}
 		fmt.Printf("%s", TABLE_SE)
+		//fmt.Println("// end::query-arguments[]")
+
 	}
 }
 
@@ -372,32 +393,51 @@ func getArgsMethodTypeString(args ast.ArgumentDefinitionList) string {
 func printQueryDetails(t *ast.Definition, definitionsMap map[string]*ast.Definition) {
 	if len(t.Fields) > 0 {
 		for _, f := range t.Fields {
+			fmt.Printf("// tag::query-%s[]\n", f.Name)
 			fmt.Println()
 			fmt.Printf("[[query_%s]]\n", strings.ToLower(f.Name))
 			fmt.Println("===", f.Name)
 			fmt.Println()
+			fmt.Printf("// tag::method-signature-%s[]\n", f.Name)
 			fmt.Printf(".query: %s\n", f.Name)
 			fmt.Println("[source, graphql]")
 			fmt.Println("----")
 			fmt.Printf("%s(\n%s): %s\n", f.Name, getArgsMethodTypeString(f.Arguments), f.Type.String())
 			fmt.Println("----")
+			fmt.Printf("// end::method-signature-%s[]\n", f.Name)
 			fmt.Println()
+			fmt.Printf("// tag::method-description-%s[]\n", f.Name)
 			fmt.Println(f.Description)
+			fmt.Printf("// end::method-description-%s[]\n", f.Name)
+
 			fmt.Println()
 
 			typeName := f.Type.String()
 
 			typeName = processTypeName(typeName, definitionsMap)
-
-			fmt.Printf("*Query Name:* _%s_\n\n", f.Name)
-
-			fmt.Printf("*Return:* %s\n\n", typeName)
+			fmt.Printf("// tag::query-name-%s[]\n", f.Name)
+			fmt.Printf("*Query Name:* _%s_\n", f.Name)
+			fmt.Printf("// end::query-name-%s[]\n", f.Name)
+			fmt.Println()
+			fmt.Printf("// tag::query-return-%s[]\n", f.Name)
+			fmt.Printf("*Return:* %s\n", typeName)
+			fmt.Printf("// end::query-return-%s[]\n", f.Name)
+			fmt.Println()
 
 			if len(f.Arguments) > 0 {
+				fmt.Printf("// tag::arguments-%s[]\n", f.Name)
 				fmt.Printf(".Arguments\n")
-				fmt.Println(getArgsString(f.Arguments))
+				//fmt.Println(getArgsString(f.Arguments))
+				// Replace "{" with a space
+				stringWithoutBraces := strings.Replace(getArgsString(f.Arguments), "{", " ", -1)
+				// Replace "}" with a space
+				stringWithoutBraces = strings.Replace(stringWithoutBraces, "}", " ", -1)
+				fmt.Println(stringWithoutBraces)
+				fmt.Printf("// end::arguments-%s[]\n", f.Name)
+				fmt.Println()
 			}
-
+			fmt.Printf("// end::query-%s[]\n", f.Name)
+			fmt.Println()
 		}
 	}
 }
