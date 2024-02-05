@@ -30,3 +30,10 @@ main
 test.adoc
 test.graphqls
 test.md
+
+## Ignore internal files
+internal.graphqls
+internal.adoc
+
+## Igmore .vscode
+.vscode/
