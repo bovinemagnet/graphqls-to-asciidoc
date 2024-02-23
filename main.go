@@ -17,13 +17,43 @@ import (
 var Version = "development"
 
 const (
+	// include tags
+	includeAdocLineTags = true
 	// AsciiDoc tags
-	CROSS_REF       = "[[%s]]\n"
-	L2_TAG          = "== %s\n\n"
-	L3_TAG          = "=== %s\n\n"
-	TYPES_TAG       = "== Types\n"
-	ENUM_TAG        = "== Enumerations\n"
-	INPUT_TAG       = "== Inputs\n"
+	CROSS_REF                  = "[[%s]]\n"
+	L2_TAG                     = "== %s\n\n"
+	L3_TAG                     = "=== %s\n\n"
+	TYPES_TAG                  = "== Types\n"
+	ENUM_TAG                   = "== Enumerations\n"
+	INPUT_TAG                  = "== Inputs\n"
+	ADOC_INPUT_DEF_START_TAG   = "// tag::input-def-%s[]\n"
+	ADOC_INPUT_DEF_END_TAG     = "// end::input-def-%s[]\n"
+	ADOC_INPUT_START_TAG       = "// tag::input-%s[]\n"
+	ADOC_INPUT_END_TAG         = "// end::input-%s[]\n"
+	ADOC_NODE_START_TAG        = "// tag::node-%s[]\n"
+	ADOC_NODE_END_TAG          = "// end::node-%s[]\n"
+	ADOC_QUERY_START_TAG       = "// tag::query-%s[]\n"
+	ADOC_QUERY_END_TAG         = "// end::query-%s[]\n"
+	ADOC_ARGUMENTS_START_TAG   = "// tag::arguments-%s[]\n"
+	ADOC_ARGUMENTS_END_TAG     = "// end::arguments-%s[]\n"
+	ADOC_ENUM_START_TAG        = "// tag::enum-%s[]\n"
+	ADOC_ENUM_END_TAG          = "// end::enum-%s[]\n"
+	ADOC_ENUM_DEF_START_TAG    = "// tag::enum-def-%s[]\n"
+	ADOC_ENUM_DEF_END_TAG      = "// end::enum-def-%s[]\n"
+	ADOC_METHOD_SIG_START_TAG  = "// tag::method-signature-%s[]\n"
+	ADOC_METHOD_SIG_END_TAG    = "// end::method-signature-%s[]\n"
+	ADOC_METHOD_DESC_START_TAG = "// tag::method-description-%s[]\n"
+	ADOC_METHOD_DESC_END_TAG   = "// end::method-description-%s[]\n"
+	ADOC_ENUM_DESC_START_TAG   = "// tag::enum-description-%s[]\n"
+	ADOC_ENUM_DESC_END_TAG     = "// end::enum-description-%s[]\n"
+
+	ADOC_TYPE_START_TAG      = "// tag::type-%s[]\n"
+	ADOC_TYPE_END_TAG        = "// end::type-%s[]\n"
+	ADOC_TYPE_DESC_START_TAG = "// tag::type-description-%s[]\n"
+	ADOC_TYPE_DESC_END_TAG   = "// end::type-description-%s[]\n"
+	ADOC_TYPE_DEF_START_TAG  = "// tag::type-def-%s[]\n"
+	ADOC_TYPE_DEF_END_TAG    = "// end::type-def-%s[]\n"
+
 	TABLE_SE        = "|===\n"
 	TABLE_OPTIONS_2 = "[width=\"90%\", cols=\"2a,6a\" options=\"header\" orientation=\"landscape\" grid=\"none\" stripes=\"even\"  , frame=\"topbot\"]"
 	TABLE_OPTIONS_3 = "[width=\"90%\", cols=\"2a,2a,6a\" options=\"header\" orientation=\"landscape\" grid=\"none\" stripes=\"even\" , frame=\"topbot\"]"
@@ -66,10 +96,16 @@ func main() {
 	fmt.Println("= GraphQL Documentation")
 	fmt.Println(":toc: left")
 	fmt.Printf(":revdate: %s\n", time.Now().Format(time.RFC1123))
-	fmt.Printf(":commandline: %s\n", strings.Join(os.Args, " ")) // Add command line as header attribute
-	fmt.Printf(":sourceFile: %s\n\n", os.Args[1])                // Add schema file as header attribute
+	fmt.Printf(":commandline: %s\n", strings.Join(os.Args, " "))
+	fmt.Printf(":sourceFile: %s\n", os.Args[1])
+	fmt.Println(":reproducible:")
+	fmt.Println(":page-partial:")
+	fmt.Println(":sect-anchors:")
+	fmt.Println(":table-caption!:")
+	fmt.Println(":pdf-page-size: A4")
+	fmt.Println(":tags: api, GraphQL, nodes, types, query")
 
-	fmt.Println("\n\n")
+	fmt.Print("\n\n")
 
 	fmt.Println("[IMPORTANT]")
 	fmt.Println("====")
@@ -101,17 +137,22 @@ func printTypes(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Def
 	fmt.Println(TYPES_TAG)
 	for _, t := range sortedDefs {
 		if (t.Kind == ast.Object && t.Name != "Query") || t.Kind == ast.Interface {
+			fmt.Printf(ADOC_TYPE_START_TAG, t.Name)
 			fmt.Printf(CROSS_REF, camelToSnake(t.Name)) // Add anchor
 			fmt.Printf(L3_TAG, t.Name)
 
 			if t.Description != "" {
+				fmt.Printf(ADOC_TYPE_DESC_START_TAG, t.Name)
 				printAsciiDocTags(t.Description)
+				fmt.Printf(ADOC_TYPE_DESC_END_TAG, t.Name)
 				fmt.Println()
 			}
-			fmt.Println("\n")
+			fmt.Println()
 
 			printObjectFields(t, definitionsMap)
 
+			fmt.Println()
+			fmt.Printf(ADOC_TYPE_END_TAG, t.Name)
 			fmt.Println()
 		}
 	}
@@ -126,6 +167,7 @@ func printEnums(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Def
 		if t.Kind == ast.Enum {
 			fmt.Println("\n")
 
+			fmt.Printf(ADOC_ENUM_DEF_START_TAG, t.Name)
 			fmt.Printf(CROSS_REF, camelToSnake(t.Name)) // Add anchor
 			fmt.Println("\n")
 
@@ -134,14 +176,17 @@ func printEnums(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Def
 			fmt.Println("\n")
 
 			if t.Description != "" {
+				fmt.Printf(ADOC_ENUM_DESC_START_TAG, t.Name)
 				printAsciiDocTags(t.Description)
-				fmt.Println()
+				fmt.Printf(ADOC_ENUM_DESC_END_TAG, t.Name)
 			}
 			fmt.Println("\n")
 
 			printEnumValues(t)
 
 			fmt.Println("\n")
+			fmt.Printf(ADOC_ENUM_DEF_END_TAG, t.Name)
+
 		}
 	}
 }
@@ -151,6 +196,8 @@ func printInputs(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.De
 	for _, t := range sortedDefs {
 		if t.Kind == ast.InputObject {
 			fmt.Println("\n")
+
+			fmt.Printf(ADOC_INPUT_START_TAG, t.Name)
 
 			fmt.Printf(CROSS_REF, camelToSnake(t.Name)) // Add anchor
 			fmt.Println("\n")
@@ -167,6 +214,7 @@ func printInputs(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.De
 			printObjectFields(t, definitionsMap)
 
 			fmt.Println("\n")
+			fmt.Printf(ADOC_INPUT_END_TAG, t.Name)
 		}
 	}
 }
@@ -223,20 +271,17 @@ func printObjectFields(t *ast.Definition, definitionsMap map[string]*ast.Definit
 	if len(t.Fields) > 0 {
 		if t.Name != "Query" {
 			if t.IsInputType() {
-				fmt.Printf("// tag::input_%s[]\n", t.Name) // Add type tag to table
-
-				fmt.Printf(".input_%s\n", strings.ToLower(t.Name)) // Add input tag to table
-				fmt.Printf(".input: %s\n", t.Name)                 // Add input header to table
+				fmt.Printf(ADOC_INPUT_DEF_START_TAG, t.Name)          // Add type tag to table
+				fmt.Printf("[[input_%s]]\n", strings.ToLower(t.Name)) // Add input tag to table
+				fmt.Printf(".input: %s\n", t.Name)                    // Add input header to table
 			} else {
-				fmt.Printf("// tag::type_%s[]\n", t.Name) // Add type tag to table
-
+				fmt.Printf(ADOC_TYPE_DEF_START_TAG, t.Name)          // Add type tag to table
 				fmt.Printf("[[type_%s]]\n", strings.ToLower(t.Name)) // Add type tag to table
 				fmt.Printf(".type: %s\n", t.Name)                    // Add type header to table
 			}
 		}
-		//fmt.Println("[cols=\"2a,4a,6a\", options=\"header\"]")
 		fmt.Println(TABLE_OPTIONS_3)
-		fmt.Println(TABLE_SE)
+		fmt.Print(TABLE_SE)
 		if t.Name == "Query" {
 			fmt.Println("| Return | Function | Description")
 		} else {
@@ -245,7 +290,6 @@ func printObjectFields(t *ast.Definition, definitionsMap map[string]*ast.Definit
 
 		for _, f := range t.Fields {
 			typeName := f.Type.String()
-
 			typeName = processTypeName(typeName, definitionsMap)
 
 			if t.Name == "Query" {
@@ -257,14 +301,13 @@ func printObjectFields(t *ast.Definition, definitionsMap map[string]*ast.Definit
 			}
 		}
 
-		fmt.Println(TABLE_SE)
+		fmt.Print(TABLE_SE)
 
 		if t.IsInputType() {
-			fmt.Printf("// end::input_%s[]\n", t.Name) // Add input tag to table
+			fmt.Printf(ADOC_INPUT_DEF_END_TAG, t.Name) // Add input tag to table
 		} else {
-			fmt.Printf("// end::type_%s[]\n", t.Name) // Add type tag to table
+			fmt.Printf(ADOC_TYPE_DEF_END_TAG, t.Name) // Add type tag to table
 		}
-
 	}
 }
 
@@ -273,15 +316,17 @@ func printObjectFields(t *ast.Definition, definitionsMap map[string]*ast.Definit
  */
 func printEnumValues(t *ast.Definition) {
 	if len(t.EnumValues) > 0 {
-		fmt.Printf("\n.enum_%s\n", camelToSnake(t.Name))
+		fmt.Printf(ADOC_ENUM_START_TAG, t.Name)
+		fmt.Printf("[[enum_%s]]\n", camelToSnake(t.Name))
+		fmt.Printf(".enum_%s\n", camelToSnake(t.Name))
 		fmt.Println(TABLE_OPTIONS_2)
-		//fmt.Println("[cols=\"2*a\", options=\"header\"]")
-		fmt.Println(TABLE_SE)
+		fmt.Print(TABLE_SE)
 		fmt.Println("| Value | Description")
 		for _, v := range t.EnumValues {
 			fmt.Printf("| %s | %s\n", v.Name, v.Description)
 		}
-		fmt.Println(TABLE_SE)
+		fmt.Print(TABLE_SE)
+		fmt.Printf(ADOC_ENUM_END_TAG, t.Name)
 	}
 }
 
@@ -306,10 +351,8 @@ func printAsciiDocTags(description string) {
  */
 func printQuery(t *ast.Definition, definitionsMap map[string]*ast.Definition) {
 	if len(t.Fields) > 0 {
-		//fmt.Println("// tag::query-arguments[]")
 		fmt.Println(TABLE_OPTIONS_4)
-		//fmt.Println("[cols=\"2a,4a,6a,4a\", options=\"header\"]")
-		fmt.Println(TABLE_SE)
+		fmt.Print(TABLE_SE)
 		if t.Name == "Query" {
 			fmt.Println("| Return | Function | Description | params")
 		} else {
@@ -318,9 +361,7 @@ func printQuery(t *ast.Definition, definitionsMap map[string]*ast.Definition) {
 
 		for _, f := range t.Fields {
 			typeName := f.Type.String()
-
 			typeName = processTypeName(typeName, definitionsMap)
-
 			if t.Name == "Query" {
 				fmt.Println("| ", typeName)
 				fmt.Println("| ", f.Name)
@@ -330,19 +371,14 @@ func printQuery(t *ast.Definition, definitionsMap map[string]*ast.Definition) {
 				fmt.Println(" ")
 				fmt.Println(" ")
 			} else {
-//				fmt.Printf("| %s | %s | %s | %s \n", typeName, f.Name, f.Description, getArgsString(f.Arguments))
 				// Replace "{" with a space
 				stringWithoutBraces := strings.Replace(getArgsString(f.Arguments), "{", " ", -1)
 				// Replace "}" with a space
 				stringWithoutBraces = strings.Replace(stringWithoutBraces, "}", " ", -1)
-			
 				fmt.Printf("| %s | %s | %s | %s \n", typeName, f.Name, f.Description, stringWithoutBraces)
-
 			}
 		}
 		fmt.Printf("%s", TABLE_SE)
-		//fmt.Println("// end::query-arguments[]")
-
 	}
 }
 
@@ -368,10 +404,11 @@ func getArgsString(args ast.ArgumentDefinitionList) string {
 /**
  * Get the type arguments.
  */
-func getArgsMethodTypeString(args ast.ArgumentDefinitionList) string {
+func getArgsMethodTypeString(args ast.ArgumentDefinitionList) (string, int) {
 	var argsStrings []string
-
+	var counter = 0
 	for _, arg := range args {
+		counter++
 		argString := fmt.Sprintf("  %s: %s", arg.Name, arg.Type.String())
 		if arg.DefaultValue != nil {
 			argString += fmt.Sprintf(" = %s", arg.DefaultValue.String())
@@ -380,11 +417,15 @@ func getArgsMethodTypeString(args ast.ArgumentDefinitionList) string {
 		if arg != args[len(args)-1] {
 			argString += " ,"
 		}
+		if includeAdocLineTags {
+			argString += fmt.Sprintf(" <%d> ", counter)
+		}
+
 		argString += "\n"
 		argsStrings = append(argsStrings, argString)
 	}
 
-	return strings.Join(argsStrings, "")
+	return strings.Join(argsStrings, ""), counter
 }
 
 /**
@@ -393,23 +434,34 @@ func getArgsMethodTypeString(args ast.ArgumentDefinitionList) string {
 func printQueryDetails(t *ast.Definition, definitionsMap map[string]*ast.Definition) {
 	if len(t.Fields) > 0 {
 		for _, f := range t.Fields {
-			fmt.Printf("// tag::query-%s[]\n", f.Name)
+			fmt.Printf(ADOC_QUERY_START_TAG, f.Name)
 			fmt.Println()
 			fmt.Printf("[[query_%s]]\n", strings.ToLower(f.Name))
-			fmt.Println("===", f.Name)
+
+			// if f.Description contains INTERNAL then add teh word INTERNAL to the tag
+			if strings.Contains(f.Description, "INTERNAL") {
+				fmt.Printf(L3_TAG, f.Name+" [INTERNAL]")
+			} else {
+				fmt.Printf(L3_TAG, f.Name)
+			}
 			fmt.Println()
-			fmt.Printf("// tag::method-signature-%s[]\n", f.Name)
+			fmt.Printf(ADOC_METHOD_SIG_START_TAG, f.Name)
 			fmt.Printf(".query: %s\n", f.Name)
 			fmt.Println("[source, graphql]")
 			fmt.Println("----")
-			fmt.Printf("%s(\n%s): %s\n", f.Name, getArgsMethodTypeString(f.Arguments), f.Type.String())
+			argsString, counter := getArgsMethodTypeString(f.Arguments)
+			if includeAdocLineTags {
+				counter++
+				fmt.Printf("%s(\n%s): %s <%d>\n", f.Name, argsString, f.Type.String(), counter)
+			} else {
+				fmt.Printf("%s(\n%s): %s\n", f.Name, argsString, f.Type.String())
+			}
 			fmt.Println("----")
-			fmt.Printf("// end::method-signature-%s[]\n", f.Name)
+			fmt.Printf(ADOC_METHOD_SIG_END_TAG, f.Name)
 			fmt.Println()
-			fmt.Printf("// tag::method-description-%s[]\n", f.Name)
+			fmt.Printf(ADOC_METHOD_DESC_START_TAG, f.Name)
 			fmt.Println(f.Description)
-			fmt.Printf("// end::method-description-%s[]\n", f.Name)
-
+			fmt.Printf(ADOC_METHOD_DESC_END_TAG, f.Name)
 			fmt.Println()
 
 			typeName := f.Type.String()
@@ -427,7 +479,6 @@ func printQueryDetails(t *ast.Definition, definitionsMap map[string]*ast.Definit
 			if len(f.Arguments) > 0 {
 				fmt.Printf("// tag::arguments-%s[]\n", f.Name)
 				fmt.Printf(".Arguments\n")
-				//fmt.Println(getArgsString(f.Arguments))
 				// Replace "{" with a space
 				stringWithoutBraces := strings.Replace(getArgsString(f.Arguments), "{", " ", -1)
 				// Replace "}" with a space
@@ -436,7 +487,7 @@ func printQueryDetails(t *ast.Definition, definitionsMap map[string]*ast.Definit
 				fmt.Printf("// end::arguments-%s[]\n", f.Name)
 				fmt.Println()
 			}
-			fmt.Printf("// end::query-%s[]\n", f.Name)
+			fmt.Printf(ADOC_QUERY_END_TAG, f.Name)
 			fmt.Println()
 		}
 	}
