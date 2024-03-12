@@ -44,6 +44,8 @@ const (
 	ADOC_METHOD_SIG_END_TAG    = "// end::method-signature-%s[]\n"
 	ADOC_METHOD_DESC_START_TAG = "// tag::method-description-%s[]\n"
 	ADOC_METHOD_DESC_END_TAG   = "// end::method-description-%s[]\n"
+	ADOC_METHOD_ARGS_START_TAG = "// tag::method-args-%s[]\n"
+	ADOC_METHOD_ARGS_END_TAG   = "// end::method-args-%s[]\n"
 	ADOC_ENUM_DESC_START_TAG   = "// tag::enum-description-%s[]\n"
 	ADOC_ENUM_DESC_END_TAG     = "// end::enum-description-%s[]\n"
 
@@ -445,6 +447,12 @@ func printQueryDetails(t *ast.Definition, definitionsMap map[string]*ast.Definit
 				fmt.Printf(L3_TAG, f.Name)
 			}
 			fmt.Println()
+			if includeAdocLineTags {
+				fmt.Printf(ADOC_METHOD_DESC_START_TAG, f.Name)
+				fmt.Println(cleanDescription(f.Description, "-"))
+				fmt.Printf(ADOC_METHOD_DESC_END_TAG, f.Name)
+				fmt.Println()
+			}
 			fmt.Printf(ADOC_METHOD_SIG_START_TAG, f.Name)
 			fmt.Printf(".query: %s\n", f.Name)
 			fmt.Println("[source, graphql]")
@@ -459,9 +467,13 @@ func printQueryDetails(t *ast.Definition, definitionsMap map[string]*ast.Definit
 			fmt.Println("----")
 			fmt.Printf(ADOC_METHOD_SIG_END_TAG, f.Name)
 			fmt.Println()
-			fmt.Printf(ADOC_METHOD_DESC_START_TAG, f.Name)
-			fmt.Println(f.Description)
-			fmt.Printf(ADOC_METHOD_DESC_END_TAG, f.Name)
+			fmt.Printf(ADOC_METHOD_ARGS_START_TAG, f.Name)
+			if includeAdocLineTags {
+				fmt.Println(convertDescriptionToRefNumbers(f.Description, true))
+			} else {
+				fmt.Println(f.Description)
+			}
+			fmt.Printf(ADOC_METHOD_ARGS_END_TAG, f.Name)
 			fmt.Println()
 
 			typeName := f.Type.String()
@@ -554,4 +566,61 @@ func camelToSnake(s string) string {
 		}
 	}
 	return result
+}
+
+/*
+A function to convert the text
+
+- <optional-filter> `studentCode`: String - Single or multiple student ids or student codes.
+- <optional-filter> `subjectCode`: String - Single or multiple subject codes.
+
+to the text
+<1> <optional-filter> `studentCode`: String - Single or multiple student ids or student codes.
+<2> <optional-filter> `subjectCode`: String - Single or multiple subject codes.
+*/
+func convertDescriptionToRefNumbers(text string, skipNonDash bool) string {
+	lines := strings.Split(text, "\n")
+	var result strings.Builder
+
+	refNum := 1
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "-") {
+			// If the line starts with a hyphen, then add the counter and the line
+			// not including the - in the line
+			result.WriteString(fmt.Sprintf("<%d> %s\n", refNum, line[1:]))
+			refNum++
+		} else {
+			if !skipNonDash {
+				// If the line does not start with a hyphen, then add the line
+				result.WriteString(line + "\n")
+			}
+		}
+		i++
+	}
+	return result.String()
+}
+
+/*
+A function to convert the text
+
+# My fancy description
+
+- <optional-filter> `studentCode`: String - Single or multiple student ids or student codes.
+- <optional-filter> `subjectCode`: String - Single or multiple subject codes.
+
+to the text
+
+My fancy description
+*/
+func cleanDescription(text string, skipCharacter string) string {
+	lines := strings.Split(text, "\n")
+	var result strings.Builder
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if !strings.HasPrefix(trimmed, skipCharacter) {
+			result.WriteString(line + "\n")
+		}
+	}
+	return result.String()
 }
