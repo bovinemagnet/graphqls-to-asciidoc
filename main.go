@@ -506,7 +506,7 @@ func printQueryDetails(t *ast.Definition, definitionsMap map[string]*ast.Definit
 			}
 			fmt.Printf(ADOC_METHOD_SIG_START_TAG, f.Name)
 			fmt.Printf(".query: %s\n", f.Name)
-			fmt.Println("[source, graphql]")
+			fmt.Println("[source, kotlin]")
 			fmt.Println("----")
 			argsString, counter := getArgsMethodTypeString(f.Arguments)
 			if includeAdocLineTags {
@@ -564,10 +564,18 @@ func isRequiredOrArrayType(typeName string) string {
 }
 
 func isRequiredType(typeName string) string {
-	if strings.Contains(typeName, "!") {
-		return "+ \n* `Required: True` "
+	if strings.Contains(typeName, "]!") {
+		return "+ \n* `Required: True` (more than one) "
 	} else {
-		return " "
+		if strings.Contains(typeName, "!]") {
+			return "+ \n* `Required: True` (at least one, if provided) "
+		} else {
+			if strings.Contains(typeName, "!") {
+				return "+ \n* `Required: True` "
+			} else {
+				return " "
+			}
+		}
 	}
 }
 
