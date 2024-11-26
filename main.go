@@ -20,9 +20,9 @@ var Version = "development"
 
 var excludeInternal = flag.Bool("exclude-internal", false, "Exclude internal queries from output")
 var schemaFile = flag.String("schema", "", "Path to the GraphQL schema file")
-var includeMutations = flag.Bool("mutations", true, "Include mutations in the output")
+var includeMutations = flag.Bool("mutations", false, "Include mutations in the output")
 var includeQueries = flag.Bool("queries", true, "Include queries in the output")
-var includeSubscriptions = flag.Bool("subscriptions", true, "Include subscriptions in the output")
+var includeSubscriptions = flag.Bool("subscriptions", false, "Include subscriptions in the output")
 var includeDirectives = flag.Bool("directives", true, "Include directives in the output")
 var includeTypes = flag.Bool("types", true, "Include types in the output")
 var includeEnums = flag.Bool("enums", true, "Include enums in the output")
