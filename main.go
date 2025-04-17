@@ -175,6 +175,47 @@ No mutations exist in this schema.
 // end::mutation[]
 `
 
+// Add this template constant
+const typeSectionTemplate = `
+{{.TypesTag}}
+{{range .Types}}
+// tag::type-{{.Name}}[]
+[[{{.AnchorName}}]]
+=== {{.Name}}
+
+{{- if .Description }}
+// tag::type-description-{{.Name}}[]
+{{ .Description | printAsciiDocTagsTmpl }}
+// end::type-description-{{.Name}}[]
+{{- end }}
+
+{{ .FieldsTable }}
+
+// end::type-{{.Name}}[]
+
+{{end}}
+`
+
+const directiveSectionTemplate = `
+{{.DirectivesTag}}
+{{- if .FoundDirectives }}
+
+{{ .TableOptions }}
+|===
+| Directive | Arguments | Description
+{{- range .Directives }}
+| @{{.Name}} | {{.Arguments}} | {{.Description}}
+{{- end }}
+|===
+
+{{- else }}
+[NOTE]
+====
+No custom directives exist in this schema.
+====
+{{- end }}
+`
+
 const (
 	// include tags
 	includeAdocLineTags = true
@@ -330,6 +371,20 @@ type TypeInfo struct {
 	IsInterface bool
 }
 
+// Add these structs
+type DirectiveSectionData struct {
+	DirectivesTag   string
+	FoundDirectives bool
+	Directives      []DirectiveInfo
+	TableOptions    string // Added field for table options
+}
+
+type DirectiveInfo struct {
+	Name        string
+	Arguments   string // Pre-formatted arguments string
+	Description string
+}
+
 func main() {
 
 	// Parse command-line flags
@@ -429,7 +484,8 @@ func main() {
 	}
 	if *includeDirectives {
 		// Add directives documentation
-		printDirectives(doc)
+		// printDirectives(doc) // Comment out the old call
+		printDirectivesTmpl(doc) // Add the new call
 		fmt.Println()
 	}
 
@@ -1272,267 +1328,7 @@ func printDirectives(doc *ast.SchemaDocument) {
 	fmt.Println()
 }
 
-// Add this new function
-func printMutations(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) {
-	fmt.Println("== Mutations")
-	fmt.Println()
-	foundMutations := false
-
-	for _, t := range sortedDefs {
-		if t.Kind == ast.Object && t.Name == "Mutation" {
-			foundMutations = true
-			fmt.Println()
-
-			if t.Description != "" {
-				printAsciiDocTags(t.Description)
-			}
-			fmt.Println()
-
-			printMutationDetails(t, definitionsMap)
-
-			fmt.Println()
-		}
-	}
-	if !foundMutations {
-		fmt.Println("[NOTE]")
-		fmt.Println("====")
-		fmt.Println("No mutations exist in this schema.")
-		fmt.Println("====")
-		fmt.Println()
-	}
-}
-
-func printMutationDetails(t *ast.Definition, definitionsMap map[string]*ast.Definition) {
-	if len(t.Fields) > 0 {
-		for _, f := range t.Fields {
-			// Check if the mutation is internal
-			isInternal := strings.Contains(f.Description, "INTERNAL")
-
-			// Skip internal mutations if excludeInternal is true
-			if *excludeInternal && isInternal {
-				continue
-			}
-
-			if f.Directives.ForName("deprecated") != nil {
-				// Handle deprecated field
-				//continue // or mark it as deprecated in the documentation
-			}
-
-			fmt.Printf(ADOC_QUERY_START_TAG, f.Name)
-			fmt.Println()
-			fmt.Printf("[[mutation_%s]]\n", strings.ToLower(f.Name))
-
-			// if f.Description contains INTERNAL then add the word INTERNAL to the tag
-			if strings.Contains(f.Description, "INTERNAL") {
-				fmt.Printf(L3_TAG, f.Name+" [INTERNAL]")
-			} else {
-				fmt.Printf(L3_TAG, f.Name)
-			}
-			fmt.Println()
-
-			if includeAdocLineTags {
-				fmt.Printf(ADOC_METHOD_DESC_START_TAG, f.Name)
-				fmt.Println(cleanDescription(f.Description, "-"))
-				fmt.Printf(ADOC_METHOD_DESC_END_TAG, f.Name)
-				fmt.Println()
-			}
-
-			fmt.Printf(ADOC_METHOD_SIG_START_TAG, f.Name)
-			fmt.Printf(".mutation: %s\n", f.Name)
-			fmt.Println(SOURCE_HEAD)
-			fmt.Println("----")
-			argsString, counter := getArgsMethodTypeString(f.Arguments)
-			if includeAdocLineTags {
-				counter++
-				fmt.Printf("%s(\n%s): %s <%d>\n", f.Name, argsString, f.Type.String(), counter)
-			} else {
-				fmt.Printf("%s(\n%s): %s\n", f.Name, argsString, f.Type.String())
-			}
-			fmt.Println("----")
-			fmt.Printf(ADOC_METHOD_SIG_END_TAG, f.Name)
-			fmt.Println()
-
-			fmt.Printf(ADOC_METHOD_ARGS_START_TAG, f.Name)
-			if includeAdocLineTags {
-				fmt.Println(convertDescriptionToRefNumbers(f.Description, true))
-			} else {
-				fmt.Println(f.Description)
-			}
-			fmt.Printf(ADOC_METHOD_ARGS_END_TAG, f.Name)
-			fmt.Println()
-
-			typeName := f.Type.String()
-			typeName = processTypeName(typeName, definitionsMap)
-
-			fmt.Printf("// tag::mutation-name-%s[]\n", f.Name)
-			fmt.Printf("*Mutation Name:* _%s_\n", f.Name)
-			fmt.Printf("// end::mutation-name-%s[]\n", f.Name)
-			fmt.Println()
-
-			fmt.Printf("// tag::mutation-return-%s[]\n", f.Name)
-			fmt.Printf("*Return:* %s\n", typeName)
-			fmt.Printf("// end::mutation-return-%s[]\n", f.Name)
-			fmt.Println()
-
-			if len(f.Arguments) > 0 {
-				fmt.Printf("// tag::arguments-%s[]\n", f.Name)
-				fmt.Printf(".Arguments\n")
-				// Replace "{" with a space
-				stringWithoutBraces := strings.Replace(getArgsString(f.Arguments), "{", " ", -1)
-				// Replace "}" with a space
-				stringWithoutBraces = strings.Replace(stringWithoutBraces, "}", " ", -1)
-				fmt.Println(stringWithoutBraces)
-				fmt.Printf("// end::arguments-%s[]\n", f.Name)
-				fmt.Println()
-			}
-
-			// Add directives if present
-			if len(f.Directives) > 0 {
-				fmt.Printf("// tag::mutation-directives-%s[]\n", f.Name)
-				fmt.Printf(".Directives\n")
-				fmt.Println(getDirectivesString(f.Directives))
-				fmt.Printf("// end::mutation-directives-%s[]\n", f.Name)
-				fmt.Println()
-			}
-
-			fmt.Printf(ADOC_QUERY_END_TAG, f.Name)
-			fmt.Println()
-		}
-	}
-}
-
-func printSubscriptions(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) {
-	fmt.Println("== Subscription")
-	fmt.Println()
-	foundSubscriptions := false
-
-	for _, t := range sortedDefs {
-		if t.Kind == ast.Object && t.Name == "Subscription" {
-			foundSubscriptions = true
-
-			fmt.Println()
-
-			if t.Description != "" {
-				printAsciiDocTags(t.Description)
-			}
-			fmt.Println()
-
-			printSubscriptionDetails(t, definitionsMap)
-
-			fmt.Println()
-		}
-	}
-	// If no subscriptions were found, print a message
-	if !foundSubscriptions {
-		fmt.Println("[NOTE]")
-		fmt.Println("====")
-		fmt.Println("No subscriptions exist in this schema.")
-		fmt.Println("====")
-		fmt.Println()
-	}
-}
-
-func printSubscriptionDetails(t *ast.Definition, definitionsMap map[string]*ast.Definition) {
-	if len(t.Fields) > 0 {
-		for _, f := range t.Fields {
-			// Check if the subscription is internal
-			isInternal := strings.Contains(f.Description, "INTERNAL")
-
-			// Skip internal subscriptions if excludeInternal is true
-			if *excludeInternal && isInternal {
-				continue
-			}
-
-			if f.Directives.ForName("deprecated") != nil {
-				// Handle deprecated field
-				//continue // or mark it as deprecated in the documentation
-			}
-
-			fmt.Printf(ADOC_SUBSCRIPTION_START_TAG, f.Name)
-			fmt.Println()
-			fmt.Printf("[[subscription_%s]]\n", strings.ToLower(f.Name))
-
-			// if f.Description contains INTERNAL then add the word INTERNAL to the tag
-			if strings.Contains(f.Description, "INTERNAL") {
-				fmt.Printf(L3_TAG, f.Name+" [INTERNAL]")
-			} else {
-				fmt.Printf(L3_TAG, f.Name)
-			}
-			fmt.Println()
-
-			if includeAdocLineTags {
-				fmt.Printf(ADOC_METHOD_DESC_START_TAG, f.Name)
-				fmt.Println(cleanDescription(f.Description, "-"))
-				fmt.Printf(ADOC_METHOD_DESC_END_TAG, f.Name)
-				fmt.Println()
-			}
-
-			fmt.Printf(ADOC_METHOD_SIG_START_TAG, f.Name)
-			fmt.Printf(".subscription: %s\n", f.Name)
-			fmt.Println(SOURCE_HEAD)
-			fmt.Println("----")
-			argsString, counter := getArgsMethodTypeString(f.Arguments)
-			if includeAdocLineTags {
-				counter++
-				fmt.Printf("%s(\n%s): %s <%d>\n", f.Name, argsString, f.Type.String(), counter)
-			} else {
-				fmt.Printf("%s(\n%s): %s\n", f.Name, argsString, f.Type.String())
-			}
-			fmt.Println("----")
-			fmt.Printf(ADOC_METHOD_SIG_END_TAG, f.Name)
-			fmt.Println()
-
-			fmt.Printf(ADOC_METHOD_ARGS_START_TAG, f.Name)
-			if includeAdocLineTags {
-				fmt.Println(convertDescriptionToRefNumbers(f.Description, true))
-			} else {
-				fmt.Println(f.Description)
-			}
-			fmt.Printf(ADOC_METHOD_ARGS_END_TAG, f.Name)
-			fmt.Println()
-
-			typeName := f.Type.String()
-			typeName = processTypeName(typeName, definitionsMap)
-
-			fmt.Printf("// tag::subscription-name-%s[]\n", f.Name)
-			fmt.Printf("*Subscription Name:* _%s_\n", f.Name)
-			fmt.Printf("// end::subscription-name-%s[]\n", f.Name)
-			fmt.Println()
-
-			fmt.Printf("// tag::subscription-return-%s[]\n", f.Name)
-			fmt.Printf("*Return:* %s\n", typeName)
-			fmt.Printf("// end::subscription-return-%s[]\n", f.Name)
-			fmt.Println()
-
-			if len(f.Arguments) > 0 {
-				fmt.Printf("// tag::arguments-%s[]\n", f.Name)
-				fmt.Printf(".Arguments\n")
-				// Replace "{" with a space
-				stringWithoutBraces := strings.Replace(getArgsString(f.Arguments), "{", " ", -1)
-				// Replace "}" with a space
-				stringWithoutBraces = strings.Replace(stringWithoutBraces, "}", " ", -1)
-				fmt.Println(stringWithoutBraces)
-				fmt.Printf("// end::arguments-%s[]\n", f.Name)
-				fmt.Println()
-			}
-
-			// Add directives if present
-			if len(f.Directives) > 0 {
-				fmt.Printf("// tag::subscription-directives-%s[]\n", f.Name)
-				fmt.Printf(".Directives\n")
-				fmt.Println(getDirectivesString(f.Directives))
-				fmt.Printf("// end::subscription-directives-%s[]\n", f.Name)
-				fmt.Println()
-			}
-
-			fmt.Printf(ADOC_SUBSCRIPTION_END_TAG, f.Name)
-			fmt.Println()
-		}
-	}
-}
-
 // Template version of printing scalar information.
-
 func printScalarsTmpl(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) {
 	var scalars []Scalar
 	for _, t := range sortedDefs {
@@ -1818,23 +1614,47 @@ func getTypeFieldsTableString(t *ast.Definition, definitionsMap map[string]*ast.
 	return builder.String(), nil
 }
 
-// Add this template constant
-const typeSectionTemplate = `
-{{.TypesTag}}
-{{range .Types}}
-// tag::type-{{.Name}}[]
-[[{{.AnchorName}}]]
-=== {{.Name}}
+// Add this new function
+func printDirectivesTmpl(doc *ast.SchemaDocument) {
+	var directiveInfos []DirectiveInfo
+	foundDirectives := len(doc.Directives) > 0
 
-{{- if .Description }}
-// tag::type-description-{{.Name}}[]
-{{ .Description | printAsciiDocTagsTmpl }}
-// end::type-description-{{.Name}}[]
-{{- end }}
+	if foundDirectives {
+		for _, dir := range doc.Directives {
+			// Format arguments
+			args := make([]string, 0, len(dir.Arguments))
+			for _, arg := range dir.Arguments {
+				args = append(args, fmt.Sprintf("%s: %s", arg.Name, arg.Type.String()))
+			}
+			argumentsString := strings.Join(args, ", ") // Create the formatted string
 
-{{ .FieldsTable }}
+			directiveInfos = append(directiveInfos, DirectiveInfo{
+				Name:        dir.Name,
+				Arguments:   argumentsString,
+				Description: dir.Description,
+			})
+		}
+	}
 
-// end::type-{{.Name}}[]
+	// Define table options string in Go code
+	tableOptions := `[width="90%", cols="2a,2a,6a" options="header" orientation="landscape" grid="none" stripes="even" , frame="topbot"]`
 
-{{end}}
-`
+	data := DirectiveSectionData{
+		DirectivesTag:   DIRECTIVES_TAG, // Use existing constant
+		FoundDirectives: foundDirectives,
+		Directives:      directiveInfos,
+		TableOptions:    tableOptions, // Pass the string
+	}
+
+	// No custom functions needed for this simple template
+	tmpl, err := template.New("directiveSectionTemplate").Parse(directiveSectionTemplate)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing directive section template: %v\n", err)
+		return
+	}
+
+	err = tmpl.Execute(os.Stdout, data)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error executing directive section template: %v\n", err)
+	}
+}
