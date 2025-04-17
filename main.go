@@ -102,6 +102,7 @@ No custom scalars exist in this schema.
 `
 
 const subscriptionTemplate = `
+// tag::subscription[]\
 == Subscription
 
 {{- if .FoundSubscriptions }}
@@ -119,51 +120,72 @@ const subscriptionTemplate = `
 No subscriptions exist in this schema.
 ====
 {{ end }}
+// end::subscription[]\
 `
 
 const mutationTemplate = `
-== Mutations
+// tag::mutation[]\
+[[mutations]]
+{{.MutationTag}}
+
+{{- if .MutationObjectDescription }}
+{{ .MutationObjectDescription | printAsciiDocTagsTmpl }}
+{{- end }}
 
 GraphQL Mutations are entry points on a GraphQL server that provides write access to our data sources. 
 
+{{- if .FoundMutations }}
+
 {{- range .Mutations }}
-{{ printf .AdocMutationStartTag .Name }}
-{{ printf .AdocMethodSigStartTag .Name }}
-{{ .Name }}
-{{ printf .AdocMethodSigEndTag .Name }}
+// tag::mutation-{{.Name}}[]
+[[{{.AnchorName}}]]
+// tag::method-signature-{{.Name}}[]
+=== {{.Name}}{{ if .IsInternal }} [INTERNAL]{{ end }}
+// end::method-signature-{{.Name}}[]
 
-{{ printf .AdocMethodArgsStartTag .Name }}
-{{- if .IncludeAdocLineTags }}
-{{ .Description | convertDescriptionToRefNumbers }}
-{{- else }}
-{{ .Description }}
+// tag::method-description-{{.Name}}[]
+{{- if .CleanedDescription }}
+{{ .CleanedDescription | printAsciiDocTagsTmpl }}
 {{- end }}
-{{ printf .AdocMethodArgsEndTag .Name }}
+// end::method-description-{{.Name}}[]
 
-{{ printf "// tag::mutation-name-%s[]\n" .Name }}
+{{ .MethodSignatureBlock }}
+
+// tag::method-args-{{.Name}}[]
+{{ convertDescriptionToRefNumbers .Description true }}
+// end::method-args-{{.Name}}[]
+
+// tag::mutation-name-{{.Name}}[]\\
 *Mutation Name:* _{{ .Name }}_
-{{ printf "// end::mutation-name-%s[]\n" .Name }}
+// end::mutation-name-{{.Name}}[]\\
 
-{{ printf "// tag::mutation-return-%s[]\n" .Name }}
+// tag::mutation-return-{{.Name}}[]\\
 *Return:* {{ .TypeName }}
-{{ printf "// end::mutation-return-%s[]\n" .Name }}
+// end::mutation-return-{{.Name}}[]\\
 
 {{- if .HasArguments }}
-{{ printf "// tag::arguments-%s[]\n" .Name }}
+// tag::arguments-{{.Name}}[]\\
 .Arguments
 {{ .Arguments }}
-{{ printf "// end::arguments-%s[]\n" .Name }}
+// end::arguments-{{.Name}}[]\\
 {{- end }}
 
 {{- if .HasDirectives }}
-{{ printf "// tag::mutation-directives-%s[]\n" .Name }}
+// tag::mutation-directives-{{.Name}}[]\\
 .Directives
 {{ .Directives }}
-{{ printf "// end::mutation-directives-%s[]\n" .Name }}
+// end::mutation-directives-{{.Name}}[]\\
 {{- end }}
 
-{{ printf .AdocMutationEndTag .Name }}
+// end::mutation-{{.Name}}[]
 {{ end }}
+{{- else }}
+[NOTE]
+====
+No mutations exist in this schema.
+====
+{{ end }}
+// end::mutation[]\
 `
 
 const (
@@ -286,24 +308,24 @@ func init() {
 }
 
 type MutationData struct {
-	Mutations []Mutation
+	Mutations                 []Mutation
+	MutationObjectDescription string
+	FoundMutations            bool
+	MutationTag               string
 }
 
 type Mutation struct {
-	Name                   string
-	Description            string
-	TypeName               string
-	Arguments              string
-	Directives             string
-	IncludeAdocLineTags    bool
-	HasArguments           bool
-	HasDirectives          bool
-	AdocMutationStartTag   string
-	AdocMutationEndTag     string
-	AdocMethodSigStartTag  string
-	AdocMethodSigEndTag    string
-	AdocMethodArgsStartTag string
-	AdocMethodArgsEndTag   string
+	Name                 string
+	Description          string
+	CleanedDescription   string
+	TypeName             string
+	Arguments            string
+	Directives           string
+	HasArguments         bool
+	HasDirectives        bool
+	AnchorName           string
+	IsInternal           bool
+	MethodSignatureBlock string
 }
 
 func main() {
@@ -376,8 +398,8 @@ func main() {
 	}
 
 	if *includeMutations {
-		printMutations(sortedDefs, definitionsMap)
-		//printMutationsTmpl(sortedDefs, definitionsMap)
+		//printMutations(sortedDefs, definitionsMap)
+		printMutationsTmpl(sortedDefs, definitionsMap)
 		fmt.Println()
 	}
 
@@ -1627,57 +1649,100 @@ func getSubscriptionDetailsTmpl(t *ast.Definition, definitionsMap map[string]*as
 
 func printMutationsTmpl(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) {
 	var mutations []Mutation
+	var mutationObjectDescription string
+	foundMutations := false
+	mutationDefinition := (*ast.Definition)(nil) // Find the Mutation object definition
 
 	for _, t := range sortedDefs {
 		if t.Kind == ast.Object && t.Name == "Mutation" {
-			for _, f := range t.Fields {
-				typeName := f.Type.String()
-				typeName = processTypeName(typeName, definitionsMap)
-
-				arguments := ""
-				if len(f.Arguments) > 0 {
-					arguments = getArgsString(f.Arguments)
-				}
-
-				directives := ""
-				if len(f.Directives) > 0 {
-					directives = getDirectivesString(f.Directives)
-				}
-
-				mutations = append(mutations, Mutation{
-					Name:                   f.Name,
-					Description:            f.Description,
-					TypeName:               typeName,
-					Arguments:              arguments,
-					Directives:             directives,
-					IncludeAdocLineTags:    includeAdocLineTags,
-					HasArguments:           len(f.Arguments) > 0,
-					HasDirectives:          len(f.Directives) > 0,
-					AdocMutationStartTag:   ADOC_MUTATION_START_TAG,
-					AdocMutationEndTag:     ADOC_MUTATION_END_TAG,
-					AdocMethodSigStartTag:  ADOC_METHOD_SIG_START_TAG,
-					AdocMethodSigEndTag:    ADOC_METHOD_SIG_END_TAG,
-					AdocMethodArgsStartTag: ADOC_METHOD_ARGS_START_TAG,
-					AdocMethodArgsEndTag:   ADOC_METHOD_ARGS_END_TAG,
-				})
+			mutationDefinition = t
+			if t.Description != "" {
+				// Store the description for the template
+				mutationObjectDescription = t.Description
 			}
+			break // Found the Mutation object
+		}
+	}
+
+	if mutationDefinition != nil {
+		for _, f := range mutationDefinition.Fields {
+			// Check if the mutation is internal
+			isInternal := strings.Contains(f.Description, "INTERNAL")
+
+			// Skip internal mutations if excludeInternal is true
+			if *excludeInternal && isInternal {
+				continue
+			}
+
+			// Skip deprecated mutations
+			if f.Directives.ForName("deprecated") != nil {
+				continue
+			}
+
+			foundMutations = true // We found at least one non-skipped mutation
+
+			typeName := processTypeName(f.Type.String(), definitionsMap)
+			arguments := ""
+			if len(f.Arguments) > 0 {
+				arguments = getArgsString(f.Arguments)
+			}
+			directives := ""
+			if len(f.Directives) > 0 {
+				directives = getDirectivesString(f.Directives)
+			}
+			cleanedDescription := cleanDescription(f.Description, "-")
+
+			// --- Construct Method Signature Block ---
+			var signatureBlock strings.Builder
+			signatureBlock.WriteString(fmt.Sprintf("// tag::method-signature-%s[]\n", f.Name)) // Re-add tag here for consistency if needed, or rely on outer one
+			signatureBlock.WriteString(fmt.Sprintf(".mutation: %s\n", f.Name))
+			signatureBlock.WriteString(SOURCE_HEAD)
+			signatureBlock.WriteString("----\n")
+			argsString, counter := getArgsMethodTypeString(f.Arguments)
+			// Always use line tags for consistency with printMutationDetails
+			counter++
+			signatureBlock.WriteString(fmt.Sprintf("%s(\n%s): %s <%d>\n", f.Name, argsString, f.Type.String(), counter))
+			signatureBlock.WriteString("----\n")
+			signatureBlock.WriteString(fmt.Sprintf("// end::method-signature-%s[]\n", f.Name)) // Re-add tag here for consistency
+			// --- End Method Signature Block ---
+
+			mutations = append(mutations, Mutation{
+				Name:                 f.Name,
+				Description:          f.Description,      // Pass raw description for convertDescriptionToRefNumbers
+				CleanedDescription:   cleanedDescription, // Pass cleaned description
+				TypeName:             typeName,
+				Arguments:            arguments,
+				Directives:           directives,
+				HasArguments:         len(f.Arguments) > 0,
+				HasDirectives:        len(f.Directives) > 0,
+				AnchorName:           "mutation_" + strings.ToLower(f.Name), // Generate anchor name
+				IsInternal:           isInternal,                            // Pass internal flag
+				MethodSignatureBlock: signatureBlock.String(),               // Pass signature block
+			})
 		}
 	}
 
 	data := MutationData{
-		Mutations: mutations,
+		Mutations:                 mutations,
+		MutationObjectDescription: mutationObjectDescription, // Pass object description
+		FoundMutations:            foundMutations,            // Pass flag
+		MutationTag:               "== Mutations",            // Pass header tag
 	}
 
-	tmpl, err := template.New("mutationTemplate").Funcs(template.FuncMap{
+	// Add printAsciiDocTagsTmpl to FuncMap
+	funcMap := template.FuncMap{
 		"convertDescriptionToRefNumbers": convertDescriptionToRefNumbers,
-	}).Parse(mutationTemplate)
+		"printAsciiDocTagsTmpl":          printAsciiDocTagsTmpl,
+	}
+
+	tmpl, err := template.New("mutationTemplate").Funcs(funcMap).Parse(mutationTemplate)
 	if err != nil {
-		fmt.Println("Error parsing template:", err)
+		fmt.Println("Error parsing mutation template:", err)
 		return
 	}
 
 	err = tmpl.Execute(os.Stdout, data)
 	if err != nil {
-		fmt.Println("Error executing template:", err)
+		fmt.Println("Error executing mutation template:", err)
 	}
 }
