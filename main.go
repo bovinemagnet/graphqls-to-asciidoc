@@ -20,7 +20,7 @@ var Version = "development"
 
 var excludeInternal = flag.Bool("exclude-internal", false, "Exclude internal queries from output")
 var schemaFile = flag.String("schema", "", "Path to the GraphQL schema file")
-var includeMutations = flag.Bool("mutations", false, "Include mutations in the output")
+var includeMutations = flag.Bool("mutations", true, "Include mutations in the output")
 var includeQueries = flag.Bool("queries", true, "Include queries in the output")
 var includeSubscriptions = flag.Bool("subscriptions", false, "Include subscriptions in the output")
 var includeDirectives = flag.Bool("directives", true, "Include directives in the output")
@@ -1235,7 +1235,7 @@ func printDirectives(doc *ast.SchemaDocument) {
 
 // Add this new function
 func printMutations(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) {
-	fmt.Println("== Mutation")
+	fmt.Println("== Mutations")
 	fmt.Println()
 	foundMutations := false
 
