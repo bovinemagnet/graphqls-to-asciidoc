@@ -32,19 +32,6 @@ var includeScalars = flag.Bool("scalars", true, "Include scalars in the output")
 //var outputFile = flag.String("output", "", "Output file for the documentation")
 //var showVersion = flag.Bool("version", false, "Show program version")
 
-var typeTemplate = `
-== {{.Name}}
-{{.Description}}
-
-=== Fields
-|===
-| Field | Type | Description
-{{range .Fields}}
-| {{.Name}} | {{.Type}} | {{.Description}}
-{{end}}
-|===
-`
-
 var fieldTemplate = `
 | {{.Type}} | {{.Name}} | {{processDescription .Description}}
 {{- if .RequiredOrArray}}
@@ -64,11 +51,11 @@ var fieldTemplate = `
 
 .Directives:
 {{.Directives}}
-{{- end}}
+{{- end }}
 `
 
 const scalarTemplate = `
-// tag::scalar[]\
+// tag::scalar[]
 [[scalars]]
 {{.ScalarTag}}
 
@@ -102,7 +89,7 @@ No custom scalars exist in this schema.
 `
 
 const subscriptionTemplate = `
-// tag::subscription[]\
+// tag::subscription[]
 == Subscription
 
 {{- if .FoundSubscriptions }}
@@ -120,11 +107,11 @@ const subscriptionTemplate = `
 No subscriptions exist in this schema.
 ====
 {{ end }}
-// end::subscription[]\
+// end::subscription[]
 `
 
 const mutationTemplate = `
-// tag::mutation[]\
+// tag::mutation[]
 [[mutations]]
 {{.MutationTag}}
 
@@ -155,26 +142,26 @@ GraphQL Mutations are entry points on a GraphQL server that provides write acces
 {{ convertDescriptionToRefNumbers .Description true }}
 // end::method-args-{{.Name}}[]
 
-// tag::mutation-name-{{.Name}}[]\\
+// tag::mutation-name-{{.Name}}[]
 *Mutation Name:* _{{ .Name }}_
-// end::mutation-name-{{.Name}}[]\\
+// end::mutation-name-{{.Name}}[]
 
-// tag::mutation-return-{{.Name}}[]\\
+// tag::mutation-return-{{.Name}}[]
 *Return:* {{ .TypeName }}
-// end::mutation-return-{{.Name}}[]\\
+// end::mutation-return-{{.Name}}[]
 
 {{- if .HasArguments }}
-// tag::arguments-{{.Name}}[]\\
+// tag::arguments-{{.Name}}[]
 .Arguments
 {{ .Arguments }}
-// end::arguments-{{.Name}}[]\\
+// end::arguments-{{.Name}}[]
 {{- end }}
 
 {{- if .HasDirectives }}
-// tag::mutation-directives-{{.Name}}[]\\
+// tag::mutation-directives-{{.Name}}[]
 .Directives
 {{ .Directives }}
-// end::mutation-directives-{{.Name}}[]\\
+// end::mutation-directives-{{.Name}}[]
 {{- end }}
 
 // end::mutation-{{.Name}}[]
@@ -185,7 +172,7 @@ GraphQL Mutations are entry points on a GraphQL server that provides write acces
 No mutations exist in this schema.
 ====
 {{ end }}
-// end::mutation[]\
+// end::mutation[]
 `
 
 const (
@@ -258,7 +245,7 @@ const (
 	ADOC_TYPE_DEF_END_TAG         = "// end::type-def-%s[]\n"
 	ADOC_TYPE_DIRECTIVE_START_TAG = "// tag::type-directive-%s[]\n"
 	ADOC_TYPE_DIRECTIVE_END_TAG   = "// end::type-directive-%s[]\n"
-	TABLE_SE                      = "|===\n"
+	TABLE_SE                      = "|==="
 
 	SOURCE_HEAD = "[source, kotlin]\n"
 
@@ -326,6 +313,21 @@ type Mutation struct {
 	AnchorName           string
 	IsInternal           bool
 	MethodSignatureBlock string
+}
+
+// Add these structs
+type TypeSectionData struct {
+	TypesTag string
+	Types    []TypeInfo
+}
+
+type TypeInfo struct {
+	Name        string
+	Kind        string // "Object" or "Interface"
+	AnchorName  string
+	Description string
+	FieldsTable string // Pre-rendered AsciiDoc table for fields
+	IsInterface bool
 }
 
 func main() {
@@ -410,7 +412,8 @@ func main() {
 	}
 
 	if *includeTypes {
-		printTypes(sortedDefs, definitionsMap)
+		//printTypes(sortedDefs, definitionsMap) // Comment out the old call
+		printTypesTmpl(sortedDefs, definitionsMap) // Add the new call
 		fmt.Println()
 	}
 
@@ -440,31 +443,53 @@ func main() {
 /**
  * Print the type details
  */
-func printTypes(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) {
-	fmt.Println(TYPES_TAG)
+func printTypesTmpl(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) {
+	var typeInfos []TypeInfo
 
 	for _, t := range sortedDefs {
+		// Include Objects (except Query) and Interfaces
 		if (t.Kind == ast.Object && t.Name != "Query") || t.Kind == ast.Interface {
-			fmt.Printf(ADOC_TYPE_START_TAG, t.Name)
-			fmt.Printf(CROSS_REF, camelToSnake(t.Name)) // Add anchor
-			fmt.Printf(L3_TAG, t.Name)
 
-			if t.Description != "" {
-				fmt.Printf(ADOC_TYPE_DESC_START_TAG, t.Name)
-				printAsciiDocTags(t.Description)
-				fmt.Printf(ADOC_TYPE_DESC_END_TAG, t.Name)
-				fmt.Println()
+			fieldsTableString, err := getTypeFieldsTableString(t, definitionsMap)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error generating fields table for type %s: %v\n", t.Name, err)
+				// Decide if you want to skip this type or continue with an empty table
+				fieldsTableString = "[ERROR generating fields table]"
 			}
-			fmt.Println()
 
-			printObjectFields(t, definitionsMap)
-
-			fmt.Println()
-			fmt.Printf(ADOC_TYPE_END_TAG, t.Name)
-			fmt.Println()
+			typeInfo := TypeInfo{
+				Name:        t.Name,
+				Kind:        string(t.Kind),
+				AnchorName:  "type_" + camelToSnake(t.Name), // Use type_ prefix consistently
+				Description: t.Description,
+				FieldsTable: fieldsTableString,
+				IsInterface: t.Kind == ast.Interface,
+			}
+			typeInfos = append(typeInfos, typeInfo)
 		}
 	}
+
+	data := TypeSectionData{
+		TypesTag: TYPES_TAG, // Use existing constant
+		Types:    typeInfos,
+	}
+
+	funcMap := template.FuncMap{
+		"printAsciiDocTagsTmpl": printAsciiDocTagsTmpl,
+	}
+
+	tmpl, err := template.New("typeSectionTemplate").Funcs(funcMap).Parse(typeSectionTemplate)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing type section template: %v\n", err)
+		return
+	}
+
+	err = tmpl.Execute(os.Stdout, data)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error executing type section template: %v\n", err)
+	}
 }
+
 func processDescription(description string) string {
 	// Replace * and - with newline followed by the character
 	processed := strings.ReplaceAll(description, "*", "\n*")
@@ -637,16 +662,16 @@ func printObjectFields(t *ast.Definition, definitionsMap map[string]*ast.Definit
 		if t.Name == "Query" {
 
 			fmt.Println(TABLE_OPTIONS_3)
-			fmt.Print(TABLE_SE)
+			fmt.Println(TABLE_SE)
 			fmt.Println("| Return | Function | Description")
 		} else if t.Name == "InputObject" {
 			fmt.Println(TABLE_OPTIONS_4)
-			fmt.Print(TABLE_SE)
+			fmt.Println(TABLE_SE)
 			//fmt.Println("| Type | Field | Description")
 			fmt.Println("| Type | Field | Description | Directives")
 		} else {
 			fmt.Println(TABLE_OPTIONS_3)
-			fmt.Print(TABLE_SE)
+			fmt.Println(TABLE_SE)
 			fmt.Println("| Type | Field | Description ")
 		}
 
@@ -684,7 +709,7 @@ func printObjectFields(t *ast.Definition, definitionsMap map[string]*ast.Definit
 			}
 		}
 
-		fmt.Print(TABLE_SE)
+		fmt.Println(TABLE_SE)
 
 		if t.IsInputType() {
 			fmt.Printf(ADOC_INPUT_DEF_END_TAG, t.Name) // Add input tag to table
@@ -751,12 +776,12 @@ func printEnumValues(t *ast.Definition) {
 		fmt.Printf("[[enum_%s]]\n", camelToSnake(t.Name))
 		fmt.Printf(".enum_%s\n", camelToSnake(t.Name))
 		fmt.Println(TABLE_OPTIONS_2)
-		fmt.Print(TABLE_SE)
+		fmt.Println(TABLE_SE)
 		fmt.Println("| Value | Description")
 		for _, v := range t.EnumValues {
 			fmt.Printf("| %s | %s\n", v.Name, v.Description)
 		}
-		fmt.Print(TABLE_SE)
+		fmt.Println(TABLE_SE)
 		fmt.Printf(ADOC_ENUM_END_TAG, t.Name)
 	}
 }
@@ -809,7 +834,7 @@ func printAsciiDocTagsTmpl(description string) string {
 func printQuery(t *ast.Definition, definitionsMap map[string]*ast.Definition) {
 	if len(t.Fields) > 0 {
 		fmt.Println(TABLE_OPTIONS_4)
-		fmt.Print(TABLE_SE)
+		fmt.Println(TABLE_SE)
 		if t.Name == "Query" {
 			fmt.Println("| Return | Function | Description | params")
 		} else {
@@ -1167,14 +1192,6 @@ func printAsciiDocTag(startTag, content, endTag string) {
 	fmt.Printf(endTag)
 }
 
-func printType(t *ast.Definition) {
-	tmpl, err := template.New("type").Parse(typeTemplate)
-	if err != nil {
-		log.Fatal(err)
-	}
-	tmpl.Execute(os.Stdout, t)
-}
-
 func getTypeName(t *ast.Type) string {
 	if t.Elem != nil {
 		return "[" + getTypeName(t.Elem) + "]"
@@ -1236,7 +1253,7 @@ func printDirectives(doc *ast.SchemaDocument) {
 	fmt.Println(DIRECTIVES_TAG)
 	fmt.Println()
 	fmt.Println(TABLE_OPTIONS_3)
-	fmt.Print(TABLE_SE)
+	fmt.Println(TABLE_SE)
 	fmt.Println("| Directive | Arguments | Description")
 
 	for _, dir := range doc.Directives {
@@ -1251,7 +1268,7 @@ func printDirectives(doc *ast.SchemaDocument) {
 			dir.Description)
 	}
 
-	fmt.Print(TABLE_SE)
+	fmt.Println(TABLE_SE)
 	fmt.Println()
 }
 
@@ -1634,7 +1651,7 @@ func getSubscriptionDetailsTmpl(t *ast.Definition, definitionsMap map[string]*as
 			if len(f.Directives) > 0 {
 				details.WriteString(fmt.Sprintf("// tag::subscription-directives-%s[]\n", f.Name))
 				details.WriteString(".Directives\n")
-				details.WriteString(getDirectivesString(f.Directives))
+				details.WriteString(getDirectivesString(f.Directives) + "\n")
 				details.WriteString(fmt.Sprintf("// end::subscription-directives-%s[]\n", f.Name))
 				details.WriteString("\n")
 			}
@@ -1746,3 +1763,78 @@ func printMutationsTmpl(sortedDefs []*ast.Definition, definitionsMap map[string]
 		fmt.Println("Error executing mutation template:", err)
 	}
 }
+
+// Add this helper function
+func getTypeFieldsTableString(t *ast.Definition, definitionsMap map[string]*ast.Definition) (string, error) {
+	var builder strings.Builder
+
+	if len(t.Fields) == 0 {
+		return "", nil // No fields, return empty string
+	}
+
+	// Use a local template instance for fields
+	fieldTmpl, err := template.New("field").Funcs(template.FuncMap{
+		"processDescription": processDescription,
+	}).Parse(fieldTemplate)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse field template: %w", err)
+	}
+
+	// Add tags and headers specific to types (not inputs)
+	builder.WriteString(fmt.Sprintf(ADOC_TYPE_DEF_START_TAG, t.Name))
+	builder.WriteString(fmt.Sprintf("[[type_%s]]\n", strings.ToLower(t.Name)))
+	builder.WriteString(fmt.Sprintf(".type: %s\n", t.Name))
+
+	builder.WriteString(TABLE_OPTIONS_3 + "\n")
+	builder.WriteString(TABLE_SE + "\n")
+	builder.WriteString("| Type | Field | Description \n") // Header for types
+
+	for _, f := range t.Fields {
+		typeName := processTypeName(f.Type.String(), definitionsMap)
+		// Directives are handled within the field template's logic if needed by FieldData
+		// directives := getDirectivesStringTpl(f.Directives) // Use Tpl version if needed by template
+
+		data := FieldData{
+			Type:            typeName,
+			Name:            f.Name,
+			Description:     f.Description,
+			RequiredOrArray: strings.Contains(typeName, "!") || strings.Contains(typeName, "["),
+			Required:        isRequiredTypeTpl(typeName), // Use Tpl version
+			IsArray:         strings.Contains(typeName, "["),
+			Directives:      getDirectivesStringTpl(f.Directives), // Use Tpl version
+		}
+
+		// Execute the field template into the builder
+		err := fieldTmpl.Execute(&builder, data)
+		if err != nil {
+			return "", fmt.Errorf("failed to execute field template for field %s: %w", f.Name, err)
+		}
+		builder.WriteString("\n") // Ensure newline after each row
+	}
+
+	builder.WriteString(TABLE_SE + "\n")
+	builder.WriteString(fmt.Sprintf(ADOC_TYPE_DEF_END_TAG, t.Name))
+
+	return builder.String(), nil
+}
+
+// Add this template constant
+const typeSectionTemplate = `
+{{.TypesTag}}
+{{range .Types}}
+// tag::type-{{.Name}}[]
+[[{{.AnchorName}}]]
+=== {{.Name}}
+
+{{- if .Description }}
+// tag::type-description-{{.Name}}[]
+{{ .Description | printAsciiDocTagsTmpl }}
+// end::type-description-{{.Name}}[]
+{{- end }}
+
+{{ .FieldsTable }}
+
+// end::type-{{.Name}}[]
+
+{{end}}
+`
