@@ -196,6 +196,27 @@ const typeSectionTemplate = `
 {{end}}
 `
 
+const enumSectionTemplate = `
+{{.EnumsTag}}
+{{range .Enums}}
+// tag::enum-def-{{.Name}}[]
+[[{{.AnchorName}}]]
+
+=== {{.Name}}
+
+{{- if .Description }}
+// tag::enum-description-{{.Name}}[]
+{{ .Description | printAsciiDocTagsTmpl }}
+// end::enum-description-{{.Name}}[]
+{{- end }}
+
+{{ .ValuesTable }}
+
+// end::enum-def-{{.Name}}[]
+
+{{end}}
+`
+
 const directiveSectionTemplate = `
 {{.DirectivesTag}}
 {{- if .FoundDirectives }}
@@ -385,6 +406,19 @@ type DirectiveInfo struct {
 	Description string
 }
 
+// Add these structs
+type EnumSectionData struct {
+	EnumsTag string
+	Enums    []EnumInfo
+}
+
+type EnumInfo struct {
+	Name        string
+	AnchorName  string
+	Description string
+	ValuesTable string // Pre-rendered AsciiDoc table for values
+}
+
 func main() {
 
 	// Parse command-line flags
@@ -473,7 +507,8 @@ func main() {
 	}
 
 	if *includeEnums {
-		printEnums(sortedDefs, definitionsMap)
+		// printEnums(sortedDefs, definitionsMap) // Comment out old call
+		printEnumsTmpl(sortedDefs, definitionsMap) // Add new call
 		fmt.Println()
 	}
 
@@ -559,33 +594,41 @@ func processDescription(description string) string {
 /**
  * Print the enumeration details
  */
-func printEnums(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) {
-	fmt.Println(ENUM_TAG)
+func printEnumsTmpl(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) {
+	var enumInfos []EnumInfo
+
 	for _, t := range sortedDefs {
 		if t.Kind == ast.Enum {
-			fmt.Println("\n")
+			valuesTableString := getEnumValuesTableString(t)
 
-			fmt.Printf(ADOC_ENUM_DEF_START_TAG, t.Name)
-			fmt.Printf(CROSS_REF, camelToSnake(t.Name)) // Add anchor
-			fmt.Println("\n")
-
-			fmt.Printf(L3_TAG, t.Name)
-			//fmt.Printf("=== %s\n\n", t.Name)
-			fmt.Println("\n")
-
-			if t.Description != "" {
-				fmt.Printf(ADOC_ENUM_DESC_START_TAG, t.Name)
-				printAsciiDocTags(t.Description)
-				fmt.Printf(ADOC_ENUM_DESC_END_TAG, t.Name)
+			enumInfo := EnumInfo{
+				Name:        t.Name,
+				AnchorName:  camelToSnake(t.Name), // Anchor name for enum
+				Description: t.Description,
+				ValuesTable: valuesTableString,
 			}
-			fmt.Println("\n")
-
-			printEnumValues(t)
-
-			fmt.Println("\n")
-			fmt.Printf(ADOC_ENUM_DEF_END_TAG, t.Name)
-
+			enumInfos = append(enumInfos, enumInfo)
 		}
+	}
+
+	data := EnumSectionData{
+		EnumsTag: ENUM_TAG, // Use existing constant
+		Enums:    enumInfos,
+	}
+
+	funcMap := template.FuncMap{
+		"printAsciiDocTagsTmpl": printAsciiDocTagsTmpl,
+	}
+
+	tmpl, err := template.New("enumSectionTemplate").Funcs(funcMap).Parse(enumSectionTemplate)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing enum section template: %v\n", err)
+		return
+	}
+
+	err = tmpl.Execute(os.Stdout, data)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error executing enum section template: %v\n", err)
 	}
 }
 
@@ -1657,4 +1700,27 @@ func printDirectivesTmpl(doc *ast.SchemaDocument) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error executing directive section template: %v\n", err)
 	}
+}
+
+// Add this helper function
+func getEnumValuesTableString(t *ast.Definition) string {
+	if len(t.EnumValues) == 0 {
+		return "" // No values, return empty string
+	}
+
+	var builder strings.Builder
+
+	builder.WriteString(fmt.Sprintf(ADOC_ENUM_START_TAG, t.Name))
+	builder.WriteString(fmt.Sprintf("[[enum_%s]]\n", camelToSnake(t.Name)))
+	builder.WriteString(fmt.Sprintf(".enum_%s\n", camelToSnake(t.Name)))
+	builder.WriteString(TABLE_OPTIONS_2 + "\n")
+	builder.WriteString(TABLE_SE + "\n")
+	builder.WriteString("| Value | Description\n")
+	for _, v := range t.EnumValues {
+		builder.WriteString(fmt.Sprintf("| %s | %s\n", v.Name, v.Description))
+	}
+	builder.WriteString(TABLE_SE + "\n")
+	builder.WriteString(fmt.Sprintf(ADOC_ENUM_END_TAG, t.Name))
+
+	return builder.String()
 }
