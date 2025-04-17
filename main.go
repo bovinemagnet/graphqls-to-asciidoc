@@ -237,6 +237,27 @@ No custom directives exist in this schema.
 {{- end }}
 `
 
+const inputSectionTemplate = `
+{{.InputsTag}}
+{{range .Inputs}}
+// tag::input-def-{{.Name}}[]
+[[{{.AnchorName}}]]
+
+=== {{.Name}}
+
+{{- if .Description }}
+// tag::input-description-{{.Name}}[] // Using generic description tags
+{{ .Description | printAsciiDocTagsTmpl }}
+// end::input-description-{{.Name}}[]
+{{- end }}
+
+{{ .FieldsTable }}
+
+// end::input-def-{{.Name}}[]
+
+{{end}}
+`
+
 const (
 	// include tags
 	includeAdocLineTags = true
@@ -419,6 +440,19 @@ type EnumInfo struct {
 	ValuesTable string // Pre-rendered AsciiDoc table for values
 }
 
+// Add these structs
+type InputSectionData struct {
+	InputsTag string
+	Inputs    []InputInfo
+}
+
+type InputInfo struct {
+	Name        string
+	AnchorName  string
+	Description string
+	FieldsTable string // Pre-rendered AsciiDoc table for fields
+}
+
 func main() {
 
 	// Parse command-line flags
@@ -514,7 +548,8 @@ func main() {
 
 	if *includeInputs {
 
-		printInputs(sortedDefs, definitionsMap)
+		// printInputs(sortedDefs, definitionsMap) // Comment out old call
+		printInputsTmpl(sortedDefs, definitionsMap) // Add new call
 		fmt.Println()
 	}
 	if *includeDirectives {
@@ -632,32 +667,106 @@ func printEnumsTmpl(sortedDefs []*ast.Definition, definitionsMap map[string]*ast
 	}
 }
 
-func printInputs(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) {
-	fmt.Println(INPUT_TAG)
+func printInputsTmpl(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) {
+	var inputInfos []InputInfo
+
 	for _, t := range sortedDefs {
 		if t.Kind == ast.InputObject {
-			fmt.Println("\n")
 
-			fmt.Printf(ADOC_INPUT_START_TAG, t.Name)
-
-			fmt.Printf(CROSS_REF, camelToSnake(t.Name)) // Add anchor
-			fmt.Println("\n")
-
-			fmt.Printf(L3_TAG, t.Name)
-			fmt.Println("\n")
-
-			if t.Description != "" {
-				printAsciiDocTags(t.Description)
-				fmt.Println()
+			fieldsTableString, err := getInputFieldsTableString(t, definitionsMap)
+			if err != nil {
+				// Log error but potentially continue?
+				fmt.Fprintf(os.Stderr, "Error generating fields table for input %s: %v\n", t.Name, err)
+				fieldsTableString = "[ERROR generating fields table]"
 			}
-			fmt.Println("\n")
 
-			printObjectFields(t, definitionsMap)
-
-			fmt.Println("\n")
-			fmt.Printf(ADOC_INPUT_END_TAG, t.Name)
+			inputInfo := InputInfo{
+				Name:        t.Name,
+				AnchorName:  "input_" + camelToSnake(t.Name), // Use input_ prefix
+				Description: t.Description,
+				FieldsTable: fieldsTableString,
+			}
+			inputInfos = append(inputInfos, inputInfo)
 		}
 	}
+
+	data := InputSectionData{
+		InputsTag: INPUT_TAG, // Use existing constant
+		Inputs:    inputInfos,
+	}
+
+	funcMap := template.FuncMap{
+		"printAsciiDocTagsTmpl": printAsciiDocTagsTmpl,
+	}
+
+	tmpl, err := template.New("inputSectionTemplate").Funcs(funcMap).Parse(inputSectionTemplate)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing input section template: %v\n", err)
+		return
+	}
+
+	err = tmpl.Execute(os.Stdout, data)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error executing input section template: %v\n", err)
+	}
+}
+
+func getInputFieldsTableString(t *ast.Definition, definitionsMap map[string]*ast.Definition) (string, error) {
+	if len(t.Fields) == 0 {
+		return "", nil // No fields
+	}
+
+	var builder strings.Builder
+
+	// Use a local template instance for fields
+	fieldTmpl, err := template.New("field").Funcs(template.FuncMap{
+		"processDescription": processDescription,
+	}).Parse(fieldTemplate)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse field template for input %s: %w", t.Name, err)
+	}
+
+	// Add tags and headers specific to inputs
+	// Note: Replicating tags from printObjectFields logic for Inputs
+	builder.WriteString(fmt.Sprintf(ADOC_INPUT_DEF_START_TAG, t.Name))
+	builder.WriteString(fmt.Sprintf("[[input_%s]]\n", strings.ToLower(t.Name)))
+	builder.WriteString(fmt.Sprintf(".input: %s\n", t.Name))
+
+	// Use TABLE_OPTIONS_4 for inputs as per printObjectFields
+	builder.WriteString(TABLE_OPTIONS_3 + "\n")
+	builder.WriteString(TABLE_SE + "\n")
+	//builder.WriteString("| Type | Field | Description | Directives\n") // Header for Input Objects
+	builder.WriteString("| Type | Field | Description\n") // Header for Input Objects
+
+	for _, f := range t.Fields {
+		typeName := processTypeName(f.Type.String(), definitionsMap)
+		directives := getDirectivesStringTpl(f.Directives) // Using Tpl version for directives
+
+		data := FieldData{
+			Type:            typeName,
+			Name:            f.Name,
+			Description:     f.Description, // Keep original description for Input tables
+			RequiredOrArray: strings.Contains(typeName, "!") || strings.Contains(typeName, "["),
+			Required:        isRequiredTypeTpl(typeName),
+			IsArray:         strings.Contains(typeName, "["),
+			Directives:      directives, // Pass processed directives
+		}
+
+		// Execute the field template into the builder
+		err := fieldTmpl.Execute(&builder, data)
+		if err != nil {
+			// Attempt to continue, maybe log error?
+			builder.WriteString(fmt.Sprintf("| ERROR executing template for field %s | | |\n", f.Name))
+			// return "", fmt.Errorf("failed to execute field template for input field %s: %w", f.Name, err)
+		} else {
+			builder.WriteString("\n") // Ensure newline after each row if template executed successfully
+		}
+	}
+
+	builder.WriteString(TABLE_SE + "\n")
+	builder.WriteString(fmt.Sprintf(ADOC_INPUT_DEF_END_TAG, t.Name))
+
+	return builder.String(), nil
 }
 
 /**
