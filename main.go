@@ -863,7 +863,7 @@ func printObjectFields(t *ast.Definition, definitionsMap map[string]*ast.Definit
 				fmt.Printf(".input: %s\n", t.Name)                    // Add input header to table
 			} else {
 				fmt.Printf(ADOC_TYPE_DEF_START_TAG, t.Name)          // Add type tag to table
-				fmt.Printf("[[type_%s]]\n", strings.ToLower(t.Name)) // Add type tag to table
+				fmt.Printf("[[type-%s]]\n", strings.ToLower(t.Name)) // Add type tag to table
 				fmt.Printf(".type: %s\n", t.Name)                    // Add type header to table
 			}
 		}
@@ -1730,7 +1730,7 @@ func getTypeFieldsTableString(t *ast.Definition, definitionsMap map[string]*ast.
 
 	// Add tags and headers specific to types (not inputs)
 	builder.WriteString(fmt.Sprintf(ADOC_TYPE_DEF_START_TAG, t.Name))
-	builder.WriteString(fmt.Sprintf("[[type_%s]]\n", strings.ToLower(t.Name)))
+	builder.WriteString(fmt.Sprintf("[[type_def_%s]]\n", strings.ToLower(t.Name)))
 	builder.WriteString(fmt.Sprintf(".type: %s\n", t.Name))
 
 	builder.WriteString(TABLE_OPTIONS_3 + "\n")
