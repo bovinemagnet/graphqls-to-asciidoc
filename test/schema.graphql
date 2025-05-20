@@ -136,11 +136,11 @@ input MessageInput {
   """
   The message's content
   """
-  content: String
+  content: String  @length(max: 31)
   """
   The message's author
   """
-  author: String
+  author: String  @length(max: 31)
 }
 
 """
@@ -264,28 +264,71 @@ type Query {
 
 }
 
+
+# tag::MUTATIONs[]
 """
 The root mutation
 """
 type Mutation {
+
+    # tag::MUTATION_CREATE_TWEET[]
     """
     Create a new tweet
     """
     createTweet (
         body: String
     ): Tweet
+    # end::MUTATION_CREATE_TWEET[]
+
+    # tag::MUTATION_DELETE_TWEET[]
     """
     Delete a tweet
     """
     deleteTweet(id: ID!): Tweet
+    # end::MUTATION_DELETE_TWEET[]
+
+    # tag::MUTATION_MARK_TWEET_READ[]
     """
     Mark a tweet as read
     """
     markTweetRead(id: ID!): Boolean
+    # end::MUTATION_MARK_TWEET_READ[]
 
+    # tag::MUTATION_CREATE_MESSAGE[]
     """
     Create a new message example.
     """
     createMessage(input: MessageInput): Message
+    # end::MUTATION_CREATE_MESSAGE[]
 
 }
+# end::MUTATIONs[]
+
+
+# tag::graphql_directives[]
+#
+# this declares the directive as being possible on arguments and input fields
+#
+"""
+Directive to specify the size constraints on arguments and input fields.
+
+.Arguments:
+- `min`: min the minimum size allowed, default is 0
+- `max`: the maximum size allowed, default is 2147483647
+- `message`: the validation message, default is "graphql.validation.Size.message"
+"""
+directive @Size(min : Int = 0, max : Int! = 2147483647, message : String = "graphql.validation.Size.message")
+on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+
+"""
+Directive to specify the length constraints on arguments and input fields.
+
+.Arguments:
+- `min`: the minimum length allowed, default is 0
+- `max`: the maximum length allowed, default is 2147483647
+- `message`: the validation message, default is "graphql.validation.Size.message"
+"""
+directive @length(min : Int = 0, max : Int! = 2147483647, message : String = "graphql.validation.Size.message")
+on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+
+# end::graphql_directives[]
