@@ -1359,7 +1359,8 @@ func convertDescriptionToRefNumbers(text string, skipNonDash bool) string {
 	refNum := 1
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "-") {
+		// ignore if the string starts with --
+		if strings.HasPrefix(trimmed, "-") && !strings.HasPrefix(trimmed, "--") {
 			lineContent := strings.TrimSpace(trimmed[1:])
 			result.WriteString(fmt.Sprintf("<%d> %s\n", refNum, lineContent))
 			refNum++
