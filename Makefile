@@ -21,6 +21,6 @@ clean:
 
 # Run the code to build to test doc
 test_doc:
-	$(GORUN) main.go test/schema.graphql > test/schema.adoc
+	$(GORUN) main.go -schema test/schema.graphql > test/schema.adoc
 
 .PHONY: all build test clean

@@ -52,6 +52,9 @@ var fieldTemplate = `
 .Directives:
 {{.Directives}}
 {{- end }}
+{{- if .Changelog}}
+{{.Changelog}}
+{{- end }}
 `
 
 const scalarTemplate = `
@@ -59,7 +62,7 @@ const scalarTemplate = `
 [[scalars]]
 {{.ScalarTag}}
 
-GraphQL specifies a basic set of well-defined Scalar types: Int, Float, String, Boolean, and ID. 
+GraphQL specifies a basic set of well-defined Scalar types: Int, Float, String, Boolean, and ID.
 {{- if .FoundScalars }}
 
 The following custom scalar types are defined in this schema:
@@ -119,7 +122,7 @@ const mutationTemplate = `
 {{ .MutationObjectDescription | printAsciiDocTagsTmpl }}
 {{- end }}
 
-GraphQL Mutations are entry points on a GraphQL server that provides write access to our data sources. 
+GraphQL Mutations are entry points on a GraphQL server that provides write access to our data sources.
 
 {{- if .FoundMutations }}
 
@@ -164,6 +167,12 @@ GraphQL Mutations are entry points on a GraphQL server that provides write acces
 // end::mutation-directives-{{.Name}}[]
 {{- end }}
 
+{{- if .Changelog }}
+// tag::mutation-changelog-{{.Name}}[]
+{{ .Changelog }}
+// end::mutation-changelog-{{.Name}}[]
+{{- end }}
+
 // end::mutation-{{.Name}}[]
 {{ end }}
 {{- else }}
@@ -187,6 +196,12 @@ const typeSectionTemplate = `
 // tag::type-description-{{.Name}}[]
 {{ .Description | printAsciiDocTagsTmpl }}
 // end::type-description-{{.Name}}[]
+{{- end }}
+
+{{- if .Changelog }}
+// tag::type-changelog-{{.Name}}[]
+{{ .Changelog }}
+// end::type-changelog-{{.Name}}[]
 {{- end }}
 
 {{ .FieldsTable }}
@@ -249,6 +264,12 @@ const inputSectionTemplate = `
 // tag::input-description-{{.Name}}[] // Using generic description tags
 {{ .Description | printAsciiDocTagsTmpl }}
 // end::input-description-{{.Name}}[]
+{{- end }}
+
+{{- if .Changelog }}
+// tag::input-changelog-{{.Name}}[]
+{{ .Changelog }}
+// end::input-changelog-{{.Name}}[]
 {{- end }}
 
 {{ .FieldsTable }}
@@ -346,6 +367,7 @@ type FieldData struct {
 	Required        string
 	IsArray         bool
 	Directives      string
+	Changelog       string
 }
 
 type ScalarData struct {
@@ -396,6 +418,7 @@ type Mutation struct {
 	AnchorName           string
 	IsInternal           bool
 	MethodSignatureBlock string
+	Changelog            string
 }
 
 // Add these structs
@@ -411,6 +434,7 @@ type TypeInfo struct {
 	Description string
 	FieldsTable string // Pre-rendered AsciiDoc table for fields
 	IsInterface bool
+	Changelog   string
 }
 
 // Add these structs
@@ -451,6 +475,7 @@ type InputInfo struct {
 	AnchorName  string
 	Description string
 	FieldsTable string // Pre-rendered AsciiDoc table for fields
+	Changelog   string
 }
 
 func main() {
@@ -583,13 +608,17 @@ func printTypesTmpl(sortedDefs []*ast.Definition, definitionsMap map[string]*ast
 				fieldsTableString = "[ERROR generating fields table]"
 			}
 
+			// Process type description and extract changelog
+			processedDesc, changelog := processDescriptionWithChangelog(t.Description)
+			
 			typeInfo := TypeInfo{
 				Name:        t.Name,
 				Kind:        string(t.Kind),
 				AnchorName:  "type_" + camelToSnake(t.Name), // Use type_ prefix consistently
-				Description: t.Description,
+				Description: processedDesc,
 				FieldsTable: fieldsTableString,
 				IsInterface: t.Kind == ast.Interface,
+				Changelog:   changelog,
 			}
 			typeInfos = append(typeInfos, typeInfo)
 		}
@@ -617,13 +646,136 @@ func printTypesTmpl(sortedDefs []*ast.Definition, definitionsMap map[string]*ast
 }
 
 func processDescription(description string) string {
-	// Replace * and - with newline followed by the character
-	processed := strings.ReplaceAll(description, "*", "\n*")
-	processed = strings.ReplaceAll(processed, "-", "\n*")
+	// First convert markdown code blocks to AsciiDoc format
+	processed := convertMarkdownCodeBlocks(description)
+	
+	// Format @deprecated directives with backticks if not already enclosed
+	processed = formatDeprecatedDirectives(processed)
+	
+	// Replace * and - with newline followed by the character, but only when they start list items
+	// Use regex to replace asterisks only when they start list items
+	reAsterisk := regexp.MustCompile(`(^|\s)\*\s`)
+	processed = reAsterisk.ReplaceAllString(processed, "${1}* ")
+	
+	// Use regex to replace hyphens only when they start list items
+	// Match: start of line OR whitespace, followed by hyphen, followed by space
+	reHyphen := regexp.MustCompile(`(^|\s)-\s`)
+	processed = reHyphen.ReplaceAllString(processed, "${1}* ")
+	
 	// Remove any double newlines that might have been created
 	//processed = strings.ReplaceAll(processed, "\n\n", "\n")
 	// Remove newline at start if present
 	return strings.TrimPrefix(processed, "\n")
+}
+
+// formatDeprecatedDirectives wraps @deprecated directives in backticks if not already enclosed
+func formatDeprecatedDirectives(description string) string {
+	// Regex to match @deprecated directives with optional arguments
+	re := regexp.MustCompile(`@deprecated(?:\([^)]*\))?`)
+	
+	return re.ReplaceAllStringFunc(description, func(match string) string {
+		// Check if the match is already surrounded by backticks by examining the context
+		matchIndex := strings.Index(description, match)
+		if matchIndex > 0 && description[matchIndex-1] == '`' {
+			// Check if there's a closing backtick after the match
+			endIndex := matchIndex + len(match)
+			if endIndex < len(description) && description[endIndex] == '`' {
+				return match // Already enclosed in backticks
+			}
+		}
+		
+		// Not already in backticks, so wrap it
+		return "`" + match + "`"
+	})
+}
+
+// convertMarkdownCodeBlocks converts markdown code blocks (```lang) to AsciiDoc format ([source,lang] ----)
+func convertMarkdownCodeBlocks(description string) string {
+	// Regex to match markdown code blocks: ```language\ncontent\n```
+	// Supports optional language specification
+	re := regexp.MustCompile("(?s)```(\\w*)\n(.*?)\n```")
+	
+	return re.ReplaceAllStringFunc(description, func(match string) string {
+		// Extract language and content from the match
+		submatches := re.FindStringSubmatch(match)
+		if len(submatches) < 3 {
+			return match // Return original if parsing fails
+		}
+		
+		language := submatches[1]
+		content := submatches[2]
+		
+		// Default to generic source block if no language specified
+		if language == "" {
+			language = "text"
+		}
+		
+		// Convert to AsciiDoc format
+		return fmt.Sprintf("[source,%s]\n----\n%s\n----", language, content)
+	})
+}
+
+// extractChangelog extracts version annotations and formats them as AsciiDoc changelog
+func extractChangelog(description string) string {
+	// Regex to match version annotations: action.version: version_number
+	re := regexp.MustCompile(`(?m)^\s*(add|update|deprecated|removed)\.version:\s*(.+)$`)
+	matches := re.FindAllStringSubmatch(description, -1)
+	
+	if len(matches) == 0 {
+		return ""
+	}
+	
+	// Group versions by action type
+	changelog := map[string][]string{
+		"add":        {},
+		"update":     {},
+		"deprecated": {},
+		"removed":    {},
+	}
+	
+	for _, match := range matches {
+		if len(match) >= 3 {
+			action := match[1]
+			version := strings.TrimSpace(match[2])
+			if _, exists := changelog[action]; exists {
+				changelog[action] = append(changelog[action], version)
+			}
+		}
+	}
+	
+	// Build AsciiDoc changelog
+	var changelogBuilder strings.Builder
+	changelogBuilder.WriteString("\n.Changelog\n")
+	
+	// Order: add, update, deprecated, removed
+	actions := []string{"add", "update", "deprecated", "removed"}
+	for _, action := range actions {
+		versions := changelog[action]
+		if len(versions) > 0 {
+			if len(versions) == 1 {
+				changelogBuilder.WriteString(fmt.Sprintf("* %s: %s\n", action, versions[0]))
+			} else {
+				changelogBuilder.WriteString(fmt.Sprintf("* %s: %s\n", action, strings.Join(versions, ", ")))
+			}
+		}
+	}
+	
+	return changelogBuilder.String()
+}
+
+// processDescriptionWithChangelog processes description and extracts changelog separately
+func processDescriptionWithChangelog(description string) (processedDesc, changelog string) {
+	// Extract changelog first
+	changelog = extractChangelog(description)
+	
+	// Remove version annotations from description for regular processing
+	versionRe := regexp.MustCompile(`(?m)^\s*(add|update|deprecated|removed)\.version:\s*.+$\n?`)
+	cleanedDesc := versionRe.ReplaceAllString(description, "")
+	
+	// Process the cleaned description normally
+	processedDesc = processDescription(cleanedDesc)
+	
+	return processedDesc, changelog
 }
 
 /**
@@ -680,11 +832,15 @@ func printInputsTmpl(sortedDefs []*ast.Definition, definitionsMap map[string]*as
 				fieldsTableString = "[ERROR generating fields table]"
 			}
 
+			// Process input description and extract changelog
+			processedDesc, changelog := processDescriptionWithChangelog(t.Description)
+			
 			inputInfo := InputInfo{
 				Name:        t.Name,
 				AnchorName:  "input_" + camelToSnake(t.Name), // Use input_ prefix
-				Description: t.Description,
+				Description: processedDesc,
 				FieldsTable: fieldsTableString,
+				Changelog:   changelog,
 			}
 			inputInfos = append(inputInfos, inputInfo)
 		}
@@ -741,15 +897,19 @@ func getInputFieldsTableString(t *ast.Definition, definitionsMap map[string]*ast
 	for _, f := range t.Fields {
 		typeName := processTypeName(f.Type.String(), definitionsMap)
 		directives := getDirectivesStringTpl(f.Directives) // Using Tpl version for directives
+		
+		// Process description and extract changelog for input fields too
+		processedDesc, changelog := processDescriptionWithChangelog(f.Description)
 
 		data := FieldData{
 			Type:            typeName,
 			Name:            f.Name,
-			Description:     f.Description, // Keep original description for Input tables
+			Description:     processedDesc, // Use processed description
 			RequiredOrArray: strings.Contains(typeName, "!") || strings.Contains(typeName, "["),
 			Required:        isRequiredTypeTpl(typeName),
 			IsArray:         strings.Contains(typeName, "["),
 			Directives:      directives, // Pass processed directives
+			Changelog:       changelog,
 		}
 
 		// Execute the field template into the builder
@@ -1149,15 +1309,18 @@ func printQueryDetails(t *ast.Definition, definitionsMap map[string]*ast.Definit
 				fmt.Printf(L3_TAG, f.Name)
 			}
 			fmt.Println()
+			// Process description and extract changelog for queries
+			processedDesc, changelog := processDescriptionWithChangelog(f.Description)
+			
 			if includeAdocLineTags {
 				fmt.Printf(ADOC_METHOD_DESC_START_TAG, f.Name)
-				fmt.Println(cleanDescription(f.Description, "-"))
+				fmt.Println(cleanDescription(processedDesc, "-"))
 				fmt.Printf(ADOC_METHOD_DESC_END_TAG, f.Name)
 				fmt.Println()
 			}
 			fmt.Printf(ADOC_METHOD_SIG_START_TAG, f.Name)
 			fmt.Printf(".query: %s\n", f.Name)
-			fmt.Println(SOURCE_HEAD)
+			fmt.Print(SOURCE_HEAD)
 			fmt.Println("----")
 			argsString, counter := getArgsMethodTypeString(f.Arguments)
 			if includeAdocLineTags {
@@ -1171,9 +1334,9 @@ func printQueryDetails(t *ast.Definition, definitionsMap map[string]*ast.Definit
 			fmt.Println()
 			fmt.Printf(ADOC_METHOD_ARGS_START_TAG, f.Name)
 			if includeAdocLineTags {
-				fmt.Println(convertDescriptionToRefNumbers(f.Description, true))
+				fmt.Println(convertDescriptionToRefNumbers(processedDesc, true))
 			} else {
-				fmt.Println(f.Description)
+				fmt.Println(processedDesc)
 			}
 			fmt.Printf(ADOC_METHOD_ARGS_END_TAG, f.Name)
 			fmt.Println()
@@ -1201,6 +1364,15 @@ func printQueryDetails(t *ast.Definition, definitionsMap map[string]*ast.Definit
 				fmt.Printf("// end::arguments-%s[]\n", f.Name)
 				fmt.Println()
 			}
+			
+			// Add changelog section for queries
+			if changelog != "" {
+				fmt.Printf("// tag::query-changelog-%s[]\n", f.Name)
+				fmt.Print(changelog)
+				fmt.Printf("// end::query-changelog-%s[]\n", f.Name)
+				fmt.Println()
+			}
+			
 			fmt.Printf(ADOC_QUERY_END_TAG, f.Name)
 			fmt.Println()
 		}
@@ -1388,7 +1560,8 @@ func cleanDescription(text string, skipCharacter string) string {
 	var result strings.Builder
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		if !strings.HasPrefix(trimmed, skipCharacter) {
+		// Don't skip AsciiDoc code block delimiters (----) even if skipCharacter is "-"
+		if !strings.HasPrefix(trimmed, skipCharacter) || trimmed == "----" {
 			result.WriteString(line + "\n")
 		}
 	}
@@ -1459,7 +1632,7 @@ func printDirectives(doc *ast.SchemaDocument) {
 		return
 	}
 
-	fmt.Println(DIRECTIVES_TAG)
+	fmt.Print(DIRECTIVES_TAG)
 	fmt.Println()
 	fmt.Println(TABLE_OPTIONS_3)
 	fmt.Println(TABLE_SE)
@@ -1656,7 +1829,9 @@ func printMutationsTmpl(sortedDefs []*ast.Definition, definitionsMap map[string]
 			if len(f.Directives) > 0 {
 				directives = getDirectivesString(f.Directives)
 			}
-			cleanedDescription := cleanDescription(f.Description, "-")
+			// Process description and extract changelog
+			processedDesc, changelog := processDescriptionWithChangelog(f.Description)
+			cleanedDescription := cleanDescription(processedDesc, "-")
 
 			// --- Construct Method Signature Block ---
 			var signatureBlock strings.Builder
@@ -1674,7 +1849,7 @@ func printMutationsTmpl(sortedDefs []*ast.Definition, definitionsMap map[string]
 
 			mutations = append(mutations, Mutation{
 				Name:                 f.Name,
-				Description:          f.Description,      // Pass raw description for convertDescriptionToRefNumbers
+				Description:          processedDesc,      // Pass processed description for convertDescriptionToRefNumbers
 				CleanedDescription:   cleanedDescription, // Pass cleaned description
 				TypeName:             typeName,
 				Arguments:            arguments,
@@ -1684,6 +1859,7 @@ func printMutationsTmpl(sortedDefs []*ast.Definition, definitionsMap map[string]
 				AnchorName:           "mutation_" + strings.ToLower(f.Name), // Generate anchor name
 				IsInternal:           isInternal,                            // Pass internal flag
 				MethodSignatureBlock: signatureBlock.String(),               // Pass signature block
+				Changelog:            changelog,                             // Pass changelog
 			})
 		}
 	}
@@ -1740,17 +1916,19 @@ func getTypeFieldsTableString(t *ast.Definition, definitionsMap map[string]*ast.
 
 	for _, f := range t.Fields {
 		typeName := processTypeName(f.Type.String(), definitionsMap)
-		// Directives are handled within the field template's logic if needed by FieldData
-		// directives := getDirectivesStringTpl(f.Directives) // Use Tpl version if needed by template
+		
+		// Process description and extract changelog
+		processedDesc, changelog := processDescriptionWithChangelog(f.Description)
 
 		data := FieldData{
 			Type:            typeName,
 			Name:            f.Name,
-			Description:     f.Description,
+			Description:     processedDesc,
 			RequiredOrArray: strings.Contains(typeName, "!") || strings.Contains(typeName, "["),
 			Required:        isRequiredTypeTpl(typeName), // Use Tpl version
 			IsArray:         strings.Contains(typeName, "["),
 			Directives:      getDirectivesStringTpl(f.Directives), // Use Tpl version
+			Changelog:       changelog,
 		}
 
 		// Execute the field template into the builder
@@ -1784,7 +1962,7 @@ func printDirectivesTmpl(doc *ast.SchemaDocument) {
 			directiveInfos = append(directiveInfos, DirectiveInfo{
 				Name:        dir.Name,
 				Arguments:   argumentsString,
-				Description: dir.Description,
+				Description: processDescription(dir.Description),
 			})
 		}
 	}
