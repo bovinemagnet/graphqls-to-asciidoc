@@ -16,7 +16,10 @@ import (
 	"github.com/vektah/gqlparser/v2/parser"
 )
 
-var Version = "development"
+var (
+	Version   = "development"
+	BuildTime = "unknown"
+)
 
 var excludeInternal = flag.Bool("exclude-internal", false, "Exclude internal queries from output")
 var schemaFile = flag.String("schema", "", "Path to the GraphQL schema file")
