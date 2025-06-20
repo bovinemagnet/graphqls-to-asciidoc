@@ -370,3 +370,56 @@ func TestConvertDescriptionToRefNumbers(t *testing.T) {
 		})
 	}
 }
+
+func TestConvertAdmonitionBlocks(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "single line note with asterisks",
+			input:    "**NOTE**: This is a simple note",
+			expected: "[NOTE]\n====\nThis is a simple note\n====",
+		},
+		{
+			name:     "single line warning without asterisks",
+			input:    "WARNING: Be careful here",
+			expected: "[WARNING]\n====\nBe careful here\n====",
+		},
+		{
+			name:     "multi-line important block",
+			input:    "**IMPORTANT**\nThis is a multi-line\nimportant message",
+			expected: "[IMPORTANT]\n====\nThis is a multi-line\nimportant message\n====",
+		},
+		{
+			name:     "multiple admonition types",
+			input:    "**NOTE**: First note\n\n**WARNING**: Then a warning\n\nTIP: Finally a tip",
+			expected: "[NOTE]\n====\nFirst note\n====\n\n[WARNING]\n====\nThen a warning\n====\n\n[TIP]\n====\nFinally a tip\n====",
+		},
+		{
+			name:     "no admonitions",
+			input:    "Just regular text with no special formatting",
+			expected: "Just regular text with no special formatting",
+		},
+		{
+			name:     "caution admonition",
+			input:    "CAUTION: This operation is dangerous",
+			expected: "[CAUTION]\n====\nThis operation is dangerous\n====",
+		},
+		{
+			name:     "tip admonition",
+			input:    "TIP: You can optimize this by caching",
+			expected: "[TIP]\n====\nYou can optimize this by caching\n====",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ConvertAdmonitionBlocks(tt.input)
+			if result != tt.expected {
+				t.Errorf("ConvertAdmonitionBlocks() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
+}

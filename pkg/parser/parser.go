@@ -14,6 +14,9 @@ func ProcessDescription(description string) string {
 	// First convert markdown code blocks to AsciiDoc format
 	processed := ConvertMarkdownCodeBlocks(description)
 
+	// Convert admonition patterns to AsciiDoc admonition blocks
+	processed = ConvertAdmonitionBlocks(processed)
+
 	// Format @deprecated directives with backticks if not already enclosed
 	processed = FormatDeprecatedDirectives(processed)
 
@@ -76,6 +79,96 @@ func ConvertMarkdownCodeBlocks(description string) string {
 		// Convert to AsciiDoc format
 		return fmt.Sprintf("[source,%s]\n----\n%s\n----", language, content)
 	})
+}
+
+// ConvertAdmonitionBlocks converts admonition patterns to AsciiDoc admonition blocks
+func ConvertAdmonitionBlocks(description string) string {
+	// Define supported admonition types
+	admonitionTypes := []string{"NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"}
+	
+	for _, admonType := range admonitionTypes {
+		// Pattern 1: **ADMONITION**: content (single line)
+		pattern1 := regexp.MustCompile(fmt.Sprintf(`\*\*%s\*\*:\s*(.+)`, admonType))
+		description = pattern1.ReplaceAllStringFunc(description, func(match string) string {
+			submatches := pattern1.FindStringSubmatch(match)
+			if len(submatches) < 2 {
+				return match
+			}
+			content := strings.TrimSpace(submatches[1])
+			return fmt.Sprintf("[%s]\n====\n%s\n====", admonType, content)
+		})
+
+		// Pattern 2: ADMONITION: content (without asterisks, single line)
+		pattern2 := regexp.MustCompile(fmt.Sprintf(`(?m)^%s:\s*(.+)$`, admonType))
+		description = pattern2.ReplaceAllStringFunc(description, func(match string) string {
+			submatches := pattern2.FindStringSubmatch(match)
+			if len(submatches) < 2 {
+				return match
+			}
+			content := strings.TrimSpace(submatches[1])
+			return fmt.Sprintf("[%s]\n====\n%s\n====", admonType, content)
+		})
+	}
+
+	// Handle multi-line admonitions with a simpler approach
+	// Process **ADMONITION** on its own line followed by content
+	lines := strings.Split(description, "\n")
+	var result []string
+	i := 0
+	
+	for i < len(lines) {
+		line := strings.TrimSpace(lines[i])
+		
+		// Check if this line is an admonition marker
+		var admonType string
+		for _, aType := range admonitionTypes {
+			if line == "**"+aType+"**" {
+				admonType = aType
+				break
+			}
+		}
+		
+		if admonType != "" {
+			// Found an admonition marker, collect content until next empty line or end
+			result = append(result, fmt.Sprintf("[%s]", admonType))
+			result = append(result, "====")
+			i++ // Move to next line
+			
+			// Collect content lines
+			for i < len(lines) {
+				contentLine := lines[i]
+				trimmedContent := strings.TrimSpace(contentLine)
+				
+				// Stop if we hit an empty line or another admonition
+				if trimmedContent == "" {
+					break
+				}
+				
+				// Check if this is another admonition marker
+				isNextAdmonition := false
+				for _, aType := range admonitionTypes {
+					if trimmedContent == "**"+aType+"**" || strings.HasPrefix(trimmedContent, "**"+aType+"**:") {
+						isNextAdmonition = true
+						break
+					}
+				}
+				
+				if isNextAdmonition {
+					break
+				}
+				
+				result = append(result, contentLine)
+				i++
+			}
+			
+			result = append(result, "====")
+		} else {
+			result = append(result, lines[i])
+			i++
+		}
+	}
+
+	return strings.Join(result, "\n")
 }
 
 // ProcessTypeName converts GraphQL types to AsciiDoc cross-references
