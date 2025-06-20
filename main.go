@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"text/template"
@@ -32,8 +33,7 @@ var includeEnums = flag.Bool("enums", true, "Include enums in the output")
 var includeInputs = flag.Bool("inputs", true, "Include inputs in the output")
 var includeScalars = flag.Bool("scalars", true, "Include scalars in the output")
 
-//var outputFile = flag.String("output", "", "Output file for the documentation")
-//var showVersion = flag.Bool("version", false, "Show program version")
+var showVersion = flag.Bool("version", false, "Show program version and build information")
 
 var fieldTemplate = `
 | {{.Type}} | {{.Name}} | {{processDescription .Description}}
@@ -486,11 +486,21 @@ func main() {
 	// Parse command-line flags
 	flag.Parse()
 
-	// Get non-flag arguments
-	//args := flag.Args()
-	//if len(args) != 1 {
-	//	log.Fatal("Usage: ./program [options] schema.graphql")
-	//}
+	// Handle version flag
+	if *showVersion {
+		fmt.Printf("graphqls-to-asciidoc\n")
+		fmt.Printf("Version: %s\n", Version)
+		fmt.Printf("Build Time: %s\n", BuildTime)
+		fmt.Printf("Built with: %s\n", runtime.Version())
+		os.Exit(0)
+	}
+
+	// Check if schema file is provided
+	if *schemaFile == "" {
+		fmt.Fprintf(os.Stderr, "Error: -schema flag is required\n")
+		flag.Usage()
+		os.Exit(1)
+	}
 
 	b, err := os.ReadFile(*schemaFile)
 	if err != nil {
@@ -613,7 +623,7 @@ func printTypesTmpl(sortedDefs []*ast.Definition, definitionsMap map[string]*ast
 
 			// Process type description and extract changelog
 			processedDesc, changelog := processDescriptionWithChangelog(t.Description)
-			
+
 			typeInfo := TypeInfo{
 				Name:        t.Name,
 				Kind:        string(t.Kind),
@@ -651,20 +661,20 @@ func printTypesTmpl(sortedDefs []*ast.Definition, definitionsMap map[string]*ast
 func processDescription(description string) string {
 	// First convert markdown code blocks to AsciiDoc format
 	processed := convertMarkdownCodeBlocks(description)
-	
+
 	// Format @deprecated directives with backticks if not already enclosed
 	processed = formatDeprecatedDirectives(processed)
-	
+
 	// Replace * and - with newline followed by the character, but only when they start list items
 	// Use regex to replace asterisks only when they start list items
 	reAsterisk := regexp.MustCompile(`(^|\s)\*\s`)
 	processed = reAsterisk.ReplaceAllString(processed, "${1}* ")
-	
+
 	// Use regex to replace hyphens only when they start list items
 	// Match: start of line OR whitespace, followed by hyphen, followed by space
 	reHyphen := regexp.MustCompile(`(^|\s)-\s`)
 	processed = reHyphen.ReplaceAllString(processed, "${1}* ")
-	
+
 	// Remove any double newlines that might have been created
 	//processed = strings.ReplaceAll(processed, "\n\n", "\n")
 	// Remove newline at start if present
@@ -675,7 +685,7 @@ func processDescription(description string) string {
 func formatDeprecatedDirectives(description string) string {
 	// Regex to match @deprecated directives with optional arguments
 	re := regexp.MustCompile(`@deprecated(?:\([^)]*\))?`)
-	
+
 	return re.ReplaceAllStringFunc(description, func(match string) string {
 		// Check if the match is already surrounded by backticks by examining the context
 		matchIndex := strings.Index(description, match)
@@ -686,7 +696,7 @@ func formatDeprecatedDirectives(description string) string {
 				return match // Already enclosed in backticks
 			}
 		}
-		
+
 		// Not already in backticks, so wrap it
 		return "`" + match + "`"
 	})
@@ -697,22 +707,22 @@ func convertMarkdownCodeBlocks(description string) string {
 	// Regex to match markdown code blocks: ```language\ncontent\n```
 	// Supports optional language specification
 	re := regexp.MustCompile("(?s)```(\\w*)\n(.*?)\n```")
-	
+
 	return re.ReplaceAllStringFunc(description, func(match string) string {
 		// Extract language and content from the match
 		submatches := re.FindStringSubmatch(match)
 		if len(submatches) < 3 {
 			return match // Return original if parsing fails
 		}
-		
+
 		language := submatches[1]
 		content := submatches[2]
-		
+
 		// Default to generic source block if no language specified
 		if language == "" {
 			language = "text"
 		}
-		
+
 		// Convert to AsciiDoc format
 		return fmt.Sprintf("[source,%s]\n----\n%s\n----", language, content)
 	})
@@ -723,11 +733,11 @@ func extractChangelog(description string) string {
 	// Regex to match version annotations: action.version: version_number
 	re := regexp.MustCompile(`(?m)^\s*(add|update|deprecated|removed)\.version:\s*(.+)$`)
 	matches := re.FindAllStringSubmatch(description, -1)
-	
+
 	if len(matches) == 0 {
 		return ""
 	}
-	
+
 	// Group versions by action type
 	changelog := map[string][]string{
 		"add":        {},
@@ -735,7 +745,7 @@ func extractChangelog(description string) string {
 		"deprecated": {},
 		"removed":    {},
 	}
-	
+
 	for _, match := range matches {
 		if len(match) >= 3 {
 			action := match[1]
@@ -745,11 +755,11 @@ func extractChangelog(description string) string {
 			}
 		}
 	}
-	
+
 	// Build AsciiDoc changelog
 	var changelogBuilder strings.Builder
 	changelogBuilder.WriteString("\n.Changelog\n")
-	
+
 	// Order: add, update, deprecated, removed
 	actions := []string{"add", "update", "deprecated", "removed"}
 	for _, action := range actions {
@@ -762,7 +772,7 @@ func extractChangelog(description string) string {
 			}
 		}
 	}
-	
+
 	return changelogBuilder.String()
 }
 
@@ -770,14 +780,14 @@ func extractChangelog(description string) string {
 func processDescriptionWithChangelog(description string) (processedDesc, changelog string) {
 	// Extract changelog first
 	changelog = extractChangelog(description)
-	
+
 	// Remove version annotations from description for regular processing
 	versionRe := regexp.MustCompile(`(?m)^\s*(add|update|deprecated|removed)\.version:\s*.+$\n?`)
 	cleanedDesc := versionRe.ReplaceAllString(description, "")
-	
+
 	// Process the cleaned description normally
 	processedDesc = processDescription(cleanedDesc)
-	
+
 	return processedDesc, changelog
 }
 
@@ -837,7 +847,7 @@ func printInputsTmpl(sortedDefs []*ast.Definition, definitionsMap map[string]*as
 
 			// Process input description and extract changelog
 			processedDesc, changelog := processDescriptionWithChangelog(t.Description)
-			
+
 			inputInfo := InputInfo{
 				Name:        t.Name,
 				AnchorName:  "input_" + camelToSnake(t.Name), // Use input_ prefix
@@ -900,7 +910,7 @@ func getInputFieldsTableString(t *ast.Definition, definitionsMap map[string]*ast
 	for _, f := range t.Fields {
 		typeName := processTypeName(f.Type.String(), definitionsMap)
 		directives := getDirectivesStringTpl(f.Directives) // Using Tpl version for directives
-		
+
 		// Process description and extract changelog for input fields too
 		processedDesc, changelog := processDescriptionWithChangelog(f.Description)
 
@@ -1314,7 +1324,7 @@ func printQueryDetails(t *ast.Definition, definitionsMap map[string]*ast.Definit
 			fmt.Println()
 			// Process description and extract changelog for queries
 			processedDesc, changelog := processDescriptionWithChangelog(f.Description)
-			
+
 			if includeAdocLineTags {
 				fmt.Printf(ADOC_METHOD_DESC_START_TAG, f.Name)
 				fmt.Println(cleanDescription(processedDesc, "-"))
@@ -1367,7 +1377,7 @@ func printQueryDetails(t *ast.Definition, definitionsMap map[string]*ast.Definit
 				fmt.Printf("// end::arguments-%s[]\n", f.Name)
 				fmt.Println()
 			}
-			
+
 			// Add changelog section for queries
 			if changelog != "" {
 				fmt.Printf("// tag::query-changelog-%s[]\n", f.Name)
@@ -1375,7 +1385,7 @@ func printQueryDetails(t *ast.Definition, definitionsMap map[string]*ast.Definit
 				fmt.Printf("// end::query-changelog-%s[]\n", f.Name)
 				fmt.Println()
 			}
-			
+
 			fmt.Printf(ADOC_QUERY_END_TAG, f.Name)
 			fmt.Println()
 		}
@@ -1919,7 +1929,7 @@ func getTypeFieldsTableString(t *ast.Definition, definitionsMap map[string]*ast.
 
 	for _, f := range t.Fields {
 		typeName := processTypeName(f.Type.String(), definitionsMap)
-		
+
 		// Process description and extract changelog
 		processedDesc, changelog := processDescriptionWithChangelog(f.Description)
 

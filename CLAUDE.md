@@ -44,6 +44,9 @@ go test -v ./...
 
 # With options
 ./graphqls-to-asciidoc -schema ./test/schema.graphql -exclude-internal -mutations=false > output.adoc
+
+# Check version information
+./graphqls-to-asciidoc -version
 ```
 
 ### Test Documentation Generation
@@ -64,6 +67,7 @@ Uses GoReleaser for cross-platform builds targeting Linux, macOS, and Windows on
 
 The tool supports extensive customization through flags:
 - `-schema`: Path to GraphQL schema file (required)
+- `-version`: Show program version and build information
 - `-exclude-internal`: Exclude queries/mutations marked as INTERNAL
 - `-mutations`, `-queries`, `-subscriptions`: Include/exclude specific sections (default: most are true)
 - `-directives`, `-types`, `-enums`, `-inputs`, `-scalars`: Include/exclude type definitions
