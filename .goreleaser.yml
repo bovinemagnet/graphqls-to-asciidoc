@@ -1,0 +1,94 @@
+project_name: graphqls-to-asciidoc
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod download
+
+builds:
+  - id: graphqls-to-asciidoc
+    binary: graphqls-to-asciidoc
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.Version={{.Version}}
+      - -X main.BuildTime={{.Date}}
+
+archives:
+  - id: default
+    builds:
+      - graphqls-to-asciidoc
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: 'checksums.txt'
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - '^ci:'
+  groups:
+    - title: Features
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: 'Bug fixes'
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: 'Enhancements'
+      regexp: "^.*enhance[(\\w)]*:+.*$"
+      order: 2
+    - title: Others
+      order: 999
+
+# Homebrew tap configuration
+brews:
+  - name: graphqls-to-asciidoc
+    repository:
+      owner: bovinemagnet
+      name: homebrew-tap
+      branch: main
+    directory: Formula
+    homepage: "https://github.com/bovinemagnet/graphqls-to-asciidoc"
+    description: "Convert GraphQL schema files to comprehensive AsciiDoc documentation"
+    license: "MIT"
+    test: |
+      system "#{bin}/graphqls-to-asciidoc -version"
+    install: |
+      bin.install "graphqls-to-asciidoc"
+
+release:
+  github:
+    owner: bovinemagnet
+    name: graphqls-to-asciidoc
+  draft: false
+  prerelease: auto
+  name_template: "{{.ProjectName}} v{{.Version}}"
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"

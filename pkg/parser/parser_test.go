@@ -423,3 +423,338 @@ func TestConvertAdmonitionBlocks(t *testing.T) {
 		})
 	}
 }
+
+func TestProcessCallouts(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "parentheses callouts",
+			input:    "function test() (1)\n  return value (2)",
+			expected: "function test() <1>\n  return value <2>",
+		},
+		{
+			name:     "double slash comment callouts",
+			input:    "let x = 5; // 1\nlet y = 10; // 2",
+			expected: "let x = 5; <1>\nlet y = 10; <2>",
+		},
+		{
+			name:     "hash comment callouts",
+			input:    "x = 5 # 1\ny = 10 # 2",
+			expected: "x = 5 <1>\ny = 10 <2>",
+		},
+		{
+			name:     "block comment callouts",
+			input:    "function test() /* 1 */\n  return value /* 2 */",
+			expected: "function test() <1>\n  return value <2>",
+		},
+		{
+			name:     "mixed callout patterns",
+			input:    "code (1)\nmore code // 2\neven more # 3\nfinal /* 4 */",
+			expected: "code <1>\nmore code <2>\neven more <3>\nfinal <4>",
+		},
+		{
+			name:     "no callouts",
+			input:    "regular code without callouts\nnothing special here",
+			expected: "regular code without callouts\nnothing special here",
+		},
+		{
+			name:     "ignore non-end-of-line comments",
+			input:    "// this is a comment\n# this is also a comment\ncode // 1",
+			expected: "// this is a comment\n# this is also a comment\ncode <1>",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ProcessCallouts(tt.input)
+			if result != tt.expected {
+				t.Errorf("ProcessCallouts() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestConvertMarkdownCodeBlocksWithCallouts(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name: "code block with parentheses callouts",
+			input: "Example:\n\n```javascript\nfunction test() (1)\n  return value (2)\n```",
+			expected: "Example:\n\n[source,javascript]\n----\nfunction test() <1>\n  return value <2>\n----",
+		},
+		{
+			name: "code block with comment callouts",
+			input: "Example:\n\n```python\nx = 5 # 1\ny = 10 # 2\n```",
+			expected: "Example:\n\n[source,python]\n----\nx = 5 <1>\ny = 10 <2>\n----",
+		},
+		{
+			name: "code block without callouts",
+			input: "Example:\n\n```graphql\nquery {\n  user {\n    name\n  }\n}\n```",
+			expected: "Example:\n\n[source,graphql]\n----\nquery {\n  user {\n    name\n  }\n}\n----",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ConvertMarkdownCodeBlocks(tt.input)
+			if result != tt.expected {
+				t.Errorf("ConvertMarkdownCodeBlocks() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestProcessAnchorsAndLabels(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "convert [#id] to [[id]]",
+			input:    "See section [#introduction] for details",
+			expected: "See section [[introduction]] for details",
+		},
+		{
+			name:     "preserve existing [[anchor]] format",
+			input:    "See section [[existing-anchor]] for details",
+			expected: "See section [[existing-anchor]] for details",
+		},
+		{
+			name:     "preserve existing cross-references",
+			input:    "See <<reference,text>> and <<simple-ref>>",
+			expected: "See <<reference,text>> and <<simple-ref>>",
+		},
+		{
+			name:     "convert standalone [label] to [[label]]",
+			input:    "This is a section\n[important-note]\nThis note is important",
+			expected: "This is a section\n[[important-note]]\nThis note is important",
+		},
+		{
+			name:     "convert {ref:anchor} to <<anchor>>",
+			input:    "Please see {ref:installation} section",
+			expected: "Please see <<installation>> section",
+		},
+		{
+			name:     "convert {link:anchor|text} to <<anchor,text>>",
+			input:    "Read {link:setup|the setup guide} first",
+			expected: "Read <<setup,the setup guide>> first",
+		},
+		{
+			name:     "mixed anchor patterns",
+			input:    "See [#intro], then {ref:setup}, and finally {link:deploy|deployment guide}",
+			expected: "See [[intro]], then <<setup>>, and finally <<deploy,deployment guide>>",
+		},
+		{
+			name:     "no anchor patterns",
+			input:    "Regular text with no special formatting",
+			expected: "Regular text with no special formatting",
+		},
+		{
+			name:     "complex example with multiple patterns",
+			input:    "[#main-section]\nThis is the main section.\n\nRefer to {ref:subsection} and {link:conclusion|the conclusion}.\nAlso see <<existing-ref,existing reference>>.",
+			expected: "[[main-section]]\nThis is the main section.\n\nRefer to <<subsection>> and <<conclusion,the conclusion>>.\nAlso see <<existing-ref,existing reference>>.",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ProcessAnchorsAndLabels(tt.input)
+			if result != tt.expected {
+				t.Errorf("ProcessAnchorsAndLabels() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestProcessDescriptionWithAnchors(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name: "description with anchors and admonitions",
+			input: "[#example-section]\nThis is an example.\n\n**NOTE**: See {ref:related-section} for more info.\n\n{link:api-docs|API documentation} contains details.",
+			expected: "[[example-section]]\nThis is an example.\n\n[NOTE]\n====\nSee <<related-section>> for more info.\n====\n\n<<api-docs,API documentation>> contains details.",
+		},
+		{
+			name: "description with code blocks and anchors",
+			input: "[#code-example]\n\n```javascript\nfunction example() { (1)\n  return value; // 2\n}\n```\n\nSee {ref:implementation} for details.",
+			expected: "[[code-example]]\n\n[source,javascript]\n----\nfunction example() { <1>\n  return value; <2>\n}\n----\n\nSee <<implementation>> for details.",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ProcessDescription(tt.input)
+			if result != tt.expected {
+				t.Errorf("ProcessDescription() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestProcessTables(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "preserve existing AsciiDoc table",
+			input:    "[options=\"header\"]\n|===\n| Name | Type | Description\n| id | String | User ID\n| name | String | User name\n|===",
+			expected: "[options=\"header\"]\n|===\n| Name | Type | Description\n| id | String | User ID\n| name | String | User name\n|===",
+		},
+		{
+			name:     "no tables in content",
+			input:    "This is regular text with no tables.",
+			expected: "This is regular text with no tables.",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ProcessTables(tt.input)
+			if result != tt.expected {
+				t.Errorf("ProcessTables() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestConvertMarkdownTables(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name: "simple markdown table",
+			input: "| Name | Type | Description |\n|------|------|-------------|\n| id | String | User ID |\n| name | String | User name |",
+			expected: "[options=\"header\"]\n|===\n| Name | Type | Description\n| id | String | User ID\n| name | String | User name\n|===",
+		},
+		{
+			name: "markdown table with alignment",
+			input: "| Name | Type | Description |\n|:-----|:----:|------------:|\n| id | String | User ID |\n| name | String | User name |",
+			expected: "[options=\"header\"]\n|===\n| Name | Type | Description\n| id | String | User ID\n| name | String | User name\n|===",
+		},
+		{
+			name: "markdown table without header separator",
+			input: "| Name | Type | Description |\n| id | String | User ID |\n| name | String | User name |",
+			expected: "[options=\"header\"]\n|===\n| Name | Type | Description\n| id | String | User ID\n| name | String | User name\n|===",
+		},
+		{
+			name: "table with mixed content",
+			input: "Here's a table:\n\n| Field | Required | Notes |\n|-------|----------|-------|\n| email | Yes | Must be valid |\n| phone | No | Optional field |\n\nEnd of table.",
+			expected: "Here's a table:\n\n[options=\"header\"]\n|===\n| Field | Required | Notes\n| email | Yes | Must be valid\n| phone | No | Optional field\n|===\n\nEnd of table.",
+		},
+		{
+			name:     "no markdown tables",
+			input:    "This text has no tables in it.",
+			expected: "This text has no tables in it.",
+		},
+		{
+			name: "malformed table row",
+			input: "| Name | Type\n|------|------|\n| id | String |",
+			expected: "[options=\"header\"]\n|===\n| Name | Type\n| id | String\n|===",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ConvertMarkdownTables(tt.input)
+			if result != tt.expected {
+				t.Errorf("ConvertMarkdownTables() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestParseTableRow(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name:     "simple row",
+			input:    "| Name | Type | Description |",
+			expected: []string{"Name", "Type", "Description"},
+		},
+		{
+			name:     "row without outer pipes",
+			input:    "Name | Type | Description",
+			expected: []string{"Name", "Type", "Description"},
+		},
+		{
+			name:     "row with extra spaces",
+			input:    "|  Name  |  Type  |  Description  |",
+			expected: []string{"Name", "Type", "Description"},
+		},
+		{
+			name:     "empty row",
+			input:    "| | | |",
+			expected: []string{},
+		},
+		{
+			name:     "single cell",
+			input:    "| Single Cell |",
+			expected: []string{"Single Cell"},
+		},
+		{
+			name:     "completely empty",
+			input:    "",
+			expected: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := parseTableRow(tt.input)
+			if len(result) != len(tt.expected) {
+				t.Errorf("parseTableRow() length = %d, want %d", len(result), len(tt.expected))
+				return
+			}
+			for i, cell := range result {
+				if cell != tt.expected[i] {
+					t.Errorf("parseTableRow()[%d] = %q, want %q", i, cell, tt.expected[i])
+				}
+			}
+		})
+	}
+}
+
+func TestProcessDescriptionWithTables(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name: "markdown table with other features",
+			input: "**NOTE**: Check the parameters table below.\n\n| Parameter | Type | Required |\n|-----------|------|----------|\n| id | String | Yes |\n| name | String | No |\n\nSee {ref:examples} for usage.",
+			expected: "[NOTE]\n====\nCheck the parameters table below.\n====\n\n[options=\"header\"]\n|===\n| Parameter | Type | Required\n| id | String | Yes\n| name | String | No\n|===\n\nSee <<examples>> for usage.",
+		},
+		{
+			name: "existing AsciiDoc table preservation",
+			input: "Parameters:\n\n|===\n| Name | Description\n| limit | Maximum results\n| offset | Starting position\n|===\n\nTable complete.",
+			expected: "Parameters:\n\n|===\n| Name | Description\n| limit | Maximum results\n| offset | Starting position\n|===\n\nTable complete.",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ProcessDescription(tt.input)
+			if result != tt.expected {
+				t.Errorf("ProcessDescription() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
+}

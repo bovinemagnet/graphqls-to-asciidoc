@@ -295,13 +295,24 @@ The root query
 """
 type Query {
     """
+    [#get-tweet]
     Get a tweet by its ID
+    
+    This is the primary method for retrieving individual tweets.
+    For bulk operations, see {ref:get-tweets}.
+    
     .Arguments:
     - `id`: the id of the tweet to search by.
     """
     Tweet(id: ID!): Tweet
     """
+    [get-tweets]
     Get a list of tweets, remember that it is `2024-01-08` for testing dates in the conversion.
+    
+    **Performance notes:**
+    - Use pagination with `limit` and `skip` parameters
+    - For single tweet access, use {link:get-tweet|the Tweet query}
+    - See {ref:tweets-meta} for metadata about the collection
     """
     Tweets(
         limit: Int!
@@ -310,7 +321,10 @@ type Query {
         sort_order: String
     ): [Tweet]
     """
+    [tweets-meta]
     Get meta information about the list of tweets. This tests the list to query options.
+
+    This provides pagination and sorting metadata for {link:get-tweets|the Tweets query}.
 
     - `limit`:  the max numer; _Required_
     - `skip`: how many to skip
@@ -385,13 +399,20 @@ type Query {
     #
     # tag::graphql_query_tweetSentimentsCode[]
     """
-    An example of an internal query.
+    An example of an internal query with callouts.
 
     ```graphql
-    tweetSentimentCode(123) {
-       Sentiment
+    query GetTweetSentiment {
+      tweetSentimentCode(id: "123") { (1)
+        sentiment (2)
+        confidence // 3
+      }
     }
     ```
+
+    (1) Query the tweet sentiment endpoint with an ID
+    (2) Get the sentiment value
+    (3) Also retrieve confidence level
 
     @deprecated(reason: "Internal test")
     - `id`: An id that is _REQUIRED_
@@ -434,6 +455,79 @@ type Query {
     """
     tweetSentimentDep(id: ID!): Sentiment
     # end::graphql_query_tweetSentimentsDeprecate[]
+
+    # tag::graphql_query_multiCalloutExample[]
+    """
+    Advanced query example with multiple callout styles.
+
+    ```javascript
+    // JavaScript client example
+    const client = new GraphQLClient(endpoint); (1)
+    
+    const query = `
+      query MultiExample($ids: [ID!]!) { // 2
+        tweets: getTweets(ids: $ids) /* 3 */
+          .map(tweet => tweet.sentiment) # 4
+      }
+    `;
+    
+    const result = await client.request(query, { 
+      ids: ["1", "2", "3"] (5)
+    });
+    ```
+
+    **Callout explanations:**
+
+    (1) Initialize the GraphQL client with endpoint
+    (2) Define the parameterized query with required ID array  
+    (3) Fetch tweets using the provided IDs
+    (4) Transform results to extract sentiment data
+    (5) Pass the actual ID values as variables
+
+    **NOTE**: This demonstrates all supported callout patterns in code blocks.
+    """
+    multiCalloutExample(ids: [ID!]!): [Sentiment]
+    # end::graphql_query_multiCalloutExample[]
+
+    """
+    Example query with table documentation.
+
+    This endpoint supports various search parameters:
+
+    | Parameter | Type | Required | Description |
+    |-----------|------|----------|-------------|
+    | query | String | Yes | Search term to match |
+    | limit | Int | No | Maximum results (default: 20) |
+    | offset | Int | No | Starting position (default: 0) |
+    | sortBy | String | No | Field to sort by |
+
+    **TIP**: Use the limit parameter to control response size.
+
+    For more advanced queries, see {ref:advanced-search}.
+    """
+    searchTweets(
+        query: String!
+        limit: Int = 20
+        offset: Int = 0
+        sortBy: String
+    ): [Tweet]
+
+    """
+    Configuration query that preserves existing AsciiDoc table formatting.
+
+    Available configuration options:
+
+    [options="header"]
+    |===
+    | Setting | Default | Description
+    | timeout | 30s | Request timeout
+    | retries | 3 | Max retry attempts
+    | cache | true | Enable response caching
+    |===
+
+    **WARNING**: Changing these settings affects all API operations.
+    """
+    getConfig: String
 }
 
 # tag::MUTATIONs[]
@@ -443,7 +537,30 @@ The root mutation
 type Mutation {
     # tag::MUTATION_CREATE_TWEET[]
     """
-    Create a new tweet
+    Create a new tweet with validation.
+
+    Example implementation pattern:
+
+    ```python
+    def create_tweet(body: str) -> Tweet:
+        # Validate input # 1
+        if not body or len(body) > 280: # 2
+            raise ValidationError("Invalid tweet body")
+        
+        # Create tweet object (3)
+        tweet = Tweet.create(
+            body=body,
+            author=current_user() /* 4 */
+        )
+        
+        return tweet (5)
+    ```
+
+    # 1 - Always validate user input first
+    # 2 - Check Twitter's character limit  
+    (3) Use the domain model to create the tweet
+    /* 4 */ Get the authenticated user context
+    (5) Return the newly created tweet
     """
     createTweet(body: String): Tweet
     # end::MUTATION_CREATE_TWEET[]

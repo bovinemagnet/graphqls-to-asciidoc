@@ -14,6 +14,12 @@ func ProcessDescription(description string) string {
 	// First convert markdown code blocks to AsciiDoc format
 	processed := ConvertMarkdownCodeBlocks(description)
 
+	// Process anchors and labels before table processing to avoid conflicts with pipe characters
+	processed = ProcessAnchorsAndLabels(processed)
+
+	// Process tables (both markdown and AsciiDoc pass-through)
+	processed = ProcessTables(processed)
+
 	// Convert admonition patterns to AsciiDoc admonition blocks
 	processed = ConvertAdmonitionBlocks(processed)
 
@@ -76,9 +82,171 @@ func ConvertMarkdownCodeBlocks(description string) string {
 			language = "text"
 		}
 
+		// Process callouts in the content
+		processedContent := ProcessCallouts(content)
+
 		// Convert to AsciiDoc format
-		return fmt.Sprintf("[source,%s]\n----\n%s\n----", language, content)
+		return fmt.Sprintf("[source,%s]\n----\n%s\n----", language, processedContent)
 	})
+}
+
+// ProcessCallouts converts various callout patterns to AsciiDoc callout syntax
+func ProcessCallouts(content string) string {
+	// Pattern 1: (1), (2), etc. -> <1>, <2>, etc.
+	pattern1 := regexp.MustCompile(`\((\d+)\)`)
+	content = pattern1.ReplaceAllString(content, "<$1>")
+
+	// Pattern 2: // 1, // 2, etc. -> <1>, <2>, etc. (comment-style callouts)
+	pattern2 := regexp.MustCompile(`(?m)//\s*(\d+)\s*$`)
+	content = pattern2.ReplaceAllString(content, "<$1>")
+
+	// Pattern 3: # 1, # 2, etc. -> <1>, <2>, etc. (hash comment-style callouts)
+	pattern3 := regexp.MustCompile(`(?m)#\s*(\d+)\s*$`)
+	content = pattern3.ReplaceAllString(content, "<$1>")
+
+	// Pattern 4: /* 1 */, /* 2 */, etc. -> <1>, <2>, etc. (block comment-style callouts)
+	pattern4 := regexp.MustCompile(`/\*\s*(\d+)\s*\*/`)
+	content = pattern4.ReplaceAllString(content, "<$1>")
+
+	return content
+}
+
+// ProcessAnchorsAndLabels converts anchor and label patterns to AsciiDoc format
+func ProcessAnchorsAndLabels(content string) string {
+	// Pattern 1: [#id] format -> [[id]]
+	pattern1 := regexp.MustCompile(`\[#([a-zA-Z0-9_-]+)\]`)
+	content = pattern1.ReplaceAllString(content, "[[$1]]")
+
+	// Pattern 2: [[anchor]] format is already AsciiDoc, so preserve it
+	// No processing needed for this pattern
+
+	// Pattern 3: <<reference>> and <<reference,text>> for cross-references
+	// These are already AsciiDoc format, so preserve them
+
+	// Pattern 4: [label] format -> [[label]] (simple label to anchor conversion)
+	// Only convert if it's not already a cross-reference or other AsciiDoc construct
+	pattern4 := regexp.MustCompile(`(?m)^\[([a-zA-Z0-9_-]+)\]\s*$`)
+	content = pattern4.ReplaceAllString(content, "[[$1]]")
+
+	// Pattern 5: Convert reference patterns like {ref:anchor} to <<anchor>>
+	pattern5 := regexp.MustCompile(`\{ref:([a-zA-Z0-9_-]+)\}`)
+	content = pattern5.ReplaceAllString(content, "<<$1>>")
+
+	// Pattern 6: Convert reference patterns like {link:anchor|text} to <<anchor,text>>
+	pattern6 := regexp.MustCompile(`\{link:([a-zA-Z0-9_-]+)\|([^}]+)\}`)
+	content = pattern6.ReplaceAllString(content, "<<$1,$2>>")
+
+	return content
+}
+
+// ProcessTables converts markdown tables to AsciiDoc format and preserves existing AsciiDoc tables
+func ProcessTables(content string) string {
+	// Convert markdown tables to AsciiDoc format
+	content = ConvertMarkdownTables(content)
+	
+	// AsciiDoc tables (|===....|===) are already in correct format, so no conversion needed
+	// They will pass through unchanged
+	
+	return content
+}
+
+// ConvertMarkdownTables converts markdown-style tables to AsciiDoc format
+func ConvertMarkdownTables(content string) string {
+	lines := strings.Split(content, "\n")
+	var result []string
+	var inTable bool
+	var inAsciiDocTable bool
+	var columnCount int
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		
+		// Check if we're entering or exiting an AsciiDoc table
+		if strings.Contains(trimmed, "|===") {
+			inAsciiDocTable = !inAsciiDocTable
+			result = append(result, line)
+			continue
+		}
+		
+		// If we're inside an AsciiDoc table, preserve the line as-is
+		if inAsciiDocTable {
+			result = append(result, line)
+			continue
+		}
+		
+		// Check if this line looks like a markdown table row
+		if strings.Contains(trimmed, "|") && !strings.HasPrefix(trimmed, "[") {
+			// Check if this is a separator line (|---|---|)
+			if regexp.MustCompile(`^\s*\|[\s\-|:]+\|\s*$`).MatchString(trimmed) {
+				// Skip separator lines in markdown tables
+				continue
+			}
+			
+			// This looks like a table row
+			if !inTable {
+				// Start new table
+				result = append(result, "[options=\"header\"]")
+				result = append(result, "|===")
+				inTable = true
+			}
+			
+			// Process the row
+			cells := parseTableRow(trimmed)
+			if len(cells) > 0 {
+				if columnCount == 0 {
+					columnCount = len(cells)
+				}
+				
+				// Add the row - put all cells on one line for AsciiDoc
+				rowLine := "| " + strings.Join(cells, " | ")
+				result = append(result, rowLine)
+			}
+		} else {
+			// Not a table row
+			if inTable {
+				// End the table
+				result = append(result, "|===")
+				inTable = false
+				columnCount = 0
+				
+				// Add empty line after table only if the next line isn't empty
+				if trimmed != "" {
+					result = append(result, "")
+				}
+			}
+			result = append(result, line)
+		}
+	}
+	
+	// Close table if we ended while still in one
+	if inTable {
+		result = append(result, "|===")
+	}
+
+	return strings.Join(result, "\n")
+}
+
+// parseTableRow extracts cell content from a markdown table row
+func parseTableRow(row string) []string {
+	// Remove leading and trailing pipes and whitespace
+	row = strings.Trim(row, " \t|")
+	
+	if row == "" {
+		return []string{}
+	}
+	
+	// Split by pipe and clean up each cell
+	parts := strings.Split(row, "|")
+	var cells []string
+	
+	for _, part := range parts {
+		cell := strings.TrimSpace(part)
+		if cell != "" {
+			cells = append(cells, cell)
+		}
+	}
+	
+	return cells
 }
 
 // ConvertAdmonitionBlocks converts admonition patterns to AsciiDoc admonition blocks
