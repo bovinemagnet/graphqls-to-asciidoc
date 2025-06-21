@@ -171,7 +171,9 @@ const TypeSectionTemplate = `
 // end::type-changelog-{{.Name}}[]
 {{- end }}
 
+// tag::type-def-{{.Name}}[]
 {{ .FieldsTable }}
+// end::type-def-{{.Name}}[]
 
 // end::type-{{.Name}}[]
 
@@ -181,7 +183,7 @@ const TypeSectionTemplate = `
 const EnumSectionTemplate = `
 {{.EnumsTag}}
 {{range .Enums}}
-// tag::enum-def-{{.Name}}[]
+// tag::enum-{{.Name}}[]
 [[{{.AnchorName}}]]
 
 === {{.Name}}
@@ -192,9 +194,11 @@ const EnumSectionTemplate = `
 // end::enum-description-{{.Name}}[]
 {{- end }}
 
+// tag::enum-def-{{.Name}}[]
 {{ .ValuesTable }}
-
 // end::enum-def-{{.Name}}[]
+
+// end::enum-{{.Name}}[]
 
 {{end}}
 `
@@ -222,7 +226,7 @@ No custom directives exist in this schema.
 const InputSectionTemplate = `
 {{.InputsTag}}
 {{range .Inputs}}
-// tag::input-def-{{.Name}}[]
+// tag::input-{{.Name}}[]
 [[{{.AnchorName}}]]
 === {{.Name}}
 
@@ -238,9 +242,11 @@ const InputSectionTemplate = `
 // end::input-changelog-{{.Name}}[]
 {{- end }}
 
+// tag::input-def-{{.Name}}[]
 {{ .FieldsTable }}
-
 // end::input-def-{{.Name}}[]
+
+// end::input-{{.Name}}[]
 
 {{end}}
 `

@@ -743,7 +743,7 @@ func (g *Generator) getInputFieldsTableString(def *ast.Definition, definitionsMa
 	var builder strings.Builder
 
 	builder.WriteString(".input: " + def.Name + "\n")
-	builder.WriteString("[options=\"header\"]\n")
+	builder.WriteString("[options=\"header\",cols=\"2a,2m,5a\"]\n")
 	builder.WriteString("|===\n")
 	builder.WriteString("| Field | Type | Description \n")
 
@@ -956,7 +956,7 @@ func (g *Generator) getTypeFieldsTableString(t *ast.Definition, definitionsMap m
 	var builder strings.Builder
 
 	builder.WriteString(".type: " + t.Name + "\n")
-	builder.WriteString("[options=\"header\"]\n")
+	builder.WriteString("[options=\"header\",cols=\"2a,2m,5a\"]\n")
 	builder.WriteString("|===\n")
 	builder.WriteString("| Type | Field | Description \n")
 
@@ -993,7 +993,7 @@ func (g *Generator) getEnumValuesTableString(e *ast.Definition) (string, error) 
 	var builder strings.Builder
 
 	builder.WriteString(".enum: " + e.Name + "\n")
-	builder.WriteString("[options=\"header\"]\n")
+	builder.WriteString("[options=\"header\",cols=\"1m,3a\"]\n")
 	builder.WriteString("|===\n")
 	builder.WriteString("| Value | Description \n")
 

@@ -413,13 +413,17 @@ func TestGenerateTypes(t *testing.T) {
 		"// tag::type-User[]",
 		"[[type_user]]",
 		"=== User",
+		"// tag::type-description-User[]",
 		"A user in the system",
+		"// end::type-description-User[]",
+		"// tag::type-def-User[]",
 		".type: User",
-		"[options=\"header\"]",
+		"[options=\"header\",cols=\"2a,2m,5a\"]",
 		"|===",
 		"| Type | Field | Description",
 		"`ID!`", "id", "User ID",
 		"`String`", "email", "User email address",
+		"// end::type-def-User[]",
 		"// end::type-User[]",
 	}
 
@@ -492,7 +496,7 @@ func TestGetTypeFieldsTableString(t *testing.T) {
 
 	expectedContent := []string{
 		".type: User",
-		"[options=\"header\"]",
+		"[options=\"header\",cols=\"2a,2m,5a\"]",
 		"|===",
 		"| Type | Field | Description",
 		"`ID!`", "id", "User identifier",
@@ -1160,7 +1164,7 @@ func TestGetInputFieldsTableString(t *testing.T) {
 
 	expectedContent := []string{
 		".input: UserInput",
-		"[options=\"header\"]",
+		"[options=\"header\",cols=\"2a,2m,5a\"]",
 		"|===",
 		"| Field | Type | Description",
 		"| `name` | `String!` | User's name",
@@ -1196,14 +1200,17 @@ func TestGetEnumValuesTableString(t *testing.T) {
 		},
 	}
 
-	table, err := gen.getEnumValuesTableString(enumDef)
+	result, err := gen.getEnumValuesTableString(enumDef)
 	if err != nil {
-		t.Fatalf("getEnumValuesTableString returned error: %v", err)
+		t.Fatalf("getEnumValuesTableString() returned error: %v", err)
 	}
+
+	// Debug: print actual result
+	fmt.Printf("ACTUAL ENUM VALUES TABLE:\n%s\n", result)
 
 	expectedContent := []string{
 		".enum: Status",
-		"[options=\"header\"]",
+		"[options=\"header\",cols=\"1m,3a\"]",
 		"|===",
 		"| Value | Description",
 		"| `ACTIVE` | Active status",
@@ -1212,7 +1219,7 @@ func TestGetEnumValuesTableString(t *testing.T) {
 	}
 
 	for _, expected := range expectedContent {
-		if !strings.Contains(table, expected) {
+		if !strings.Contains(result, expected) {
 			t.Errorf("Enum values table should contain %q, but doesn't", expected)
 		}
 	}
@@ -1256,11 +1263,16 @@ func TestGenerateEnums(t *testing.T) {
 	output := buf.String()
 	expectedContent := []string{
 		"== Enums",
-		"Status",
+		"// tag::enum-Status[]",
+		"[[enum_status]]",
+		"=== Status",
 		"User status enum",
+		"// tag::enum-def-Status[]",
 		".enum: Status",
 		"| `ACTIVE` | Active status",
 		"| `INACTIVE` | Inactive status",
+		"// end::enum-def-Status[]",
+		"// end::enum-Status[]",
 	}
 
 	for _, expected := range expectedContent {
@@ -1312,11 +1324,18 @@ func TestGenerateInputs(t *testing.T) {
 	fmt.Printf("ACTUAL GENERATE INPUTS OUTPUT:\n%s\n", output)
 	expectedContent := []string{
 		"== Inputs",
-		"UserInput",
+		"// tag::input-UserInput[]",
+		"[[input_user_input]]",
+		"=== UserInput",
+		"// tag::input-description-UserInput[]",
 		"Input for creating a user",
+		"// end::input-description-UserInput[]",
+		"// tag::input-def-UserInput[]",
 		".input: UserInput",
 		"| `name` | `String!` | User's name",
 		"| `email` | `String` | User's email",
+		"// end::input-def-UserInput[]",
+		"// end::input-UserInput[]",
 	}
 
 	for _, expected := range expectedContent {

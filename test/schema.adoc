@@ -1,6 +1,6 @@
 = GraphQL Documentation
 :toc: left
-:revdate: Sat, 21 Jun 2025 12:30:49 AEST
+:revdate: Sat, 21 Jun 2025 13:30:28 AEST
 :commandline: ./graphqls-to-asciidoc -s test/schema.graphql -o test/schema.adoc --verbose --subscriptions
 :sourceFile: test/schema.graphql
 :reproducible:
@@ -1199,8 +1199,9 @@ An example of a type with a changelog in the type definition as well as on the f
 
 // end::type-changelog-CLogExample[]
 
+// tag::type-def-CLogExample[]
 .type: CLogExample
-[options="header"]
+[options="header",cols="2a,2m,5a"]
 |===
 | Type | Field | Description 
 
@@ -1227,6 +1228,7 @@ An example of a type with a changelog in the type definition as well as on the f
 
 |===
 
+// end::type-def-CLogExample[]
 
 // end::type-CLogExample[]
 
@@ -1238,8 +1240,9 @@ An example of a type with a changelog in the type definition as well as on the f
 A message
 // end::type-description-Message[]
 
+// tag::type-def-Message[]
 .type: Message
-[options="header"]
+[options="header",cols="2a,2m,5a"]
 |===
 | Type | Field | Description 
 
@@ -1248,6 +1251,7 @@ A message
 | `String` | author | The message's author
 |===
 
+// end::type-def-Message[]
 
 // end::type-Message[]
 
@@ -1259,14 +1263,16 @@ A message
 Meta information about the query
 // end::type-description-Meta[]
 
+// tag::type-def-Meta[]
 .type: Meta
-[options="header"]
+[options="header",cols="2a,2m,5a"]
 |===
 | Type | Field | Description 
 
 | `Int` | count | The total number of items
 |===
 
+// end::type-def-Meta[]
 
 // end::type-Meta[]
 
@@ -1278,8 +1284,9 @@ Meta information about the query
 A notification for a user
 // end::type-description-Notification[]
 
+// tag::type-def-Notification[]
 .type: Notification
-[options="header"]
+[options="header",cols="2a,2m,5a"]
 |===
 | Type | Field | Description 
 
@@ -1290,6 +1297,7 @@ A notification for a user
 | `String` | type | The notification type
 |===
 
+// end::type-def-Notification[]
 
 // end::type-Notification[]
 
@@ -1301,8 +1309,9 @@ A notification for a user
 Stats about a tweet, such as number of views, likes, retweets, etc
 // end::type-description-Stat[]
 
+// tag::type-def-Stat[]
 .type: Stat
-[options="header"]
+[options="header",cols="2a,2m,5a"]
 |===
 | Type | Field | Description 
 
@@ -1315,6 +1324,7 @@ Stats about a tweet, such as number of views, likes, retweets, etc
 | `Int` | responses | The number of responses
 |===
 
+// end::type-def-Stat[]
 
 // end::type-Stat[]
 
@@ -1327,8 +1337,9 @@ A tweet
 This schema came from an example found here https://github.com/marmelab/GraphQL-example/blob/master/schema.graphql
 // end::type-description-Tweet[]
 
+// tag::type-def-Tweet[]
 .type: Tweet
-[options="header"]
+[options="header",cols="2a,2m,5a"]
 |===
 | Type | Field | Description 
 
@@ -1357,6 +1368,7 @@ This schema came from an example found here https://github.com/marmelab/GraphQL-
 
 |===
 
+// end::type-def-Tweet[]
 
 // end::type-Tweet[]
 
@@ -1368,8 +1380,9 @@ This schema came from an example found here https://github.com/marmelab/GraphQL-
 A Twitter user. They can publish tweets, and have followers
 // end::type-description-User[]
 
+// tag::type-def-User[]
 .type: User
-[options="header"]
+[options="header",cols="2a,2m,5a"]
 |===
 | Type | Field | Description 
 
@@ -1390,6 +1403,7 @@ A Twitter user. They can publish tweets, and have followers
 | <<Url,`Url`>> | avatar_url | The user's avatar URL
 |===
 
+// end::type-def-User[]
 
 // end::type-User[]
 
@@ -1397,7 +1411,7 @@ A Twitter user. They can publish tweets, and have followers
 
 == Enums
 
-// tag::enum-def-Direction[]
+// tag::enum-Direction[]
 [[enum_direction]]
 
 === Direction
@@ -1409,19 +1423,21 @@ The direction UP or Down
 # end::ENUM_DIRECTION_DES[]
 // end::enum-description-Direction[]
 
+// tag::enum-def-Direction[]
 .enum: Direction
-[options="header"]
+[options="header",cols="1m,3a"]
 |===
 | Value | Description 
 | `UP` | The Up direction.
 | `DOWN` | The Down direction.
 |===
 
-
 // end::enum-def-Direction[]
 
+// end::enum-Direction[]
 
-// tag::enum-def-MutationMode[]
+
+// tag::enum-MutationMode[]
 [[enum_mutation_mode]]
 
 === MutationMode
@@ -1431,19 +1447,21 @@ The mode of the mutation.
 The mutation can be either `synchronous` or `asynchronous`, depending on if the data requires further processing or not.
 // end::enum-description-MutationMode[]
 
+// tag::enum-def-MutationMode[]
 .enum: MutationMode
-[options="header"]
+[options="header",cols="1m,3a"]
 |===
 | Value | Description 
 | `SYNC` | Synchronous
 | `ASYNC` | Asynchronous
 |===
 
-
 // end::enum-def-MutationMode[]
 
+// end::enum-MutationMode[]
 
-// tag::enum-def-Sentiment[]
+
+// tag::enum-Sentiment[]
 [[enum_sentiment]]
 
 === Sentiment
@@ -1462,8 +1480,9 @@ This is just to demonstrate how to document an enum with asciidoc tags in the de
 # end::SENTIMENT_DES[]
 // end::enum-description-Sentiment[]
 
+// tag::enum-def-Sentiment[]
 .enum: Sentiment
-[options="header"]
+[options="header",cols="1m,3a"]
 |===
 | Value | Description 
 | `HAPPY` | The tweet is happy.
@@ -1472,14 +1491,15 @@ This is just to demonstrate how to document an enum with asciidoc tags in the de
 | `OTHER` | The tweet is something else.
 |===
 
-
 // end::enum-def-Sentiment[]
+
+// end::enum-Sentiment[]
 
 
 
 == Inputs
 
-// tag::input-def-CLogExampleInput[]
+// tag::input-CLogExampleInput[]
 [[input_c_log_example_input]]
 === CLogExampleInput
 // tag::input-description-CLogExampleInput[]
@@ -1494,8 +1514,9 @@ An example of a type with a changelog in the type definition as well as on the f
 
 // end::input-changelog-CLogExampleInput[]
 
+// tag::input-def-CLogExampleInput[]
 .input: CLogExampleInput
-[options="header"]
+[options="header",cols="2a,2m,5a"]
 |===
 | Field | Type | Description 
 | `count` | `Int` | The total number of items
@@ -1518,11 +1539,12 @@ An example of a type with a changelog in the type definition as well as on the f
 
 |===
 
-
 // end::input-def-CLogExampleInput[]
 
+// end::input-CLogExampleInput[]
 
-// tag::input-def-DateFilter[]
+
+// tag::input-DateFilter[]
 [[input_date_filter]]
 === DateFilter
 // tag::input-description-DateFilter[]
@@ -1551,8 +1573,9 @@ should be included.
 ----
 // end::input-description-DateFilter[]
 
+// tag::input-def-DateFilter[]
 .input: DateFilter
-[options="header"]
+[options="header",cols="2a,2m,5a"]
 |===
 | Field | Type | Description 
 | `fromDateTime` | `LocalDateTime!` | .**Required:** Inclusive start or lower bound of the date/time window.
@@ -1582,27 +1605,30 @@ Example:
 If this field is not strictly later than or equal to fromDateTime, the server will reject the request.
 |===
 
-
 // end::input-def-DateFilter[]
 
+// end::input-DateFilter[]
 
-// tag::input-def-MessageInput[]
+
+// tag::input-MessageInput[]
 [[input_message_input]]
 === MessageInput
 // tag::input-description-MessageInput[]
 Example of an input type
 // end::input-description-MessageInput[]
 
+// tag::input-def-MessageInput[]
 .input: MessageInput
-[options="header"]
+[options="header",cols="2a,2m,5a"]
 |===
 | Field | Type | Description 
 | `content` | `String` | The message's content
 | `author` | `String` | The message's author
 |===
 
-
 // end::input-def-MessageInput[]
+
+// end::input-MessageInput[]
 
 
 == Directives
