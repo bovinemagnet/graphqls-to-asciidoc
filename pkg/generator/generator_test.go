@@ -1395,3 +1395,147 @@ func TestGenerateScalarsWithBuiltIn(t *testing.T) {
 		t.Error("Should include custom scalar 'CustomScalar'")
 	}
 }
+
+func TestGenerateTypesWithNoFields(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{
+			"EmptyType": {
+				Kind:        ast.Object,
+				Name:        "EmptyType",
+				Fields:      ast.FieldList{},
+				Description: "A type with no fields",
+			},
+		},
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+	var sortedDefs []*ast.Definition
+	for _, def := range gen.schema.Types {
+		sortedDefs = append(sortedDefs, def)
+	}
+	count := gen.generateTypes(sortedDefs, gen.schema.Types)
+	if count != 1 {
+		t.Errorf("Expected 1 type, got %d", count)
+	}
+	output := buf.String()
+	if !strings.Contains(output, "EmptyType") {
+		t.Error("Output should contain type name")
+	}
+}
+
+func TestGenerateEnumsWithNoValues(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{
+			"EmptyEnum": {
+				Kind:        ast.Enum,
+				Name:        "EmptyEnum",
+				EnumValues:  ast.EnumValueList{},
+				Description: "An enum with no values",
+			},
+		},
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+	var sortedDefs []*ast.Definition
+	for _, def := range gen.schema.Types {
+		sortedDefs = append(sortedDefs, def)
+	}
+	count := gen.generateEnums(sortedDefs, gen.schema.Types)
+	if count != 1 {
+		t.Errorf("Expected 1 enum, got %d", count)
+	}
+	output := buf.String()
+	if !strings.Contains(output, "EmptyEnum") {
+		t.Error("Output should contain enum name")
+	}
+}
+
+func TestGenerateScalarsWithNoDescription(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{
+			"NoDescScalar": {
+				Kind:        ast.Scalar,
+				Name:        "NoDescScalar",
+				Description: "",
+			},
+		},
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+	var sortedDefs []*ast.Definition
+	for _, def := range gen.schema.Types {
+		sortedDefs = append(sortedDefs, def)
+	}
+	count := gen.generateScalars(sortedDefs)
+	if count != 1 {
+		t.Errorf("Expected 1 scalar, got %d", count)
+	}
+	output := buf.String()
+	if !strings.Contains(output, "NoDescScalar") {
+		t.Error("Output should contain scalar name")
+	}
+}
+
+func TestGenerateInputsWithNoFields(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{
+			"EmptyInput": {
+				Kind:        ast.InputObject,
+				Name:        "EmptyInput",
+				Fields:      ast.FieldList{},
+				Description: "An input with no fields",
+			},
+		},
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+	var sortedDefs []*ast.Definition
+	for _, def := range gen.schema.Types {
+		sortedDefs = append(sortedDefs, def)
+	}
+	count := gen.generateInputs(sortedDefs, gen.schema.Types)
+	if count != 1 {
+		t.Errorf("Expected 1 input, got %d", count)
+	}
+	output := buf.String()
+	if !strings.Contains(output, "EmptyInput") {
+		t.Error("Output should contain input name")
+	}
+}
+
+func TestFieldWithOnlyChangelog(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{
+			"TypeWithChangelog": {
+				Kind: ast.Object,
+				Name: "TypeWithChangelog",
+				Fields: ast.FieldList{
+					&ast.FieldDefinition{
+						Name:        "field1",
+						Description: "[changelog] Added in v1.2.3",
+						Type:        &ast.Type{NamedType: "String"},
+					},
+				},
+			},
+		},
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+	var sortedDefs []*ast.Definition
+	for _, def := range gen.schema.Types {
+		sortedDefs = append(sortedDefs, def)
+	}
+	count := gen.generateTypes(sortedDefs, gen.schema.Types)
+	if count != 1 {
+		t.Errorf("Expected 1 type, got %d", count)
+	}
+	output := buf.String()
+	if !strings.Contains(output, "Added in v1.2.3") {
+		t.Error("Output should contain changelog")
+	}
+}

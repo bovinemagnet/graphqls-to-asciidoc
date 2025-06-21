@@ -204,3 +204,63 @@ func TestConfigDefaultValues(t *testing.T) {
 		t.Error("Verbose should be false by default")
 	}
 }
+
+func TestGetOutputWriterStdout(t *testing.T) {
+	cfg := NewConfig()
+	cfg.OutputFile = ""
+	file, isStdout, err := cfg.GetOutputWriter()
+	if err != nil {
+		t.Fatalf("GetOutputWriter returned error: %v", err)
+	}
+	if !isStdout {
+		t.Error("Expected isStdout to be true for empty OutputFile")
+	}
+	if file != os.Stdout {
+		t.Error("Expected file to be os.Stdout for empty OutputFile")
+	}
+}
+
+func TestGetOutputWriterFileSuccess(t *testing.T) {
+	cfg := NewConfig()
+	tmpFile, err := os.CreateTemp("", "output-*.adoc")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	cfg.OutputFile = tmpFile.Name()
+	file, isStdout, err := cfg.GetOutputWriter()
+	if err != nil {
+		t.Fatalf("GetOutputWriter returned error: %v", err)
+	}
+	if isStdout {
+		t.Error("Expected isStdout to be false for OutputFile")
+	}
+	if file == os.Stdout {
+		t.Error("Expected file not to be os.Stdout for OutputFile")
+	}
+	file.Close()
+}
+
+func TestGetOutputWriterFileDirNotExist(t *testing.T) {
+	cfg := NewConfig()
+	cfg.OutputFile = "/nonexistentdir/output.adoc"
+	_, _, err := cfg.GetOutputWriter()
+	if err == nil {
+		t.Error("Expected error for non-existent output directory")
+	}
+}
+
+func TestValidateOutputDirNotExist(t *testing.T) {
+	cfg := NewConfig()
+	tmpFile, err := os.CreateTemp("", "test-*.graphql")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	cfg.SchemaFile = tmpFile.Name()
+	cfg.OutputFile = "/nonexistentdir/output.adoc"
+	err = cfg.Validate()
+	if err == nil {
+		t.Error("Expected error for non-existent output directory in Validate")
+	}
+}

@@ -1,6 +1,6 @@
 = GraphQL Documentation
 :toc: left
-:revdate: Sat, 21 Jun 2025 11:51:24 AEST
+:revdate: Sat, 21 Jun 2025 11:52:25 AEST
 :commandline: ./graphqls-to-asciidoc -s test/schema.graphql -o test/schema.adoc --verbose --subscriptions
 :sourceFile: test/schema.graphql
 :reproducible:
