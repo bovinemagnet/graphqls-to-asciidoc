@@ -3,10 +3,10 @@ package metrics
 import (
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/config"
+	"github.com/jedib0t/go-pretty/v6/table"
 )
 
 // SectionMetrics holds timing and count data for a processing section
@@ -87,30 +87,37 @@ func (m *Metrics) LogInputParameters() {
 		return
 	}
 
-	fmt.Fprintf(os.Stderr, "┌─ GraphQLS-to-AsciiDoc - Processing Started ─┐\n")
-	fmt.Fprintf(os.Stderr, "│\n")
-	fmt.Fprintf(os.Stderr, "│ Input Parameters:\n")
-	fmt.Fprintf(os.Stderr, "│   Schema File:         %s\n", m.config.SchemaFile)
-	
+	// Create input parameters table
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stderr)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("GraphQLS-to-AsciiDoc - Processing Started")
+	t.AppendHeader(table.Row{"Parameter", "Value"})
+
+	// Input parameters
+	t.AppendRow(table.Row{"Schema File", m.config.SchemaFile})
 	if m.config.OutputFile != "" {
-		fmt.Fprintf(os.Stderr, "│   Output File:         %s\n", m.config.OutputFile)
+		t.AppendRow(table.Row{"Output File", m.config.OutputFile})
 	} else {
-		fmt.Fprintf(os.Stderr, "│   Output:              stdout\n")
+		t.AppendRow(table.Row{"Output", "stdout"})
 	}
-	
-	fmt.Fprintf(os.Stderr, "│   Exclude Internal:    %t\n", m.config.ExcludeInternal)
-	fmt.Fprintf(os.Stderr, "│\n")
-	fmt.Fprintf(os.Stderr, "│ Sections to Process:\n")
-	fmt.Fprintf(os.Stderr, "│   Queries:             %s\n", formatEnabled(m.config.IncludeQueries))
-	fmt.Fprintf(os.Stderr, "│   Mutations:           %s\n", formatEnabled(m.config.IncludeMutations))
-	fmt.Fprintf(os.Stderr, "│   Subscriptions:       %s\n", formatEnabled(m.config.IncludeSubscriptions))
-	fmt.Fprintf(os.Stderr, "│   Types:               %s\n", formatEnabled(m.config.IncludeTypes))
-	fmt.Fprintf(os.Stderr, "│   Enums:               %s\n", formatEnabled(m.config.IncludeEnums))
-	fmt.Fprintf(os.Stderr, "│   Inputs:              %s\n", formatEnabled(m.config.IncludeInputs))
-	fmt.Fprintf(os.Stderr, "│   Directives:          %s\n", formatEnabled(m.config.IncludeDirectives))
-	fmt.Fprintf(os.Stderr, "│   Scalars:             %s\n", formatEnabled(m.config.IncludeScalars))
-	fmt.Fprintf(os.Stderr, "│\n")
-	fmt.Fprintf(os.Stderr, "└──────────────────────────────────────────────┘\n")
+	t.AppendRow(table.Row{"Exclude Internal", m.config.ExcludeInternal})
+
+	// Add separator before sections
+	t.AppendSeparator()
+
+	// Sections to process
+	t.AppendRow(table.Row{"Queries", formatEnabled(m.config.IncludeQueries)})
+	t.AppendRow(table.Row{"Mutations", formatEnabled(m.config.IncludeMutations)})
+	t.AppendRow(table.Row{"Subscriptions", formatEnabled(m.config.IncludeSubscriptions)})
+	t.AppendRow(table.Row{"Types", formatEnabled(m.config.IncludeTypes)})
+	t.AppendRow(table.Row{"Enums", formatEnabled(m.config.IncludeEnums)})
+	t.AppendRow(table.Row{"Inputs", formatEnabled(m.config.IncludeInputs)})
+	t.AppendRow(table.Row{"Directives", formatEnabled(m.config.IncludeDirectives)})
+	t.AppendRow(table.Row{"Scalars", formatEnabled(m.config.IncludeScalars)})
+
+	// Render the table
+	t.Render()
 	fmt.Fprintf(os.Stderr, "\n")
 }
 
@@ -121,20 +128,15 @@ func (m *Metrics) LogMetricsTable() {
 	}
 
 	totalDuration := time.Since(m.startTime)
-	
-	fmt.Fprintf(os.Stderr, "\n")
-	fmt.Fprintf(os.Stderr, "┌─ Processing Metrics ──────────────────────────┐\n")
-	fmt.Fprintf(os.Stderr, "│\n")
-	fmt.Fprintf(os.Stderr, "│ %-15s │ %7s │ %12s │ %8s\n", "Section", "Count", "Duration", "Status")
-	fmt.Fprintf(os.Stderr, "│ %s │ %s │ %s │ %s\n", 
-		strings.Repeat("─", 15), 
-		strings.Repeat("─", 7), 
-		strings.Repeat("─", 12), 
-		strings.Repeat("─", 8))
+
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stderr)
+	t.SetStyle(table.StyleRounded)
+	t.AppendHeader(table.Row{"Section", "Count", "Duration", "Status"})
 
 	// Define the order of sections for consistent display
 	sectionOrder := []string{
-		"Queries", "Mutations", "Subscriptions", 
+		"Queries", "Mutations", "Subscriptions",
 		"Types", "Enums", "Inputs", "Directives", "Scalars",
 	}
 
@@ -147,44 +149,39 @@ func (m *Metrics) LogMetricsTable() {
 			if section.Count == 0 {
 				status = "○" // processed but no items
 			}
-			
-			fmt.Fprintf(os.Stderr, "│ %-15s │ %7d │ %12s │ %8s\n", 
-				section.Name, 
-				section.Count, 
+			t.AppendRow(table.Row{
+				section.Name,
+				section.Count,
 				formatDuration(section.Duration),
-				status)
-			
+				status,
+			})
 			totalProcessed += section.Count
 			totalSectionTime += section.Duration
 		} else {
-			// Section was not processed (disabled)
-			fmt.Fprintf(os.Stderr, "│ %-15s │ %7s │ %12s │ %8s\n", 
-				sectionName, "-", "-", "✗")
+			t.AppendRow(table.Row{
+				sectionName, "-", "-", "✗",
+			})
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "│ %s │ %s │ %s │ %s\n", 
-		strings.Repeat("─", 15), 
-		strings.Repeat("─", 7), 
-		strings.Repeat("─", 12), 
-		strings.Repeat("─", 8))
-	
-	fmt.Fprintf(os.Stderr, "│ %-15s │ %7d │ %12s │ %8s\n", 
-		"TOTAL", totalProcessed, formatDuration(totalDuration), "✓")
-	
-	fmt.Fprintf(os.Stderr, "│\n")
-	
+	t.AppendSeparator()
+	t.AppendRow(table.Row{
+		"TOTAL", totalProcessed, formatDuration(totalDuration), "✓",
+	})
+
+	// Print the table
+	t.Render()
+
 	// Calculate processing efficiency
 	processingRatio := float64(totalSectionTime) / float64(totalDuration) * 100
-	fmt.Fprintf(os.Stderr, "│ Processing Efficiency: %.1f%% (%.2fms overhead)\n", 
-		processingRatio, 
+	fmt.Fprintf(os.Stderr, "\nProcessing Efficiency: %.1f%% (%.2fms overhead)\n",
+		processingRatio,
 		float64(totalDuration-totalSectionTime)/1000000)
-	
-	fmt.Fprintf(os.Stderr, "│ Items per Second:      %.1f\n", 
+
+	fmt.Fprintf(os.Stderr, "Items per Second:      %.1f\n",
 		float64(totalProcessed)/totalDuration.Seconds())
-	
-	fmt.Fprintf(os.Stderr, "│\n")
-	fmt.Fprintf(os.Stderr, "└──────────────────────────────────────────────┘\n")
+
+	fmt.Fprintf(os.Stderr, "\n")
 }
 
 // formatEnabled returns a colored status string
@@ -213,8 +210,8 @@ func (m *Metrics) LogProgress(section string, message string) {
 	if !m.enabled {
 		return
 	}
-	
+
 	timestamp := time.Since(m.startTime)
-	fmt.Fprintf(os.Stderr, "[%8s] %s: %s\n", 
+	fmt.Fprintf(os.Stderr, "[%8s] %s: %s\n",
 		formatDuration(timestamp), section, message)
 }
