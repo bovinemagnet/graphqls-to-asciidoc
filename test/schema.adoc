@@ -1,6 +1,6 @@
 = GraphQL Documentation
 :toc: left
-:revdate: Sat, 21 Jun 2025 11:35:09 AEST
+:revdate: Sat, 21 Jun 2025 11:45:04 AEST
 :commandline: ./graphqls-to-asciidoc -s test/schema.graphql -o test/schema.adoc --verbose
 :sourceFile: test/schema.graphql
 :reproducible:
@@ -878,13 +878,264 @@ getConfig(
 
 // end::query-getConfig[]
 
+
+// tag::mutation[]
+[[mutations]]
 == Mutations
+The root mutation
 
-[NOTE]
-====
-Mutations section - implementation in progress
-====
+GraphQL Mutations are entry points on a GraphQL server that provides write access to our data sources.
+// tag::mutation-createTweet[]
+[[mutation_create_tweet]]
+// tag::method-signature-createTweet[]
+=== createTweet
+// end::method-signature-createTweet[]
 
+// tag::method-description-createTweet[]
+Create a new tweet with validation.
+
+Example implementation pattern:
+
+[source,python]
+----
+def create_tweet(body: str) -> Tweet:
+    # Validate input <1>
+    if not body or len(body) > 280: <2>
+        raise ValidationError("Invalid tweet body")
+
+    # Create tweet object <3>
+    tweet = Tweet.create(
+        body=body,
+        author=current_user() <4>
+    )
+
+    return tweet <5>
+----
+
+# 1 * Always validate user input first
+# 2 * Check Twitter's character limit
+(3) Use the domain model to create the tweet
+/* 4 */ Get the authenticated user context
+(5) Return the newly created tweet
+// end::method-description-createTweet[]
+
+.mutation: createTweet
+[source, kotlin]
+----
+createTweet(  body: `String` <1> ) : <<Tweet,`Tweet`>> <2>
+----
+
+
+// tag::method-args-createTweet[]
+Create a new tweet with validation.
+
+Example implementation pattern:
+
+```python
+def create_tweet(body: str) -> Tweet:
+    # Validate input # 1
+    if not body or len(body) > 280: # 2
+        raise ValidationError("Invalid tweet body")
+
+    # Create tweet object (3)
+    tweet = Tweet.create(
+        body=body,
+        author=current_user() /* 4 */
+    )
+
+    return tweet (5)
+```
+
+# 1 - Always validate user input first
+# 2 - Check Twitter's character limit
+(3) Use the domain model to create the tweet
+/* 4 */ Get the authenticated user context
+(5) Return the newly created tweet
+// end::method-args-createTweet[]
+
+// tag::mutation-name-createTweet[]
+*Mutation Name:* _createTweet_
+// end::mutation-name-createTweet[]
+
+// tag::mutation-return-createTweet[]
+*Return:* <<Tweet,`Tweet`>>
+// end::mutation-return-createTweet[]
+// tag::arguments-createTweet[]
+.Arguments
+* `body : `String``
+
+// end::arguments-createTweet[]
+
+// end::mutation-createTweet[]
+
+// tag::mutation-deleteTweet[]
+[[mutation_delete_tweet]]
+// tag::method-signature-deleteTweet[]
+=== deleteTweet
+// end::method-signature-deleteTweet[]
+
+// tag::method-description-deleteTweet[]
+Delete a tweet
+// end::method-description-deleteTweet[]
+
+.mutation: deleteTweet
+[source, kotlin]
+----
+deleteTweet(  id: `ID!` <1> ) : <<Tweet,`Tweet`>> <2>
+----
+
+
+// tag::method-args-deleteTweet[]
+Delete a tweet
+// end::method-args-deleteTweet[]
+
+// tag::mutation-name-deleteTweet[]
+*Mutation Name:* _deleteTweet_
+// end::mutation-name-deleteTweet[]
+
+// tag::mutation-return-deleteTweet[]
+*Return:* <<Tweet,`Tweet`>>
+// end::mutation-return-deleteTweet[]
+// tag::arguments-deleteTweet[]
+.Arguments
+* `id : `ID!``
+
+// end::arguments-deleteTweet[]
+
+// end::mutation-deleteTweet[]
+
+// tag::mutation-markTweetRead[]
+[[mutation_mark_tweet_read]]
+// tag::method-signature-markTweetRead[]
+=== markTweetRead
+// end::method-signature-markTweetRead[]
+
+// tag::method-description-markTweetRead[]
+Mark a tweet as read
+// end::method-description-markTweetRead[]
+
+.mutation: markTweetRead
+[source, kotlin]
+----
+markTweetRead(  id: `ID!` <1> ) : `Boolean` <2>
+----
+
+
+// tag::method-args-markTweetRead[]
+Mark a tweet as read
+// end::method-args-markTweetRead[]
+
+// tag::mutation-name-markTweetRead[]
+*Mutation Name:* _markTweetRead_
+// end::mutation-name-markTweetRead[]
+
+// tag::mutation-return-markTweetRead[]
+*Return:* `Boolean`
+// end::mutation-return-markTweetRead[]
+// tag::arguments-markTweetRead[]
+.Arguments
+* `id : `ID!``
+
+// end::arguments-markTweetRead[]
+
+// end::mutation-markTweetRead[]
+
+// tag::mutation-createMessage[]
+[[mutation_create_message]]
+// tag::method-signature-createMessage[]
+=== createMessage
+// end::method-signature-createMessage[]
+
+// tag::method-description-createMessage[]
+Create a new message example.
+// end::method-description-createMessage[]
+
+.mutation: createMessage
+[source, kotlin]
+----
+createMessage(  input: <<MessageInput,`MessageInput`>> <1> ) : <<Message,`Message`>> <2>
+----
+
+
+// tag::method-args-createMessage[]
+Create a new message example.
+// end::method-args-createMessage[]
+
+// tag::mutation-name-createMessage[]
+*Mutation Name:* _createMessage_
+// end::mutation-name-createMessage[]
+
+// tag::mutation-return-createMessage[]
+*Return:* <<Message,`Message`>>
+// end::mutation-return-createMessage[]
+// tag::arguments-createMessage[]
+.Arguments
+* `input : <<MessageInput,`MessageInput`>>`
+
+// end::arguments-createMessage[]
+
+// end::mutation-createMessage[]
+
+// tag::mutation-createMessageDep[]
+[[mutation_create_message_dep]]
+// tag::method-signature-createMessageDep[]
+=== createMessageDep
+// end::method-signature-createMessageDep[]
+
+// tag::method-description-createMessageDep[]
+Create a new message example.
+
+`@deprecated(reason: "Internal test")`
+
+* `input` is the input message.
+// end::method-description-createMessageDep[]
+
+.mutation: createMessageDep
+[source, kotlin]
+----
+createMessageDep(  input: <<MessageInput,`MessageInput`>> <1> ) : <<Message,`Message`>> <2>
+----
+
+
+// tag::method-args-createMessageDep[]
+Create a new message example.
+
+@deprecated(reason: "Internal test")
+
+add.version: 1.0.0
+update.version: 1.2.3
+update.version: 2.0.5
+deprecated.version: 2.6.0
+removed.version: 2.7.8
+
+- `input` is the input message.
+// end::method-args-createMessageDep[]
+
+// tag::mutation-name-createMessageDep[]
+*Mutation Name:* _createMessageDep_
+// end::mutation-name-createMessageDep[]
+
+// tag::mutation-return-createMessageDep[]
+*Return:* <<Message,`Message`>>
+// end::mutation-return-createMessageDep[]
+// tag::arguments-createMessageDep[]
+.Arguments
+* `input : <<MessageInput,`MessageInput`>>`
+
+// end::arguments-createMessageDep[]
+// tag::mutation-changelog-createMessageDep[]
+
+.Changelog
+* add: 1.0.0
+* update: 1.2.3, 2.0.5
+* deprecated: 2.6.0
+* removed: 2.7.8
+
+// end::mutation-changelog-createMessageDep[]
+
+// end::mutation-createMessageDep[]
+
+// end::mutation[]
 
 == Types
 
@@ -1180,12 +1431,134 @@ This is just to demonstrate how to document an enum with asciidoc tags in the de
 // end::enum-def-Sentiment[]
 
 
+
 == Inputs
 
-[NOTE]
-====
-Inputs section - implementation in progress
-====
+// tag::input-def-CLogExampleInput[]
+[[input_c_log_example_input]]
+=== CLogExampleInput
+// tag::input-description-CLogExampleInput[]
+An example of a type with a changelog in the type definition as well as on the fieds.
+
+// end::input-description-CLogExampleInput[]
+// tag::input-changelog-CLogExampleInput[]
+
+.Changelog
+* add: 1.0.0
+* update: 1.2.3, 2.0.5
+
+// end::input-changelog-CLogExampleInput[]
+
+.input: CLogExampleInput
+[options="header"]
+|===
+| Field | Type | Description 
+| `count` | `Int` | The total number of items
+| `up` | `String` | This was updated
+| `dep` | `String` | This was deprecated
+
+`@deprecated("testing this out")`
+
+
+.Changelog
+* add: 1.0.0
+* update: 1.2.3
+* deprecated: 2.6.0
+
+| `new` | `String` | This was new
+
+
+.Changelog
+* add: 2.6.0
+
+|===
+
+
+// end::input-def-CLogExampleInput[]
+
+
+// tag::input-def-DateFilter[]
+[[input_date_filter]]
+=== DateFilter
+// tag::input-description-DateFilter[]
+Defines an inclusive time window used to filter records (e.g. delta changes, events, logs) by their timestamps.
+
+.Use Cases:
+* **Delta queries**: clients can pass a `DateFilter` to `deltaChanges` (or similar endpoints) to retrieve only
+those records whose timestamps fall between two instants.
+* **Searches & reporting**: limit results to objects created, updated, or deleted within a specific date/time range.
+
+.Behavior & Validation:
+* Both `fromDateTime` and `toDateTime` are **inclusive**. Events occurring exactly at `fromDateTime` or `toDateTime`
+should be included.
+* `fromDateTime` **must be less than or equal to** `toDateTime`. If a client sends them in reverse order, the server
+**should** respond with a validation error stating "fromDateTime must be less than or equal to `toDateTime`".
+* Timestamps are expected in the **ISO-8601** format `YYYY-MM-DD'T'HH:mm:ss`.
+* Because this input uses the scalar `LocalDateTime`, it does not carry a timezone offset.
+
+.Example JSON representation (as a request payload in REST, or variables in GraphQL):
+[source,json]
+----
+{
+  "fromDateTime": "2025-01-01T00:00:00",
+  "toDateTime":   "2025-01-01T23:59:59"
+}
+----
+// end::input-description-DateFilter[]
+
+.input: DateFilter
+[options="header"]
+|===
+| Field | Type | Description 
+| `fromDateTime` | `LocalDateTime!` | .**Required:** Inclusive start or lower bound of the date/time window.
+* **Format:** ISO-8601 `YYYY-MM-DD'T'HH:mm:ss` (e.g. _2025-01-01T00:00:00_).
+* **Constraint:** Must be less than or equal to `toDateTime`.
+* Any event whose timestamp is exactly equal to `after` must be included in the result.
+
+.Validation:
+* If `after` is missing or not a valid ISO-8601 string, return a validation error: +
+`"Invalid ISO8601DateTime format for field 'after'."`
+
+.Examples:
+* `2025-05-01T00:00:00` (midnight UTC on May 1, 2025)
+* `2025-06-06T14:30:15`
+* `2025-06-06T00:00:00Z`
+* `2025-06-06T10:00:00+10:00`
+
+
+If this field is not strictly earlier than or equal to `toDateTime`, the server will reject the request.
+| `toDateTime` | `LocalDateTime!` | .An explicit inclusive upper bound orr end of the date/time window.
+* **Format:** ISO-8601 YYYY-MM-DD'T'HH:mm:ss (e.g. 2025-05-31T23:59:59).
+* **Constraint:** Must be greater than or equal to `fromDateTime`.
+
+Example:
+• `2025-05-31T23:59:59` (one second before midnight UTC on May 31, 2025)
+
+If this field is not strictly later than or equal to fromDateTime, the server will reject the request.
+|===
+
+
+// end::input-def-DateFilter[]
+
+
+// tag::input-def-MessageInput[]
+[[input_message_input]]
+=== MessageInput
+// tag::input-description-MessageInput[]
+Example of an input type
+// end::input-description-MessageInput[]
+
+.input: MessageInput
+[options="header"]
+|===
+| Field | Type | Description 
+| `content` | `String` | The message's content
+| `author` | `String` | The message's author
+|===
+
+
+// end::input-def-MessageInput[]
+
 
 == Directives
 

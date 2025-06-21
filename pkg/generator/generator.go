@@ -261,24 +261,143 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 	fmt.Fprintln(g.writer)
 }
 
-// Placeholder implementations for other generators
+// generateMutations generates the mutations section
 func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition) int {
 	g.metrics.LogProgress("Mutations", "Starting mutations generation")
 
-	// Implementation would go here - simplified for now
-	fmt.Fprintln(g.writer, "== Mutations")
-	fmt.Fprintln(g.writer)
-	fmt.Fprintln(g.writer, "[NOTE]")
-	fmt.Fprintln(g.writer, "====")
-	fmt.Fprintln(g.writer, "Mutations section - implementation in progress")
-	fmt.Fprintln(g.writer, "====")
-	fmt.Fprintln(g.writer)
+	if g.schema.Mutation == nil || len(g.schema.Mutation.Fields) == 0 {
+		// No mutations exist
+		tmpl, err := template.New("mutation").Parse(templates.MutationTemplate)
+		if err == nil {
+			_ = tmpl.Execute(g.writer, struct {
+				MutationTag               string
+				MutationObjectDescription string
+				FoundMutations            bool
+				Mutations                 []MutationInfo
+			}{
+				MutationTag:               "== Mutations",
+				MutationObjectDescription: "",
+				FoundMutations:            false,
+				Mutations:                 nil,
+			})
+		} else {
+			fmt.Fprintln(g.writer, "== Mutations")
+			fmt.Fprintln(g.writer)
+			fmt.Fprintln(g.writer, "[NOTE]")
+			fmt.Fprintln(g.writer, "====")
+			fmt.Fprintln(g.writer, "No mutations exist in this schema.")
+			fmt.Fprintln(g.writer, "====")
+			fmt.Fprintln(g.writer)
+		}
+		g.metrics.LogProgress("Mutations", "Generated 0 mutations")
+		return 0
+	}
 
-	count := 0 // No actual mutations processed yet
-	g.metrics.LogProgress("Mutations", fmt.Sprintf("Generated %d mutations", count))
-	return count
+	var mutationInfos []MutationInfo
+	for _, f := range g.schema.Mutation.Fields {
+		processedDesc, changelog := changelog.ProcessWithChangelog(f.Description, parser.ProcessDescription)
+		methodSignature := g.getMethodSignatureBlock(f, definitionsMap)
+		argsBlock := g.getArgumentsBlock(f, definitionsMap)
+		directivesBlock := g.getDirectivesBlock(f)
+		mutationInfo := MutationInfo{
+			Name:                 f.Name,
+			AnchorName:           "mutation_" + parser.CamelToSnake(f.Name),
+			Description:          f.Description,
+			CleanedDescription:   processedDesc,
+			TypeName:             parser.ProcessTypeName(f.Type.String(), definitionsMap),
+			MethodSignatureBlock: methodSignature,
+			Arguments:            argsBlock,
+			Directives:           directivesBlock,
+			HasArguments:         len(f.Arguments) > 0,
+			HasDirectives:        len(f.Directives) > 0,
+			IsInternal:           g.config.ExcludeInternal && strings.Contains(f.Description, "INTERNAL"),
+			Changelog:            changelog,
+		}
+		mutationInfos = append(mutationInfos, mutationInfo)
+	}
+
+	mutationObjectDescription := ""
+	if g.schema.Mutation.Description != "" {
+		mutationObjectDescription = parser.ProcessDescription(g.schema.Mutation.Description)
+	}
+
+	data := struct {
+		MutationTag               string
+		MutationObjectDescription string
+		FoundMutations            bool
+		Mutations                 []MutationInfo
+	}{
+		MutationTag:               "== Mutations",
+		MutationObjectDescription: mutationObjectDescription,
+		FoundMutations:            len(mutationInfos) > 0,
+		Mutations:                 mutationInfos,
+	}
+
+	tmpl, err := template.New("mutation").Funcs(template.FuncMap{
+		"printAsciiDocTagsTmpl":          func(s string) string { return s },
+		"convertDescriptionToRefNumbers": func(desc string, _ bool) string { return desc },
+	}).Parse(templates.MutationTemplate)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing mutation template: %v\n", err)
+		g.metrics.LogProgress("Mutations", "Generated 0 mutations (template error)")
+		return 0
+	}
+
+	err = tmpl.Execute(g.writer, data)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error executing mutation template: %v\n", err)
+	}
+
+	g.metrics.LogProgress("Mutations", fmt.Sprintf("Generated %d mutations", len(mutationInfos)))
+	return len(mutationInfos)
 }
 
+// Helper for mutation method signature
+func (g *Generator) getMethodSignatureBlock(f *ast.FieldDefinition, definitionsMap map[string]*ast.Definition) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, ".mutation: %s\n", f.Name)
+	fmt.Fprintln(&b, "[source, kotlin]")
+	fmt.Fprintln(&b, "----")
+	fmt.Fprintf(&b, "%s(", f.Name)
+	for i, arg := range f.Arguments {
+		typeName := parser.ProcessTypeName(arg.Type.String(), definitionsMap)
+		fmt.Fprintf(&b, "  %s: %s", arg.Name, typeName)
+		if i < len(f.Arguments)-1 {
+			fmt.Fprint(&b, " ,")
+		}
+		fmt.Fprintf(&b, " <%d> ", i+1)
+	}
+	fmt.Fprintf(&b, ") : %s <%d>\n", parser.ProcessTypeName(f.Type.String(), definitionsMap), len(f.Arguments)+1)
+	fmt.Fprintln(&b, "----")
+	return b.String()
+}
+
+// Helper for mutation arguments block
+func (g *Generator) getArgumentsBlock(f *ast.FieldDefinition, definitionsMap map[string]*ast.Definition) string {
+	if len(f.Arguments) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	for _, arg := range f.Arguments {
+		typeName := parser.ProcessTypeName(arg.Type.String(), definitionsMap)
+		fmt.Fprintf(&b, "* `%s : %s`\n", arg.Name, typeName)
+	}
+	return b.String()
+}
+
+// Helper for mutation directives block
+func (g *Generator) getDirectivesBlock(f *ast.FieldDefinition) string {
+	if len(f.Directives) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	for _, d := range f.Directives {
+		fmt.Fprintf(&b, "* @%s\n", d.Name)
+	}
+	return b.String()
+}
+
+// Placeholder implementations for other generators
 func (g *Generator) generateSubscriptions(definitionsMap map[string]*ast.Definition) int {
 	g.metrics.LogProgress("Subscriptions", "Starting subscriptions generation")
 
