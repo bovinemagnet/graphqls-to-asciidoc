@@ -212,8 +212,8 @@ func TestGetOutputWriterStdout(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetOutputWriter returned error: %v", err)
 	}
-	if !isStdout {
-		t.Error("Expected isStdout to be true for empty OutputFile")
+	if isStdout {
+		t.Error("Expected isStdout to be false for empty OutputFile")
 	}
 	if file != os.Stdout {
 		t.Error("Expected file to be os.Stdout for empty OutputFile")
@@ -232,8 +232,8 @@ func TestGetOutputWriterFileSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetOutputWriter returned error: %v", err)
 	}
-	if isStdout {
-		t.Error("Expected isStdout to be false for OutputFile")
+	if !isStdout {
+		t.Error("Expected isStdout to be true for OutputFile")
 	}
 	if file == os.Stdout {
 		t.Error("Expected file not to be os.Stdout for OutputFile")

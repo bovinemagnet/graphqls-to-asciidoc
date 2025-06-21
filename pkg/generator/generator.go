@@ -295,6 +295,11 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 
 	var mutationInfos []MutationInfo
 	for _, f := range g.schema.Mutation.Fields {
+		// Skip internal mutations if configured
+		if g.config.ExcludeInternal && strings.Contains(f.Description, "INTERNAL") {
+			continue
+		}
+
 		processedDesc, changelog := changelog.ProcessWithChangelog(f.Description, parser.ProcessDescription)
 		methodSignature := g.getMethodSignatureBlock(f, definitionsMap)
 		argsBlock := g.getArgumentsBlock(f, definitionsMap)
