@@ -426,18 +426,88 @@ func (g *Generator) generateEnums(sortedDefs []*ast.Definition, definitionsMap m
 func (g *Generator) generateInputs(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) int {
 	g.metrics.LogProgress("Inputs", "Starting inputs generation")
 
-	// Implementation would go here - simplified for now
-	fmt.Fprintln(g.writer, "== Inputs")
-	fmt.Fprintln(g.writer)
-	fmt.Fprintln(g.writer, "[NOTE]")
-	fmt.Fprintln(g.writer, "====")
-	fmt.Fprintln(g.writer, "Inputs section - implementation in progress")
-	fmt.Fprintln(g.writer, "====")
-	fmt.Fprintln(g.writer)
+	var inputInfos []InputInfo
+	count := 0
 
-	count := 0 // No actual inputs processed yet
+	// Filter for input object definitions
+	for _, def := range sortedDefs {
+		if def.Kind == ast.InputObject {
+			fieldsTableString, err := g.getInputFieldsTableString(def, definitionsMap)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error generating fields table for input %s: %v\n", def.Name, err)
+				fieldsTableString = "[ERROR generating fields table]"
+			}
+
+			processedDesc, changelog := changelog.ProcessWithChangelog(def.Description, parser.ProcessDescription)
+
+			inputInfo := InputInfo{
+				Name:        def.Name,
+				AnchorName:  "input_" + parser.CamelToSnake(def.Name),
+				Description: processedDesc,
+				FieldsTable: fieldsTableString,
+				Changelog:   changelog,
+			}
+			inputInfos = append(inputInfos, inputInfo)
+			count++
+		}
+	}
+
+	if len(inputInfos) > 0 {
+		data := struct {
+			InputsTag string
+			Inputs    []InputInfo
+		}{
+			InputsTag: "== Inputs",
+			Inputs:    inputInfos,
+		}
+
+		tmpl, err := template.New("inputs").Funcs(template.FuncMap{
+			"printAsciiDocTagsTmpl": func(s string) string { return s },
+		}).Parse(templates.InputSectionTemplate)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error parsing input section template: %v\n", err)
+			g.metrics.LogProgress("Inputs", fmt.Sprintf("Generated %d inputs", count))
+			return count
+		}
+
+		err = tmpl.Execute(g.writer, data)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error executing input section template: %v\n", err)
+		}
+	} else {
+		fmt.Fprintln(g.writer, "== Inputs")
+		fmt.Fprintln(g.writer)
+		fmt.Fprintln(g.writer, "[NOTE]")
+		fmt.Fprintln(g.writer, "====")
+		fmt.Fprintln(g.writer, "No input types exist in this schema.")
+		fmt.Fprintln(g.writer, "====")
+		fmt.Fprintln(g.writer)
+	}
+
 	g.metrics.LogProgress("Inputs", fmt.Sprintf("Generated %d inputs", count))
 	return count
+}
+
+func (g *Generator) getInputFieldsTableString(def *ast.Definition, definitionsMap map[string]*ast.Definition) (string, error) {
+	var builder strings.Builder
+
+	builder.WriteString(".input: " + def.Name + "\n")
+	builder.WriteString("[options=\"header\"]\n")
+	builder.WriteString("|===\n")
+	builder.WriteString("| Field | Type | Description \n")
+
+	for _, field := range def.Fields {
+		typeName := parser.ProcessTypeName(field.Type.String(), definitionsMap)
+		processedDesc, changelog := changelog.ProcessWithChangelog(field.Description, parser.ProcessDescription)
+		desc := processedDesc
+		if changelog != "" {
+			desc += "\n" + changelog
+		}
+		fmt.Fprintf(&builder, "| `%s` | %s | %s\n", field.Name, typeName, desc)
+	}
+
+	builder.WriteString("|===\n")
+	return builder.String(), nil
 }
 
 func (g *Generator) generateDirectives(sortedDefs []*ast.Definition) int {

@@ -87,14 +87,17 @@ func TestGenerateWithEmptySchema(t *testing.T) {
 	}
 
 	// Should contain placeholder messages for empty sections
-	expectedPlaceholders := []string{
-		"Inputs section - implementation in progress",
-	}
+	expectedPlaceholders := []string{}
 
 	for _, placeholder := range expectedPlaceholders {
 		if !strings.Contains(output, placeholder) {
 			t.Errorf("Output should contain placeholder %q", placeholder)
 		}
+	}
+
+	// Inputs section should show "No input types exist" when no input types are present
+	if !strings.Contains(output, "No input types exist in this schema") {
+		t.Error("Output should contain 'No input types exist in this schema' when no input types are present")
 	}
 
 	// Enums section should show "No enums exist" when no enums are present
