@@ -10,7 +10,6 @@ import (
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/config"
 )
 
-
 func TestNew(t *testing.T) {
 	cfg := &config.Config{SchemaFile: "test.graphql"}
 	schema := &ast.Schema{Types: make(map[string]*ast.Definition)}
@@ -90,8 +89,7 @@ func TestGenerateWithEmptySchema(t *testing.T) {
 	// Should contain placeholder messages for empty sections
 	expectedPlaceholders := []string{
 		"Enums section - implementation in progress",
-		"Inputs section - implementation in progress", 
-		"Scalars section - implementation in progress",
+		"Inputs section - implementation in progress",
 	}
 
 	for _, placeholder := range expectedPlaceholders {
@@ -99,18 +97,23 @@ func TestGenerateWithEmptySchema(t *testing.T) {
 			t.Errorf("Output should contain placeholder %q", placeholder)
 		}
 	}
-	
+
+	// Scalars section should show "No custom scalars exist" when no custom scalars are present
+	if !strings.Contains(output, "No custom scalars exist in this schema") {
+		t.Error("Output should contain 'No custom scalars exist in this schema' when no custom scalars are present")
+	}
+
 	// Directives section should NOT appear when no directives are present
 	if strings.Contains(output, "== Directives") {
 		t.Error("Output should not contain Directives section when no directives are present")
 	}
-	
+
 	// Should NOT contain mutation/subscription sections since schema.Mutation and schema.Subscription are nil
 	notExpectedSections := []string{
 		"== Mutations",
 		"== Subscriptions",
 	}
-	
+
 	for _, section := range notExpectedSections {
 		if strings.Contains(output, section) {
 			t.Errorf("Output should NOT contain section %q when schema doesn't define it", section)
@@ -207,9 +210,9 @@ func TestGenerateConfigFlags(t *testing.T) {
 	schema := createTestSchema()
 
 	testCases := []struct {
-		name           string
-		configModifier func(*config.Config)
-		shouldContain  []string
+		name             string
+		configModifier   func(*config.Config)
+		shouldContain    []string
 		shouldNotContain []string
 	}{
 		{
@@ -346,7 +349,7 @@ func TestGenerateQueryFieldWithArguments(t *testing.T) {
 
 	expectedContent := []string{
 		"searchUsers",
-		"Search for users", 
+		"Search for users",
 		"query: `String!` , <1>",
 		"limit: `Int` <2>",
 		"): [<<User,`User`>>] <3>",
@@ -597,20 +600,20 @@ func createTestSchema() *ast.Schema {
 func TestGenerateDirectives(t *testing.T) {
 	cfg := config.NewConfig()
 	cfg.SchemaFile = "test.graphql"
-	
+
 	// Create a directive definition for testing
 	sizeDirective := &ast.DirectiveDefinition{
 		Name:        "size",
 		Description: "Directive to specify size constraints",
 		Arguments: []*ast.ArgumentDefinition{
 			{
-				Name: "min",
-				Type: &ast.Type{NamedType: "Int"},
+				Name:         "min",
+				Type:         &ast.Type{NamedType: "Int"},
 				DefaultValue: &ast.Value{Raw: "0", Kind: ast.IntValue},
 			},
 			{
-				Name: "max",
-				Type: &ast.Type{NamedType: "Int", NonNull: true},
+				Name:         "max",
+				Type:         &ast.Type{NamedType: "Int", NonNull: true},
 				DefaultValue: &ast.Value{Raw: "100", Kind: ast.IntValue},
 			},
 		},
@@ -620,14 +623,14 @@ func TestGenerateDirectives(t *testing.T) {
 		},
 		IsRepeatable: false,
 	}
-	
+
 	schema := &ast.Schema{
 		Types: make(map[string]*ast.Definition),
 		Directives: map[string]*ast.DirectiveDefinition{
 			"size": sizeDirective,
 		},
 	}
-	
+
 	var buf bytes.Buffer
 	gen := New(cfg, schema, &buf)
 
@@ -641,34 +644,62 @@ func TestGenerateDirectives(t *testing.T) {
 	if !strings.Contains(output, "== Directives") {
 		t.Error("Output should contain Directives section")
 	}
-	
+
 	// Should contain directive name with @
 	if !strings.Contains(output, "=== @size") {
 		t.Error("Output should contain directive name with @ prefix")
 	}
-	
+
 	// Should contain directive description
 	if !strings.Contains(output, "Directive to specify size constraints") {
 		t.Error("Output should contain directive description")
 	}
-	
+
 	// Should contain directive signature
 	if !strings.Contains(output, "directive @size") {
 		t.Error("Output should contain directive signature")
 	}
-	
+
 	// Should contain arguments table
 	if !strings.Contains(output, "Arguments") {
 		t.Error("Output should contain arguments table")
 	}
-	
+
 	// Should contain usage locations
 	if !strings.Contains(output, "Usage Locations") {
 		t.Error("Output should contain usage locations")
 	}
-	
+
 	// Should contain AsciiDoc tags
 	if !strings.Contains(output, "// tag::directive-size[]") {
 		t.Error("Output should contain directive AsciiDoc tags")
+	}
+}
+
+func TestIsBuiltInScalar(t *testing.T) {
+	testCases := []struct {
+		name     string
+		typeName string
+		expected bool
+	}{
+		{"String", "String", true},
+		{"Int", "Int", true},
+		{"Float", "Float", true},
+		{"Boolean", "Boolean", true},
+		{"ID", "ID", true},
+		{"Date", "Date", false},
+		{"Url", "Url", false},
+		{"ISO8601DateTime", "ISO8601DateTime", false},
+		{"CustomScalar", "CustomScalar", false},
+		{"DateTime", "DateTime", false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := isBuiltInScalar(tc.typeName)
+			if result != tc.expected {
+				t.Errorf("isBuiltInScalar(%q) = %v, expected %v", tc.typeName, result, tc.expected)
+			}
+		})
 	}
 }

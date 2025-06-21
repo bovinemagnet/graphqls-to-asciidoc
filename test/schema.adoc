@@ -1,6 +1,6 @@
 = GraphQL Documentation
 :toc: left
-:revdate: Sat, 21 Jun 2025 11:05:23 AEST
+:revdate: Sat, 21 Jun 2025 11:29:29 AEST
 :commandline: ./graphqls-to-asciidoc -s test/schema.graphql -o test/schema.adoc --verbose
 :sourceFile: test/schema.graphql
 :reproducible:
@@ -1201,10 +1201,59 @@ directive @length(min: Int = 0, max: Int! = 2147483647, message: String = "graph
 // end::directive-length[]
 
 // end::DIRECTIVES[]
+
+// tag::scalar[]
+[[scalars]]
 == Scalars
 
-[NOTE]
-====
-Scalars section - implementation in progress
-====
+GraphQL specifies a basic set of well-defined Scalar types: Int, Float, String, Boolean, and ID.
 
+The following custom scalar types are defined in this schema:
+// tag::scalar-Date[]
+[[scalar-Date]]
+=== Date
+
+// tag::scalar-description-Date[]
+# tag::SCALAR_DATE_DES[]
+A date string scalar
+# end::SCALAR_DATE_DES[]
+// end::scalar-description-Date[]
+
+
+// end::scalar-Date[]
+
+
+// tag::scalar-ISO8601DateTime[]
+[[scalar-ISO8601DateTime]]
+=== ISO8601DateTime
+
+// tag::scalar-description-ISO8601DateTime[]
+A custom scalar that enforces full ISO-8601 date‐time strings with time‐zone offsets.
+
+.Example values:
+* "2025-06-06T00:00:00Z"
+* "2025-06-06T14:30:45+10:00"
+* "2025-06-06T18:15:00-05:00"
+Internally, this should map to something like java.time.OffsetDateTime
+ or java.time.Instant (if you normalize to UTC on parse).
+// end::scalar-description-ISO8601DateTime[]
+
+
+// end::scalar-ISO8601DateTime[]
+
+
+// tag::scalar-Url[]
+[[scalar-Url]]
+=== Url
+
+// tag::scalar-description-Url[]
+# tag::SCALAR_URL_DES[]
+A URL string scalar
+# end::SCALAR_URL_DES[]
+// end::scalar-description-Url[]
+
+
+// end::scalar-Url[]
+
+
+// end::scalar[]

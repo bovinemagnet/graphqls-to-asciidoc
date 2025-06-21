@@ -160,7 +160,7 @@ func (g *Generator) generateQueries(definitionsMap map[string]*ast.Definition) i
 	}
 
 	g.metrics.LogProgress("Queries", "Starting query generation")
-	
+
 	fmt.Fprintln(g.writer, "== Query")
 	fmt.Fprintln(g.writer)
 	fmt.Fprintln(g.writer)
@@ -178,7 +178,7 @@ func (g *Generator) generateQueries(definitionsMap map[string]*ast.Definition) i
 		g.generateQueryField(f, definitionsMap)
 		count++
 	}
-	
+
 	g.metrics.LogProgress("Queries", fmt.Sprintf("Generated %d queries", count))
 	return count
 }
@@ -264,7 +264,7 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 // Placeholder implementations for other generators
 func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition) int {
 	g.metrics.LogProgress("Mutations", "Starting mutations generation")
-	
+
 	// Implementation would go here - simplified for now
 	fmt.Fprintln(g.writer, "== Mutations")
 	fmt.Fprintln(g.writer)
@@ -273,15 +273,15 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 	fmt.Fprintln(g.writer, "Mutations section - implementation in progress")
 	fmt.Fprintln(g.writer, "====")
 	fmt.Fprintln(g.writer)
-	
-	count := 0  // No actual mutations processed yet
+
+	count := 0 // No actual mutations processed yet
 	g.metrics.LogProgress("Mutations", fmt.Sprintf("Generated %d mutations", count))
 	return count
 }
 
 func (g *Generator) generateSubscriptions(definitionsMap map[string]*ast.Definition) int {
 	g.metrics.LogProgress("Subscriptions", "Starting subscriptions generation")
-	
+
 	// Implementation would go here - simplified for now
 	fmt.Fprintln(g.writer, "== Subscriptions")
 	fmt.Fprintln(g.writer)
@@ -290,15 +290,15 @@ func (g *Generator) generateSubscriptions(definitionsMap map[string]*ast.Definit
 	fmt.Fprintln(g.writer, "Subscriptions section - implementation in progress")
 	fmt.Fprintln(g.writer, "====")
 	fmt.Fprintln(g.writer)
-	
-	count := 0  // No actual subscriptions processed yet
+
+	count := 0 // No actual subscriptions processed yet
 	g.metrics.LogProgress("Subscriptions", fmt.Sprintf("Generated %d subscriptions", count))
 	return count
 }
 
 func (g *Generator) generateTypes(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) int {
 	g.metrics.LogProgress("Types", "Starting types generation")
-	
+
 	var typeInfos []TypeInfo
 	count := 0
 
@@ -351,14 +351,14 @@ func (g *Generator) generateTypes(sortedDefs []*ast.Definition, definitionsMap m
 			fmt.Fprintf(os.Stderr, "Error executing type section template: %v\n", err)
 		}
 	}
-	
+
 	g.metrics.LogProgress("Types", fmt.Sprintf("Generated %d types", count))
 	return count
 }
 
 func (g *Generator) generateEnums(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) int {
 	g.metrics.LogProgress("Enums", "Starting enums generation")
-	
+
 	// Implementation would go here - simplified for now
 	fmt.Fprintln(g.writer, "== Enums")
 	fmt.Fprintln(g.writer)
@@ -367,15 +367,15 @@ func (g *Generator) generateEnums(sortedDefs []*ast.Definition, definitionsMap m
 	fmt.Fprintln(g.writer, "Enums section - implementation in progress")
 	fmt.Fprintln(g.writer, "====")
 	fmt.Fprintln(g.writer)
-	
-	count := 0  // No actual enums processed yet
+
+	count := 0 // No actual enums processed yet
 	g.metrics.LogProgress("Enums", fmt.Sprintf("Generated %d enums", count))
 	return count
 }
 
 func (g *Generator) generateInputs(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) int {
 	g.metrics.LogProgress("Inputs", "Starting inputs generation")
-	
+
 	// Implementation would go here - simplified for now
 	fmt.Fprintln(g.writer, "== Inputs")
 	fmt.Fprintln(g.writer)
@@ -384,20 +384,20 @@ func (g *Generator) generateInputs(sortedDefs []*ast.Definition, definitionsMap 
 	fmt.Fprintln(g.writer, "Inputs section - implementation in progress")
 	fmt.Fprintln(g.writer, "====")
 	fmt.Fprintln(g.writer)
-	
-	count := 0  // No actual inputs processed yet
+
+	count := 0 // No actual inputs processed yet
 	g.metrics.LogProgress("Inputs", fmt.Sprintf("Generated %d inputs", count))
 	return count
 }
 
 func (g *Generator) generateDirectives(sortedDefs []*ast.Definition) int {
 	g.metrics.LogProgress("Directives", "Starting directives generation")
-	
+
 	if len(g.schema.Directives) == 0 {
 		g.metrics.LogProgress("Directives", "No directives found")
 		return 0
 	}
-	
+
 	fmt.Fprintln(g.writer, "== Directives")
 	fmt.Fprintln(g.writer)
 	fmt.Fprintln(g.writer, "// tag::DIRECTIVES[]")
@@ -416,9 +416,9 @@ func (g *Generator) generateDirectives(sortedDefs []*ast.Definition) int {
 		g.generateDirective(directive)
 		count++
 	}
-	
+
 	fmt.Fprintln(g.writer, "// end::DIRECTIVES[]")
-	
+
 	g.metrics.LogProgress("Directives", fmt.Sprintf("Generated %d directives", count))
 	return count
 }
@@ -427,7 +427,7 @@ func (g *Generator) generateDirectives(sortedDefs []*ast.Definition) int {
 func (g *Generator) generateDirective(directive *ast.DirectiveDefinition) {
 	fmt.Fprintf(g.writer, "// tag::directive-%s[]\n", directive.Name)
 	fmt.Fprintln(g.writer)
-	fmt.Fprintf(g.writer, "[[directive_%s]]\n", strings.ToLower(directive.Name))  
+	fmt.Fprintf(g.writer, "[[directive_%s]]\n", strings.ToLower(directive.Name))
 	fmt.Fprintf(g.writer, "=== @%s\n", directive.Name)
 	fmt.Fprintln(g.writer)
 
@@ -446,7 +446,7 @@ func (g *Generator) generateDirective(directive *ast.DirectiveDefinition) {
 	fmt.Fprintln(g.writer, "[source, graphql]")
 	fmt.Fprintln(g.writer, "----")
 	fmt.Fprintf(g.writer, "directive @%s", directive.Name)
-	
+
 	if len(directive.Arguments) > 0 {
 		fmt.Fprint(g.writer, "(")
 		for i, arg := range directive.Arguments {
@@ -460,7 +460,7 @@ func (g *Generator) generateDirective(directive *ast.DirectiveDefinition) {
 		}
 		fmt.Fprint(g.writer, ")")
 	}
-	
+
 	if len(directive.Locations) > 0 {
 		fmt.Fprint(g.writer, " on ")
 		for i, location := range directive.Locations {
@@ -470,7 +470,7 @@ func (g *Generator) generateDirective(directive *ast.DirectiveDefinition) {
 			fmt.Fprint(g.writer, string(location))
 		}
 	}
-	
+
 	fmt.Fprintln(g.writer)
 	fmt.Fprintln(g.writer, "----")
 	fmt.Fprintf(g.writer, "// end::directive-signature-%s[]\n", directive.Name)
@@ -483,18 +483,18 @@ func (g *Generator) generateDirective(directive *ast.DirectiveDefinition) {
 		fmt.Fprintln(g.writer, "[options=\"header\",stripes=\"even\"]")
 		fmt.Fprintln(g.writer, "|===")
 		fmt.Fprintln(g.writer, "| Argument | Type | Default | Description")
-		
+
 		for _, arg := range directive.Arguments {
 			fmt.Fprintf(g.writer, "| `%s`", arg.Name)
 			fmt.Fprintf(g.writer, " | `%s`", arg.Type.String())
-			
+
 			// Default value
 			if arg.DefaultValue != nil {
 				fmt.Fprintf(g.writer, " | `%s`", arg.DefaultValue.String())
 			} else {
 				fmt.Fprint(g.writer, " | _none_")
 			}
-			
+
 			// Description
 			if arg.Description != "" {
 				processedDesc := parser.ProcessDescription(arg.Description)
@@ -504,7 +504,7 @@ func (g *Generator) generateDirective(directive *ast.DirectiveDefinition) {
 			}
 			fmt.Fprintln(g.writer)
 		}
-		
+
 		fmt.Fprintln(g.writer, "|===")
 		fmt.Fprintf(g.writer, "// end::directive-arguments-%s[]\n", directive.Name)
 		fmt.Fprintln(g.writer)
@@ -535,17 +535,47 @@ func (g *Generator) generateDirective(directive *ast.DirectiveDefinition) {
 
 func (g *Generator) generateScalars(sortedDefs []*ast.Definition) int {
 	g.metrics.LogProgress("Scalars", "Starting scalars generation")
-	
-	// Implementation would go here - simplified for now
-	fmt.Fprintln(g.writer, "== Scalars")
-	fmt.Fprintln(g.writer)
-	fmt.Fprintln(g.writer, "[NOTE]")
-	fmt.Fprintln(g.writer, "====")
-	fmt.Fprintln(g.writer, "Scalars section - implementation in progress")
-	fmt.Fprintln(g.writer, "====")
-	fmt.Fprintln(g.writer)
-	
-	count := 0  // No actual scalars processed yet
+
+	var scalarInfos []ScalarInfo
+	count := 0
+
+	// Filter for scalar definitions and exclude built-in scalars
+	for _, def := range sortedDefs {
+		if def.Kind == ast.Scalar && !isBuiltInScalar(def.Name) {
+			// Process description and extract changelog
+			processedDesc, _ := changelog.ProcessWithChangelog(def.Description, parser.ProcessDescription)
+
+			scalarInfo := ScalarInfo{
+				Name:        def.Name,
+				Description: processedDesc,
+			}
+			scalarInfos = append(scalarInfos, scalarInfo)
+			count++
+		}
+	}
+
+	// Prepare data for template
+	data := ScalarData{
+		ScalarTag:    "== Scalars",
+		FoundScalars: len(scalarInfos) > 0,
+		Scalars:      scalarInfos,
+	}
+
+	// Execute template
+	tmpl, err := template.New("scalars").Funcs(template.FuncMap{
+		"printAsciiDocTagsTmpl": func(s string) string { return s },
+	}).Parse(templates.ScalarTemplate)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing scalar template: %v\n", err)
+		g.metrics.LogProgress("Scalars", fmt.Sprintf("Generated %d scalars", count))
+		return count
+	}
+
+	err = tmpl.Execute(g.writer, data)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error executing scalar template: %v\n", err)
+	}
+
 	g.metrics.LogProgress("Scalars", fmt.Sprintf("Generated %d scalars", count))
 	return count
 }
@@ -590,14 +620,25 @@ func (g *Generator) getTypeFieldsTableString(t *ast.Definition, definitionsMap m
 
 func isBuiltInType(typeName string) bool {
 	builtInTypes := map[string]bool{
+		"String":       true,
+		"Int":          true,
+		"Float":        true,
+		"Boolean":      true,
+		"ID":           true,
+		"Query":        true,
+		"Mutation":     true,
+		"Subscription": true,
+	}
+	return builtInTypes[typeName]
+}
+
+func isBuiltInScalar(typeName string) bool {
+	builtInScalars := map[string]bool{
 		"String":  true,
 		"Int":     true,
 		"Float":   true,
 		"Boolean": true,
 		"ID":      true,
-		"Query":   true,
-		"Mutation": true,
-		"Subscription": true,
 	}
-	return builtInTypes[typeName]
+	return builtInScalars[typeName]
 }
