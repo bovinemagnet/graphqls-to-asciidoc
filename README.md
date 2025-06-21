@@ -50,35 +50,55 @@ make build
 
 ### Basic Usage
 ```bash
-./graphqls-to-asciidoc -schema ./schema.graphqls > documentation.adoc
+# Generate documentation to stdout
+graphqls-to-asciidoc -s schema.graphql
+
+# Generate documentation to a file  
+graphqls-to-asciidoc -s schema.graphql -o documentation.adoc
 ```
 
 ### Advanced Usage
 ```bash
 # Exclude internal queries and disable mutations section
-./graphqls-to-asciidoc -schema ./schema.graphql -exclude-internal -mutations=false > api-docs.adoc
+graphqls-to-asciidoc -s schema.graphql -o api-docs.adoc -x -m=false
 
-# Generate only types and enums
-./graphqls-to-asciidoc -schema ./schema.graphql -queries=false -mutations=false -subscriptions=false > types-only.adoc
+# Generate only types and enums using short flags
+graphqls-to-asciidoc -s schema.graphql -o types-only.adoc -q=false -m=false
 
-# Check version
-./graphqls-to-asciidoc -version
+# Generate comprehensive documentation with all sections
+graphqls-to-asciidoc -s schema.graphql -o full-docs.adoc --subscriptions
+
+# Check version and help
+graphqls-to-asciidoc -v
+graphqls-to-asciidoc -h
 ```
 
 ### Command-Line Options
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-schema` | Path to GraphQL schema file | **Required** |
-| `-version` | Show version information | false |
-| `-exclude-internal` | Exclude queries/mutations marked as INTERNAL | false |
-| `-queries` | Include queries section | true |
-| `-mutations` | Include mutations section | true |
-| `-subscriptions` | Include subscriptions section | true |
-| `-types` | Include types section | true |
-| `-enums` | Include enums section | true |
-| `-inputs` | Include inputs section | true |
-| `-directives` | Include directives section | true |
-| `-scalars` | Include scalars section | true |
+
+#### Core Options
+| Flag | Short | Description | Default |
+|------|-------|-------------|---------|
+| `--schema` | `-s` | Path to GraphQL schema file | **Required** |
+| `--output` | `-o` | Output file path | stdout |
+| `--help` | `-h` | Show detailed help information | - |
+| `--version` | `-v` | Show version information | - |
+
+#### Control Options  
+| Flag | Short | Description | Default |
+|------|-------|-------------|---------|
+| `--exclude-internal` | `-x` | Exclude queries/mutations marked as INTERNAL | false |
+
+#### Section Control
+| Flag | Short | Description | Default |
+|------|-------|-------------|---------|
+| `--queries` | `-q` | Include queries section | true |
+| `--mutations` | `-m` | Include mutations section | true |
+| `--subscriptions` | - | Include subscriptions section | false |
+| `--types` | `-t` | Include types section | true |
+| `--enums` | `-e` | Include enums section | true |
+| `--inputs` | `-i` | Include inputs section | true |
+| `--directives` | `-d` | Include directives section | true |
+| `--scalars` | - | Include scalars section | true |
 
 ## GraphQL Schema Enhancements
 

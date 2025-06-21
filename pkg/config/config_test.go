@@ -42,7 +42,7 @@ func TestValidate(t *testing.T) {
 	}{
 		{
 			name:        "valid schema file",
-			schemaFile:  "schema.graphql",
+			schemaFile:  "../../test/schema.graphql",
 			expectError: false,
 		},
 		{

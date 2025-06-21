@@ -31,9 +31,14 @@ func main() {
 		os.Exit(0)
 	}
 
+	// Handle help flag
+	if cfg.HandleHelp() {
+		os.Exit(0)
+	}
+
 	// Validate configuration
 	if err := cfg.Validate(); err != nil {
-		config.PrintUsage()
+		config.PrintError(err.Error())
 	}
 
 	// Read schema file
@@ -73,8 +78,17 @@ func main() {
 		}
 	}
 
+	// Get output writer
+	outputWriter, shouldClose, err := cfg.GetOutputWriter()
+	if err != nil {
+		log.Fatalf("Failed to setup output: %v", err)
+	}
+	if shouldClose {
+		defer outputWriter.Close()
+	}
+
 	// Generate AsciiDoc documentation
-	gen := generator.New(cfg, schema)
+	gen := generator.New(cfg, schema, outputWriter)
 	if err := gen.Generate(); err != nil {
 		log.Fatalf("Failed to generate documentation: %v", err)
 	}

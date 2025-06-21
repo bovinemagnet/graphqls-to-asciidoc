@@ -2,8 +2,6 @@ package generator
 
 import (
 	"bytes"
-	"io"
-	"os"
 	"strings"
 	"testing"
 
@@ -12,27 +10,13 @@ import (
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/config"
 )
 
-// captureOutput captures stdout during function execution
-func captureOutput(f func()) string {
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	f()
-
-	w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
-	return buf.String()
-}
 
 func TestNew(t *testing.T) {
 	cfg := &config.Config{SchemaFile: "test.graphql"}
 	schema := &ast.Schema{Types: make(map[string]*ast.Definition)}
+	var buf bytes.Buffer
 
-	gen := New(cfg, schema)
+	gen := New(cfg, schema, &buf)
 
 	if gen == nil {
 		t.Fatal("New() returned nil")
@@ -43,16 +27,19 @@ func TestNew(t *testing.T) {
 	if gen.schema != schema {
 		t.Error("Schema not set correctly")
 	}
+	if gen.writer != &buf {
+		t.Error("Writer not set correctly")
+	}
 }
 
 func TestGeneratorPrintHeader(t *testing.T) {
 	cfg := &config.Config{SchemaFile: "test/schema.graphql"}
 	schema := &ast.Schema{Types: make(map[string]*ast.Definition)}
-	gen := New(cfg, schema)
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
 
-	output := captureOutput(func() {
-		gen.printHeader()
-	})
+	gen.printHeader()
+	output := buf.String()
 
 	expectedContains := []string{
 		"= GraphQL Documentation",
@@ -83,14 +70,14 @@ func TestGenerateWithEmptySchema(t *testing.T) {
 	cfg := config.NewConfig()
 	cfg.SchemaFile = "empty.graphql"
 	schema := &ast.Schema{Types: make(map[string]*ast.Definition)}
-	gen := New(cfg, schema)
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
 
-	output := captureOutput(func() {
-		err := gen.Generate()
-		if err != nil {
-			t.Errorf("Generate() returned error: %v", err)
-		}
-	})
+	err := gen.Generate()
+	if err != nil {
+		t.Errorf("Generate() returned error: %v", err)
+	}
+	output := buf.String()
 
 	// Should at least contain header
 	if !strings.Contains(output, "= GraphQL Documentation") {
@@ -175,14 +162,14 @@ func TestGenerateWithQuerySchema(t *testing.T) {
 		},
 	}
 
-	gen := New(cfg, schema)
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
 
-	output := captureOutput(func() {
-		err := gen.Generate()
-		if err != nil {
-			t.Errorf("Generate() returned error: %v", err)
-		}
-	})
+	err := gen.Generate()
+	if err != nil {
+		t.Errorf("Generate() returned error: %v", err)
+	}
+	output := buf.String()
 
 	// Check for query-specific content
 	expectedQueryContent := []string{
@@ -275,11 +262,11 @@ func TestGenerateConfigFlags(t *testing.T) {
 			cfg.SchemaFile = "test.graphql"
 			tc.configModifier(cfg)
 
-			gen := New(cfg, schema)
+			var buf bytes.Buffer
+			gen := New(cfg, schema, &buf)
 
-			output := captureOutput(func() {
-				gen.Generate()
-			})
+			gen.Generate()
+			output := buf.String()
 
 			for _, expected := range tc.shouldContain {
 				if !strings.Contains(output, expected) {
@@ -344,11 +331,11 @@ func TestGenerateQueryFieldWithArguments(t *testing.T) {
 		},
 	}
 
-	gen := New(cfg, schema)
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
 
-	output := captureOutput(func() {
-		gen.Generate()
-	})
+	gen.Generate()
+	output := buf.String()
 
 	expectedContent := []string{
 		"searchUsers",
@@ -397,11 +384,11 @@ func TestGenerateTypes(t *testing.T) {
 		},
 	}
 
-	gen := New(cfg, schema)
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
 
-	output := captureOutput(func() {
-		gen.Generate()
-	})
+	gen.Generate()
+	output := buf.String()
 
 	expectedContent := []string{
 		"== Types",
@@ -456,7 +443,8 @@ func TestIsBuiltInType(t *testing.T) {
 func TestGetTypeFieldsTableString(t *testing.T) {
 	cfg := config.NewConfig()
 	schema := &ast.Schema{Types: make(map[string]*ast.Definition)}
-	gen := New(cfg, schema)
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
 
 	userDef := &ast.Definition{
 		Kind: ast.Object,
@@ -529,11 +517,11 @@ func TestExcludeInternal(t *testing.T) {
 		},
 	}
 
-	gen := New(cfg, schema)
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
 
-	output := captureOutput(func() {
-		gen.Generate()
-	})
+	gen.Generate()
+	output := buf.String()
 
 	// Should contain public query
 	if !strings.Contains(output, "publicQuery") {

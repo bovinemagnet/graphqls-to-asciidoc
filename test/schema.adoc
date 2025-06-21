@@ -1,7 +1,7 @@
 = GraphQL Documentation
 :toc: left
-:revdate: Fri, 20 Jun 2025 13:08:55 AEST
-:commandline: /tmp/go-build2098669611/b001/exe/main -schema test/schema.graphql
+:revdate: Sat, 21 Jun 2025 10:08:28 AEST
+:commandline: bin/graphqls-to-asciidoc -s test/schema.graphql -o test/schema.adoc
 :sourceFile: test/schema.graphql
 :reproducible:
 :page-partial:
@@ -23,7 +23,6 @@ Last generated _{revdate}_
 
 
 The root query
-
 // tag::query-Tweet[]
 
 [[query_tweet]]
@@ -31,10 +30,14 @@ The root query
 
 
 // tag::method-description-Tweet[]
+[[get-tweet]]
 Get a tweet by its ID
+
+This is the primary method for retrieving individual tweets.
+For bulk operations, see <<get-tweets>>.
+
 .Arguments:
 * `id`: the id of the tweet to search by.
-
 // end::method-description-Tweet[]
 
 // tag::method-signature-Tweet[]
@@ -42,13 +45,12 @@ Get a tweet by its ID
 [source, kotlin]
 ----
 Tweet(
-  id: ID! <1> 
-): Tweet <2>
+  id: `ID!` <1> 
+): <<Tweet,`Tweet`>> <2>
 ----
 // end::method-signature-Tweet[]
 
 // tag::method-args-Tweet[]
-
 // end::method-args-Tweet[]
 
 // tag::query-name-Tweet[]
@@ -73,8 +75,13 @@ Tweet(
 
 
 // tag::method-description-Tweets[]
+[[get-tweets]]
 Get a list of tweets, remember that it is `2024-01-08` for testing dates in the conversion.
 
+**Performance notes:**
+* Use pagination with `limit` and `skip` parameters
+* For single tweet access, use <<get-tweet,the Tweet query>>
+* See <<tweets-meta>> for metadata about the collection
 // end::method-description-Tweets[]
 
 // tag::method-signature-Tweets[]
@@ -82,16 +89,15 @@ Get a list of tweets, remember that it is `2024-01-08` for testing dates in the 
 [source, kotlin]
 ----
 Tweets(
-  limit: Int! , <1> 
-  skip: Int , <2> 
-  sort_field: String , <3> 
-  sort_order: String <4> 
-): [Tweet] <5>
+  limit: `Int!` , <1> 
+  skip: `Int` , <2> 
+  sort_field: `String` , <3> 
+  sort_order: `String` <4> 
+): [<<Tweet,`Tweet`>>] <5>
 ----
 // end::method-signature-Tweets[]
 
 // tag::method-args-Tweets[]
-
 // end::method-args-Tweets[]
 
 // tag::query-name-Tweets[]
@@ -104,9 +110,9 @@ Tweets(
 
 // tag::arguments-Tweets[]
 .Arguments
-* `limit : Int!` + 
-* `skip : Int` + 
-* `sort_field : String` + 
+* `limit : Int!`
+* `skip : Int`
+* `sort_field : String`
 * `sort_order : String`
 // end::arguments-Tweets[]
 
@@ -119,14 +125,16 @@ Tweets(
 
 
 // tag::method-description-TweetsMeta[]
+[[tweets-meta]]
 Get meta information about the list of tweets. This tests the list to query options.
+
+This provides pagination and sorting metadata for <<get-tweets,the Tweets query>>.
 
 * `limit`:  the max numer; _Required_
 * `skip`: how many to skip
 * `sort_field`: what to sort on
 * `sort_order`: which direction to do you want to sort.
 * _RETURNS_: an array of `Tweet`.
-
 // end::method-description-TweetsMeta[]
 
 // tag::method-signature-TweetsMeta[]
@@ -134,12 +142,11 @@ Get meta information about the list of tweets. This tests the list to query opti
 [source, kotlin]
 ----
 TweetsMeta(
-): Meta <1>
+): <<Meta,`Meta`>> <1>
 ----
 // end::method-signature-TweetsMeta[]
 
 // tag::method-args-TweetsMeta[]
-
 // end::method-args-TweetsMeta[]
 
 // tag::query-name-TweetsMeta[]
@@ -160,7 +167,6 @@ TweetsMeta(
 
 // tag::method-description-User[]
 Get a user by its ID
-
 // end::method-description-User[]
 
 // tag::method-signature-User[]
@@ -168,13 +174,12 @@ Get a user by its ID
 [source, kotlin]
 ----
 User(
-  id: ID! <1> 
-): User <2>
+  id: `ID!` <1> 
+): <<User,`User`>> <2>
 ----
 // end::method-signature-User[]
 
 // tag::method-args-User[]
-
 // end::method-args-User[]
 
 // tag::query-name-User[]
@@ -200,7 +205,6 @@ User(
 
 // tag::method-description-Notifications[]
 Get a list of users
-
 // end::method-description-Notifications[]
 
 // tag::method-signature-Notifications[]
@@ -208,13 +212,12 @@ Get a list of users
 [source, kotlin]
 ----
 Notifications(
-  limit: Int <1> 
-): [Notification] <2>
+  limit: `Int` <1> 
+): [<<Notification,`Notification`>>] <2>
 ----
 // end::method-signature-Notifications[]
 
 // tag::method-args-Notifications[]
-
 // end::method-args-Notifications[]
 
 // tag::query-name-Notifications[]
@@ -240,7 +243,6 @@ Notifications(
 
 // tag::method-description-NotificationsMeta[]
 Get meta information about the list of notifications
-
 // end::method-description-NotificationsMeta[]
 
 // tag::method-signature-NotificationsMeta[]
@@ -248,12 +250,11 @@ Get meta information about the list of notifications
 [source, kotlin]
 ----
 NotificationsMeta(
-): Meta <1>
+): <<Meta,`Meta`>> <1>
 ----
 // end::method-signature-NotificationsMeta[]
 
 // tag::method-args-NotificationsMeta[]
-
 // end::method-args-NotificationsMeta[]
 
 // tag::query-name-NotificationsMeta[]
@@ -274,7 +275,6 @@ NotificationsMeta(
 
 // tag::method-description-TweetSentiment[]
 Get a tweet's sentiment by its ID
-
 // end::method-description-TweetSentiment[]
 
 // tag::method-signature-TweetSentiment[]
@@ -282,13 +282,12 @@ Get a tweet's sentiment by its ID
 [source, kotlin]
 ----
 TweetSentiment(
-  id: ID! <1> 
-): Sentiment <2>
+  id: `ID!` <1> 
+): <<Sentiment,`Sentiment`>> <2>
 ----
 // end::method-signature-TweetSentiment[]
 
 // tag::method-args-TweetSentiment[]
-
 // end::method-args-TweetSentiment[]
 
 // tag::query-name-TweetSentiment[]
@@ -296,7 +295,7 @@ TweetSentiment(
 // end::query-name-TweetSentiment[]
 
 // tag::query-return-TweetSentiment[]
-*Return:* `Sentiment`
+*Return:* <<Sentiment,`Sentiment`>>
 // end::query-return-TweetSentiment[]
 
 // tag::arguments-TweetSentiment[]
@@ -314,7 +313,6 @@ TweetSentiment(
 
 // tag::method-description-TweetSentiments1[]
 1: Get a tweet's sentiment by its IDs (plural)
-
 // end::method-description-TweetSentiments1[]
 
 // tag::method-signature-TweetSentiments1[]
@@ -322,13 +320,12 @@ TweetSentiment(
 [source, kotlin]
 ----
 TweetSentiments1(
-  id: [ID] <1> 
-): [Sentiment] <2>
+  id: [`ID`] <1> 
+): [<<Sentiment,`Sentiment`>>] <2>
 ----
 // end::method-signature-TweetSentiments1[]
 
 // tag::method-args-TweetSentiments1[]
-
 // end::method-args-TweetSentiments1[]
 
 // tag::query-name-TweetSentiments1[]
@@ -336,7 +333,7 @@ TweetSentiments1(
 // end::query-name-TweetSentiments1[]
 
 // tag::query-return-TweetSentiments1[]
-*Return:* `[Sentiment]`
+*Return:* [<<Sentiment,`Sentiment`>>]
 // end::query-return-TweetSentiments1[]
 
 // tag::arguments-TweetSentiments1[]
@@ -354,7 +351,6 @@ TweetSentiments1(
 
 // tag::method-description-TweetSentiments2[]
 2: Get a tweet's sentiment by its IDs (plural)
-
 // end::method-description-TweetSentiments2[]
 
 // tag::method-signature-TweetSentiments2[]
@@ -362,13 +358,12 @@ TweetSentiments1(
 [source, kotlin]
 ----
 TweetSentiments2(
-  id: [ID!] <1> 
-): [Sentiment] <2>
+  id: [`ID!`] <1> 
+): [<<Sentiment,`Sentiment`>>] <2>
 ----
 // end::method-signature-TweetSentiments2[]
 
 // tag::method-args-TweetSentiments2[]
-
 // end::method-args-TweetSentiments2[]
 
 // tag::query-name-TweetSentiments2[]
@@ -376,7 +371,7 @@ TweetSentiments2(
 // end::query-name-TweetSentiments2[]
 
 // tag::query-return-TweetSentiments2[]
-*Return:* `[Sentiment]`
+*Return:* [<<Sentiment,`Sentiment`>>]
 // end::query-return-TweetSentiments2[]
 
 // tag::arguments-TweetSentiments2[]
@@ -394,7 +389,6 @@ TweetSentiments2(
 
 // tag::method-description-TweetSentiments3[]
 3: Get a tweet's sentiment by its IDs (plural)
-
 // end::method-description-TweetSentiments3[]
 
 // tag::method-signature-TweetSentiments3[]
@@ -402,13 +396,12 @@ TweetSentiments2(
 [source, kotlin]
 ----
 TweetSentiments3(
-  id: [ID]! <1> 
-): [Sentiment] <2>
+  id: [`ID`]! <1> 
+): [<<Sentiment,`Sentiment`>>] <2>
 ----
 // end::method-signature-TweetSentiments3[]
 
 // tag::method-args-TweetSentiments3[]
-
 // end::method-args-TweetSentiments3[]
 
 // tag::query-name-TweetSentiments3[]
@@ -416,7 +409,7 @@ TweetSentiments3(
 // end::query-name-TweetSentiments3[]
 
 // tag::query-return-TweetSentiments3[]
-*Return:* `[Sentiment]`
+*Return:* [<<Sentiment,`Sentiment`>>]
 // end::query-return-TweetSentiments3[]
 
 // tag::arguments-TweetSentiments3[]
@@ -434,7 +427,6 @@ TweetSentiments3(
 
 // tag::method-description-TweetSentiments4[]
 4: Get a tweet's sentiment by its IDs (plural)
-
 // end::method-description-TweetSentiments4[]
 
 // tag::method-signature-TweetSentiments4[]
@@ -442,13 +434,12 @@ TweetSentiments3(
 [source, kotlin]
 ----
 TweetSentiments4(
-  id: [ID!]! <1> 
-): [Sentiment] <2>
+  id: [`ID!`]! <1> 
+): [<<Sentiment,`Sentiment`>>] <2>
 ----
 // end::method-signature-TweetSentiments4[]
 
 // tag::method-args-TweetSentiments4[]
-
 // end::method-args-TweetSentiments4[]
 
 // tag::query-name-TweetSentiments4[]
@@ -456,7 +447,7 @@ TweetSentiments4(
 // end::query-name-TweetSentiments4[]
 
 // tag::query-return-TweetSentiments4[]
-*Return:* `[Sentiment]`
+*Return:* [<<Sentiment,`Sentiment`>>]
 // end::query-return-TweetSentiments4[]
 
 // tag::arguments-TweetSentiments4[]
@@ -469,7 +460,7 @@ TweetSentiments4(
 // tag::query-tweetSentiments5[]
 
 [[query_tweetsentiments5]]
-=== tweetSentiments5 [INTERNAL]
+=== tweetSentiments5
 
 
 // tag::method-description-tweetSentiments5[]
@@ -479,7 +470,6 @@ An example of an internal query.
 
 * `id`: A list of id's that are _REQUIRED_
 * _RETURNS_ :  a list of Sentiments
-
 // end::method-description-tweetSentiments5[]
 
 // tag::method-signature-tweetSentiments5[]
@@ -487,13 +477,12 @@ An example of an internal query.
 [source, kotlin]
 ----
 tweetSentiments5(
-  id: [ID!]! <1> 
-): [Sentiment] <2>
+  id: [`ID!`]! <1> 
+): [<<Sentiment,`Sentiment`>>] <2>
 ----
 // end::method-signature-tweetSentiments5[]
 
 // tag::method-args-tweetSentiments5[]
-
 // end::method-args-tweetSentiments5[]
 
 // tag::query-name-tweetSentiments5[]
@@ -501,7 +490,7 @@ tweetSentiments5(
 // end::query-name-tweetSentiments5[]
 
 // tag::query-return-tweetSentiments5[]
-*Return:* `[Sentiment]`
+*Return:* [<<Sentiment,`Sentiment`>>]
 // end::query-return-tweetSentiments5[]
 
 // tag::arguments-tweetSentiments5[]
@@ -514,7 +503,7 @@ tweetSentiments5(
 // tag::query-tweetSentimentsDep[]
 
 [[query_tweetsentimentsdep]]
-=== tweetSentimentsDep [INTERNAL]
+=== tweetSentimentsDep
 
 
 // tag::method-description-tweetSentimentsDep[]
@@ -526,7 +515,6 @@ An example of an internal query.
 `@deprecated(reason: "Internal test")`
 * `id`: A list of id's that are _REQUIRED_
 * _RETURNS_ :  a list of Sentiments
-
 // end::method-description-tweetSentimentsDep[]
 
 // tag::method-signature-tweetSentimentsDep[]
@@ -534,13 +522,12 @@ An example of an internal query.
 [source, kotlin]
 ----
 tweetSentimentsDep(
-  id: [ID!]! <1> 
-): [Sentiment] <2>
+  id: [`ID!`]! <1> 
+): [<<Sentiment,`Sentiment`>>] <2>
 ----
 // end::method-signature-tweetSentimentsDep[]
 
 // tag::method-args-tweetSentimentsDep[]
-
 // end::method-args-tweetSentimentsDep[]
 
 // tag::query-name-tweetSentimentsDep[]
@@ -548,7 +535,7 @@ tweetSentimentsDep(
 // end::query-name-tweetSentimentsDep[]
 
 // tag::query-return-tweetSentimentsDep[]
-*Return:* `[Sentiment]`
+*Return:* [<<Sentiment,`Sentiment`>>]
 // end::query-return-tweetSentimentsDep[]
 
 // tag::arguments-tweetSentimentsDep[]
@@ -565,19 +552,25 @@ tweetSentimentsDep(
 
 
 // tag::method-description-tweetSentimentCode[]
-An example of an internal query.
+An example of an internal query with callouts.
 
 [source,graphql]
 ----
-tweetSentimentCode(123) {
-   Sentiment
+query GetTweetSentiment {
+  tweetSentimentCode(id: "123") { <1>
+    sentiment <2>
+    confidence <3>
+  }
 }
 ----
+
+(1) Query the tweet sentiment endpoint with an ID
+(2) Get the sentiment value
+(3) Also retrieve confidence level
 
 `@deprecated(reason: "Internal test")`
 * `id`: An id that is _REQUIRED_
 * _RETURNS_ :  a list of Sentiments
-
 // end::method-description-tweetSentimentCode[]
 
 // tag::method-signature-tweetSentimentCode[]
@@ -585,13 +578,12 @@ tweetSentimentCode(123) {
 [source, kotlin]
 ----
 tweetSentimentCode(
-  id: ID! <1> 
-): Sentiment <2>
+  id: `ID!` <1> 
+): <<Sentiment,`Sentiment`>> <2>
 ----
 // end::method-signature-tweetSentimentCode[]
 
 // tag::method-args-tweetSentimentCode[]
-
 // end::method-args-tweetSentimentCode[]
 
 // tag::query-name-tweetSentimentCode[]
@@ -599,7 +591,7 @@ tweetSentimentCode(
 // end::query-name-tweetSentimentCode[]
 
 // tag::query-return-tweetSentimentCode[]
-*Return:* `Sentiment`
+*Return:* <<Sentiment,`Sentiment`>>
 // end::query-return-tweetSentimentCode[]
 
 // tag::arguments-tweetSentimentCode[]
@@ -627,7 +619,6 @@ tweetSentimentACode(123) {
 
 * `id`: An id that are _REQUIRED_
 * _RETURNS_ :  a list of Sentiments
-
 // end::method-description-tweetSentimentACode[]
 
 // tag::method-signature-tweetSentimentACode[]
@@ -635,13 +626,12 @@ tweetSentimentACode(123) {
 [source, kotlin]
 ----
 tweetSentimentACode(
-  id: ID! <1> 
-): Sentiment <2>
+  id: `ID!` <1> 
+): <<Sentiment,`Sentiment`>> <2>
 ----
 // end::method-signature-tweetSentimentACode[]
 
 // tag::method-args-tweetSentimentACode[]
-
 // end::method-args-tweetSentimentACode[]
 
 // tag::query-name-tweetSentimentACode[]
@@ -649,7 +639,7 @@ tweetSentimentACode(
 // end::query-name-tweetSentimentACode[]
 
 // tag::query-return-tweetSentimentACode[]
-*Return:* `Sentiment`
+*Return:* <<Sentiment,`Sentiment`>>
 // end::query-return-tweetSentimentACode[]
 
 // tag::arguments-tweetSentimentACode[]
@@ -672,7 +662,6 @@ An example of an internal query.
 
 * `id`: An id that are _REQUIRED_
 * _RETURNS_ :  a list of Sentiments
-
 // end::method-description-tweetSentimentDep[]
 
 // tag::method-signature-tweetSentimentDep[]
@@ -680,13 +669,12 @@ An example of an internal query.
 [source, kotlin]
 ----
 tweetSentimentDep(
-  id: ID! <1> 
-): Sentiment <2>
+  id: `ID!` <1> 
+): <<Sentiment,`Sentiment`>> <2>
 ----
 // end::method-signature-tweetSentimentDep[]
 
 // tag::method-args-tweetSentimentDep[]
-
 // end::method-args-tweetSentimentDep[]
 
 // tag::query-name-tweetSentimentDep[]
@@ -694,7 +682,7 @@ tweetSentimentDep(
 // end::query-name-tweetSentimentDep[]
 
 // tag::query-return-tweetSentimentDep[]
-*Return:* `Sentiment`
+*Return:* <<Sentiment,`Sentiment`>>
 // end::query-return-tweetSentimentDep[]
 
 // tag::arguments-tweetSentimentDep[]
@@ -713,246 +701,198 @@ tweetSentimentDep(
 
 // end::query-tweetSentimentDep[]
 
+// tag::query-multiCalloutExample[]
+
+[[query_multicalloutexample]]
+=== multiCalloutExample
 
 
+// tag::method-description-multiCalloutExample[]
+Advanced query example with multiple callout styles.
 
-// tag::mutation[]
-[[mutations]]
+[source,javascript]
+----
+// JavaScript client example
+const client = new GraphQLClient(endpoint); <1>
+
+const query = `
+  query MultiExample($ids: [ID!]!) { <2>
+    tweets: getTweets(ids: $ids) <3>
+      .map(tweet => tweet.sentiment) <4>
+  }
+`;
+
+const result = await client.request(query, { 
+  ids: ["1", "2", "3"] <5>
+});
+----
+
+**Callout explanations:**
+
+(1) Initialize the GraphQL client with endpoint
+(2) Define the parameterized query with required ID array  
+(3) Fetch tweets using the provided IDs
+(4) Transform results to extract sentiment data
+(5) Pass the actual ID values as variables
+
+[NOTE]
+====
+This demonstrates all supported callout patterns in code blocks.
+====
+// end::method-description-multiCalloutExample[]
+
+// tag::method-signature-multiCalloutExample[]
+.query: multiCalloutExample
+[source, kotlin]
+----
+multiCalloutExample(
+  ids: [`ID!`]! <1> 
+): [<<Sentiment,`Sentiment`>>] <2>
+----
+// end::method-signature-multiCalloutExample[]
+
+// tag::method-args-multiCalloutExample[]
+// end::method-args-multiCalloutExample[]
+
+// tag::query-name-multiCalloutExample[]
+*Query Name:* _multiCalloutExample_
+// end::query-name-multiCalloutExample[]
+
+// tag::query-return-multiCalloutExample[]
+*Return:* [<<Sentiment,`Sentiment`>>]
+// end::query-return-multiCalloutExample[]
+
+// tag::arguments-multiCalloutExample[]
+.Arguments
+* `ids : [ID!]!`
+// end::arguments-multiCalloutExample[]
+
+// end::query-multiCalloutExample[]
+
+// tag::query-searchTweets[]
+
+[[query_searchtweets]]
+=== searchTweets
+
+
+// tag::method-description-searchTweets[]
+Example query with table documentation.
+
+This endpoint supports various search parameters:
+
+[options="header"]
+|===
+| Parameter | Type | Required | Description
+| query | String | Yes | Search term to match
+| limit | Int | No | Maximum results (default: 20)
+| offset | Int | No | Starting position (default: 0)
+| sortBy | String | No | Field to sort by
+|===
+
+[TIP]
+====
+Use the limit parameter to control response size.
+====
+
+For more advanced queries, see <<advanced-search>>.
+// end::method-description-searchTweets[]
+
+// tag::method-signature-searchTweets[]
+.query: searchTweets
+[source, kotlin]
+----
+searchTweets(
+  query: `String!` , <1> 
+  limit: `Int` , <2> 
+  offset: `Int` , <3> 
+  sortBy: `String` <4> 
+): [<<Tweet,`Tweet`>>] <5>
+----
+// end::method-signature-searchTweets[]
+
+// tag::method-args-searchTweets[]
+// end::method-args-searchTweets[]
+
+// tag::query-name-searchTweets[]
+*Query Name:* _searchTweets_
+// end::query-name-searchTweets[]
+
+// tag::query-return-searchTweets[]
+*Return:* [<<Tweet,`Tweet`>>]
+// end::query-return-searchTweets[]
+
+// tag::arguments-searchTweets[]
+.Arguments
+* `query : String!`
+* `limit : Int`
+* `offset : Int`
+* `sortBy : String`
+// end::arguments-searchTweets[]
+
+// end::query-searchTweets[]
+
+// tag::query-getConfig[]
+
+[[query_getconfig]]
+=== getConfig
+
+
+// tag::method-description-getConfig[]
+Configuration query that preserves existing AsciiDoc table formatting.
+
+Available configuration options:
+
+[options="header"]
+|===
+| Setting | Default | Description
+| timeout | 30s | Request timeout
+| retries | 3 | Max retry attempts
+| cache | true | Enable response caching
+|===
+
+[WARNING]
+====
+Changing these settings affects all API operations.
+====
+// end::method-description-getConfig[]
+
+// tag::method-signature-getConfig[]
+.query: getConfig
+[source, kotlin]
+----
+getConfig(
+): `String` <1>
+----
+// end::method-signature-getConfig[]
+
+// tag::method-args-getConfig[]
+// end::method-args-getConfig[]
+
+// tag::query-name-getConfig[]
+*Query Name:* _getConfig_
+// end::query-name-getConfig[]
+
+// tag::query-return-getConfig[]
+*Return:* `String`
+// end::query-return-getConfig[]
+
+// end::query-getConfig[]
+
 == Mutations
-The root mutation
 
-
-GraphQL Mutations are entry points on a GraphQL server that provides write access to our data sources.
-// tag::mutation-createTweet[]
-[[mutation_createtweet]]
-// tag::method-signature-createTweet[]
-=== createTweet
-// end::method-signature-createTweet[]
-
-// tag::method-description-createTweet[]
-Create a new tweet
-
-
-// end::method-description-createTweet[]
-
-// tag::method-signature-createTweet[]
-.mutation: createTweet
-[source, kotlin]
-----
-createTweet(
-  body: String <1> 
-): Tweet <2>
-----
-// end::method-signature-createTweet[]
-
-
-// tag::method-args-createTweet[]
-
-// end::method-args-createTweet[]
-
-// tag::mutation-name-createTweet[]
-*Mutation Name:* _createTweet_
-// end::mutation-name-createTweet[]
-
-// tag::mutation-return-createTweet[]
-*Return:* <<Tweet,`Tweet`>>
-// end::mutation-return-createTweet[]
-// tag::arguments-createTweet[]
-.Arguments
-* `body : String`
-// end::arguments-createTweet[]
-
-// end::mutation-createTweet[]
-
-// tag::mutation-deleteTweet[]
-[[mutation_deletetweet]]
-// tag::method-signature-deleteTweet[]
-=== deleteTweet
-// end::method-signature-deleteTweet[]
-
-// tag::method-description-deleteTweet[]
-Delete a tweet
-
-
-// end::method-description-deleteTweet[]
-
-// tag::method-signature-deleteTweet[]
-.mutation: deleteTweet
-[source, kotlin]
-----
-deleteTweet(
-  id: ID! <1> 
-): Tweet <2>
-----
-// end::method-signature-deleteTweet[]
-
-
-// tag::method-args-deleteTweet[]
-
-// end::method-args-deleteTweet[]
-
-// tag::mutation-name-deleteTweet[]
-*Mutation Name:* _deleteTweet_
-// end::mutation-name-deleteTweet[]
-
-// tag::mutation-return-deleteTweet[]
-*Return:* <<Tweet,`Tweet`>>
-// end::mutation-return-deleteTweet[]
-// tag::arguments-deleteTweet[]
-.Arguments
-* `id : ID!`
-// end::arguments-deleteTweet[]
-
-// end::mutation-deleteTweet[]
-
-// tag::mutation-markTweetRead[]
-[[mutation_marktweetread]]
-// tag::method-signature-markTweetRead[]
-=== markTweetRead
-// end::method-signature-markTweetRead[]
-
-// tag::method-description-markTweetRead[]
-Mark a tweet as read
-
-
-// end::method-description-markTweetRead[]
-
-// tag::method-signature-markTweetRead[]
-.mutation: markTweetRead
-[source, kotlin]
-----
-markTweetRead(
-  id: ID! <1> 
-): Boolean <2>
-----
-// end::method-signature-markTweetRead[]
-
-
-// tag::method-args-markTweetRead[]
-
-// end::method-args-markTweetRead[]
-
-// tag::mutation-name-markTweetRead[]
-*Mutation Name:* _markTweetRead_
-// end::mutation-name-markTweetRead[]
-
-// tag::mutation-return-markTweetRead[]
-*Return:* `Boolean`
-// end::mutation-return-markTweetRead[]
-// tag::arguments-markTweetRead[]
-.Arguments
-* `id : ID!`
-// end::arguments-markTweetRead[]
-
-// end::mutation-markTweetRead[]
-
-// tag::mutation-createMessage[]
-[[mutation_createmessage]]
-// tag::method-signature-createMessage[]
-=== createMessage
-// end::method-signature-createMessage[]
-
-// tag::method-description-createMessage[]
-Create a new message example.
-
-
-// end::method-description-createMessage[]
-
-// tag::method-signature-createMessage[]
-.mutation: createMessage
-[source, kotlin]
-----
-createMessage(
-  input: MessageInput <1> 
-): Message <2>
-----
-// end::method-signature-createMessage[]
-
-
-// tag::method-args-createMessage[]
-
-// end::method-args-createMessage[]
-
-// tag::mutation-name-createMessage[]
-*Mutation Name:* _createMessage_
-// end::mutation-name-createMessage[]
-
-// tag::mutation-return-createMessage[]
-*Return:* <<Message,`Message`>>
-// end::mutation-return-createMessage[]
-// tag::arguments-createMessage[]
-.Arguments
-* `input : MessageInput`
-// end::arguments-createMessage[]
-
-// end::mutation-createMessage[]
-
-// tag::mutation-createMessageDep[]
-[[mutation_createmessagedep]]
-// tag::method-signature-createMessageDep[]
-=== createMessageDep
-// end::method-signature-createMessageDep[]
-
-// tag::method-description-createMessageDep[]
-Create a new message example.
-
-`@deprecated(reason: "Internal test")`
-
-* `input` is the input message.
-
-
-// end::method-description-createMessageDep[]
-
-// tag::method-signature-createMessageDep[]
-.mutation: createMessageDep
-[source, kotlin]
-----
-createMessageDep(
-  input: MessageInput <1> 
-): Message <2>
-----
-// end::method-signature-createMessageDep[]
-
-
-// tag::method-args-createMessageDep[]
-
-// end::method-args-createMessageDep[]
-
-// tag::mutation-name-createMessageDep[]
-*Mutation Name:* _createMessageDep_
-// end::mutation-name-createMessageDep[]
-
-// tag::mutation-return-createMessageDep[]
-*Return:* <<Message,`Message`>>
-// end::mutation-return-createMessageDep[]
-// tag::arguments-createMessageDep[]
-.Arguments
-* `input : MessageInput`
-// end::arguments-createMessageDep[]
-// tag::mutation-changelog-createMessageDep[]
-
-.Changelog
-* add: 1.0.0
-* update: 1.2.3, 2.0.5
-* deprecated: 2.6.0
-* removed: 2.7.8
-
-// end::mutation-changelog-createMessageDep[]
-
-// end::mutation-createMessageDep[]
-
-// end::mutation[]
+[NOTE]
+====
+Mutations section - implementation in progress
+====
 
 
 == Types
-
 
 // tag::type-CLogExample[]
 [[type_c_log_example]]
 === CLogExample
 // tag::type-description-CLogExample[]
 An example of a type with a changelog in the type definition as well as on the fieds.
-
 
 // end::type-description-CLogExample[]
 // tag::type-changelog-CLogExample[]
@@ -963,18 +903,14 @@ An example of a type with a changelog in the type definition as well as on the f
 
 // end::type-changelog-CLogExample[]
 
-// tag::type-def-CLogExample[]
-[[type_def_clogexample]]
 .type: CLogExample
-[width="90%", cols="2a,2a,6a" options="header" orientation="landscape" grid="none" stripes="even" , frame="topbot"]
+[options="header"]
 |===
 | Type | Field | Description 
 
 | `Int` | count | The total number of items
 
-
 | `String` | up | This was updated
-
 
 | `String` | dep | This was deprecated
 
@@ -987,16 +923,13 @@ An example of a type with a changelog in the type definition as well as on the f
 * deprecated: 2.6.0
 
 
-
 | `String` | new | This was new
 
 
 .Changelog
 * add: 2.6.0
 
-
 |===
-// end::type-def-CLogExample[]
 
 
 // end::type-CLogExample[]
@@ -1007,23 +940,17 @@ An example of a type with a changelog in the type definition as well as on the f
 === Message
 // tag::type-description-Message[]
 A message
-
 // end::type-description-Message[]
 
-// tag::type-def-Message[]
-[[type_def_message]]
 .type: Message
-[width="90%", cols="2a,2a,6a" options="header" orientation="landscape" grid="none" stripes="even" , frame="topbot"]
+[options="header"]
 |===
 | Type | Field | Description 
 
 | `String` | content | The message's content
 
-
 | `String` | author | The message's author
-
 |===
-// end::type-def-Message[]
 
 
 // end::type-Message[]
@@ -1034,70 +961,18 @@ A message
 === Meta
 // tag::type-description-Meta[]
 Meta information about the query
-
 // end::type-description-Meta[]
 
-// tag::type-def-Meta[]
-[[type_def_meta]]
 .type: Meta
-[width="90%", cols="2a,2a,6a" options="header" orientation="landscape" grid="none" stripes="even" , frame="topbot"]
+[options="header"]
 |===
 | Type | Field | Description 
 
 | `Int` | count | The total number of items
-
 |===
-// end::type-def-Meta[]
 
 
 // end::type-Meta[]
-
-
-// tag::type-Mutation[]
-[[type_mutation]]
-=== Mutation
-// tag::type-description-Mutation[]
-The root mutation
-
-// end::type-description-Mutation[]
-
-// tag::type-def-Mutation[]
-[[type_def_mutation]]
-.type: Mutation
-[width="90%", cols="2a,2a,6a" options="header" orientation="landscape" grid="none" stripes="even" , frame="topbot"]
-|===
-| Type | Field | Description 
-
-| <<Tweet,`Tweet`>> | createTweet | Create a new tweet
-
-
-| <<Tweet,`Tweet`>> | deleteTweet | Delete a tweet
-
-
-| `Boolean` | markTweetRead | Mark a tweet as read
-
-
-| <<Message,`Message`>> | createMessage | Create a new message example.
-
-
-| <<Message,`Message`>> | createMessageDep | Create a new message example.
-
-`@deprecated(reason: "Internal test")`
-
-* `input` is the input message.
-
-.Changelog
-* add: 1.0.0
-* update: 1.2.3, 2.0.5
-* deprecated: 2.6.0
-* removed: 2.7.8
-
-
-|===
-// end::type-def-Mutation[]
-
-
-// end::type-Mutation[]
 
 
 // tag::type-Notification[]
@@ -1105,26 +980,19 @@ The root mutation
 === Notification
 // tag::type-description-Notification[]
 A notification for a user
-
 // end::type-description-Notification[]
 
-// tag::type-def-Notification[]
-[[type_def_notification]]
 .type: Notification
-[width="90%", cols="2a,2a,6a" options="header" orientation="landscape" grid="none" stripes="even" , frame="topbot"]
+[options="header"]
 |===
 | Type | Field | Description 
 
 | `ID` | id | The notification ID
 
-
-| `Date` | date | The notification date
-
+| <<Date,`Date`>> | date | The notification date
 
 | `String` | type | The notification type
-
 |===
-// end::type-def-Notification[]
 
 
 // end::type-Notification[]
@@ -1135,29 +1003,21 @@ A notification for a user
 === Stat
 // tag::type-description-Stat[]
 Stats about a tweet, such as number of views, likes, retweets, etc
-
 // end::type-description-Stat[]
 
-// tag::type-def-Stat[]
-[[type_def_stat]]
 .type: Stat
-[width="90%", cols="2a,2a,6a" options="header" orientation="landscape" grid="none" stripes="even" , frame="topbot"]
+[options="header"]
 |===
 | Type | Field | Description 
 
 | `Int` | views | The number of views
 
-
 | `Int` | likes | The number of likes
-
 
 | `Int` | retweets | The number of retweets
 
-
 | `Int` | responses | The number of responses
-
 |===
-// end::type-def-Stat[]
 
 
 // end::type-Stat[]
@@ -1169,13 +1029,10 @@ Stats about a tweet, such as number of views, likes, retweets, etc
 // tag::type-description-Tweet[]
 A tweet
 This schema came from an example found here https://github.com/marmelab/GraphQL-example/blob/master/schema.graphql
-
 // end::type-description-Tweet[]
 
-// tag::type-def-Tweet[]
-[[type_def_tweet]]
 .type: Tweet
-[width="90%", cols="2a,2a,6a" options="header" orientation="landscape" grid="none" stripes="even" , frame="topbot"]
+[options="header"]
 |===
 | Type | Field | Description 
 
@@ -1183,24 +1040,15 @@ This schema came from an example found here https://github.com/marmelab/GraphQL-
 
 .Notes:
 
-.Required:
-* `True` 
-
-
 | `String` | body | The tweet text. No more than 140 characters!
 
-
-| `Date` | date | When the tweet was published
-
+| <<Date,`Date`>> | date | When the tweet was published
 
 | <<User,`User`>> | Author | Who published the tweet
 
-
 | <<Stat,`Stat`>> | Stats | Views, retweets, likes, etc
 
-
-| `Sentiment` | sentiment | The tweet's sentiment
-
+| <<Sentiment,`Sentiment`>> | sentiment | The tweet's sentiment
 
 | `String` | newField | This is to test the version number of this field.
 
@@ -1211,9 +1059,7 @@ This schema came from an example found here https://github.com/marmelab/GraphQL-
 * deprecated: 2.6.0
 * removed: 2.7.8
 
-
 |===
-// end::type-def-Tweet[]
 
 
 // end::type-Tweet[]
@@ -1224,13 +1070,10 @@ This schema came from an example found here https://github.com/marmelab/GraphQL-
 === User
 // tag::type-description-User[]
 A Twitter user. They can publish tweets, and have followers
-
 // end::type-description-User[]
 
-// tag::type-def-User[]
-[[type_def_user]]
 .type: User
-[width="90%", cols="2a,2a,6a" options="header" orientation="landscape" grid="none" stripes="even" , frame="topbot"]
+[options="header"]
 |===
 | Type | Field | Description 
 
@@ -1238,265 +1081,48 @@ A Twitter user. They can publish tweets, and have followers
 
 .Notes:
 
-.Required:
-* `True` 
-
-
 | `String` | username | The user's Twitter handle
-
 
 | `String` | first_name | The user's real name
 
-
 | `String` | last_name | The user's real name
-
 
 | `String` | full_name | The user's real full name
 
-
 | `String` | name | The user's name, that is deprecated
 
-.Directives:
-
-* `@deprecated`
-
-
-| `Url` | avatar_url | The user's avatar URL
-
+| <<Url,`Url`>> | avatar_url | The user's avatar URL
 |===
-// end::type-def-User[]
 
 
 // end::type-User[]
 
 
+== Enums
 
-
-== Enumerations
-
-
-// tag::enum-def-Direction[]
-[[direction]]
-
-=== Direction
-// tag::enum-description-Direction[]
-//tag::ENUM_DIRECTION_DES[]
-
-The direction UP or Down
-
-//end::ENUM_DIRECTION_DES[]
-
-// end::enum-description-Direction[]
-
-// tag::enum-Direction[]
-[[enum_direction]]
-.enum_direction
-[width="90%", cols="2a,6a" options="header" orientation="landscape" grid="none" stripes="even"  , frame="topbot"]
-|===
-| Value | Description
-| UP | The Up direction.
-| DOWN | The Down direction.
-|===
-// end::enum-Direction[]
-
-
-// end::enum-def-Direction[]
-
-
-// tag::enum-def-Sentiment[]
-[[sentiment]]
-
-=== Sentiment
-// tag::enum-description-Sentiment[]
-//tag::SENTIMENT_DES[]
-A sentiment enum
-
-.Values
-- `HAPPY`: A happy one
-- `SAD`: A sad one
-- `INDIFFERENT`: An indifferent one
-- `OTHER`: Something else
-
-This is just to demonstrate how to document an enum with asciidoc tags in the description.
-
-//end::SENTIMENT_DES[]
-
-// end::enum-description-Sentiment[]
-
-// tag::enum-Sentiment[]
-[[enum_sentiment]]
-.enum_sentiment
-[width="90%", cols="2a,6a" options="header" orientation="landscape" grid="none" stripes="even"  , frame="topbot"]
-|===
-| Value | Description
-| HAPPY | The tweet is happy.
-| SAD | The tweet is sad.
-| INDIFFERENT | The tweet is indifferent.
-| OTHER | The tweet is something else.
-|===
-// end::enum-Sentiment[]
-
-
-// end::enum-def-Sentiment[]
-
-
-
+[NOTE]
+====
+Enums section - implementation in progress
+====
 
 == Inputs
 
-
-// tag::input-def-CLogExampleInput[]
-[[input_c_log_example_input]]
-
-=== CLogExampleInput
-// tag::input-description-CLogExampleInput[] // Using generic description tags
-An example of a type with a changelog in the type definition as well as on the fieds.
-
-
-// end::input-description-CLogExampleInput[]
-// tag::input-changelog-CLogExampleInput[]
-
-.Changelog
-* add: 1.0.0
-* update: 1.2.3, 2.0.5
-
-// end::input-changelog-CLogExampleInput[]
-
-// tag::input-def-CLogExampleInput[]
-[[input_clogexampleinput]]
-.input: CLogExampleInput
-[width="90%", cols="2a,2a,6a" options="header" orientation="landscape" grid="none" stripes="even" , frame="topbot"]
-|===
-| Type | Field | Description
-
-| `Int` | count | The total number of items
-
-
-| `String` | up | This was updated
-
-
-| `String` | dep | This was deprecated
-
-`@deprecated("testing this out")`
-
-
-.Changelog
-* add: 1.0.0
-* update: 1.2.3
-* deprecated: 2.6.0
-
-
-
-| `String` | new | This was new
-
-
-.Changelog
-* add: 2.6.0
-
-
-|===
-// end::input-def-CLogExampleInput[]
-
-
-// end::input-def-CLogExampleInput[]
-
-
-// tag::input-def-MessageInput[]
-[[input_message_input]]
-
-=== MessageInput
-// tag::input-description-MessageInput[] // Using generic description tags
-Example of an input type
-
-// end::input-description-MessageInput[]
-
-// tag::input-def-MessageInput[]
-[[input_messageinput]]
-.input: MessageInput
-[width="90%", cols="2a,2a,6a" options="header" orientation="landscape" grid="none" stripes="even" , frame="topbot"]
-|===
-| Type | Field | Description
-
-| `String` | content | The message's content
-
-.Directives:
-
-* `@length(max: 31)`
-
-
-| `String` | author | The message's author
-
-.Directives:
-
-* `@length(max: 31)`
-
-|===
-// end::input-def-MessageInput[]
-
-
-// end::input-def-MessageInput[]
-
-
-
+[NOTE]
+====
+Inputs section - implementation in progress
+====
 
 == Directives
 
+[NOTE]
+====
+Directives section - implementation in progress
+====
 
-[width="90%", cols="2a,2a,6a" options="header" orientation="landscape" grid="none" stripes="even" , frame="topbot"]
-|===
-| Directive | Arguments | Description
-| @Size | min: Int, max: Int!, message: String | Directive to specify the size constraints on arguments and input fields.
-
-.Arguments:
-* `min`: min the minimum size allowed, default is 0
-* `max`: the maximum size allowed, default is 2147483647
-* `message`: the validation message, default is "graphql.validation.Size.message"
-| @length | min: Int, max: Int!, message: String | Directive to specify the length constraints on arguments and input fields.
-
-.Arguments:
-* `min`: the minimum length allowed, default is 0
-* `max`: the maximum length allowed, default is 2147483647
-* `message`: the validation message, default is "graphql.validation.Size.message"
-|===
-
-
-// tag::scalar[]
-[[scalars]]
 == Scalars
 
-
-GraphQL specifies a basic set of well-defined Scalar types: Int, Float, String, Boolean, and ID.
-
-The following custom scalar types are defined in this schema:
-// tag::scalar-Date[]
-[[scalar-Date]]
-=== Date
-
-// tag::scalar-description-Date[]
-//tag::SCALAR_DATE_DES[]
-A date string scalar
-//end::SCALAR_DATE_DES[]
-
-// end::scalar-description-Date[]
-
-
-// end::scalar-Date[]
-
-
-// tag::scalar-Url[]
-[[scalar-Url]]
-=== Url
-
-// tag::scalar-description-Url[]
-//tag::SCALAR_URL_DES[]
-A URL string scalar
-//end::SCALAR_URL_DES[]
-
-// end::scalar-description-Url[]
-
-
-// end::scalar-Url[]
-
-
-// end::scalar[]
+[NOTE]
+====
+Scalars section - implementation in progress
+====
 

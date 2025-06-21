@@ -2,8 +2,8 @@
 
 This is a simple example of the input and output of the converter.
 
-* The input file [schema.graphql](test/schema.graphql)
-* The output file [schema.adoc](test/schema.adoc)
+* The input file [schema.graphql](schema.graphql)
+* The output file [schema.adoc](schema.adoc)
 
 
 ## Schema Source File

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 )
 
@@ -15,6 +16,7 @@ var (
 // Config holds all configuration options for the application
 type Config struct {
 	SchemaFile          string
+	OutputFile          string
 	ExcludeInternal     bool
 	IncludeMutations    bool
 	IncludeQueries      bool
@@ -25,6 +27,7 @@ type Config struct {
 	IncludeInputs       bool
 	IncludeScalars      bool
 	ShowVersion         bool
+	ShowHelp            bool
 }
 
 // NewConfig creates a new Config with default values
@@ -45,17 +48,38 @@ func NewConfig() *Config {
 func ParseFlags() *Config {
 	config := NewConfig()
 
+	// Core flags with short aliases
 	flag.StringVar(&config.SchemaFile, "schema", "", "Path to the GraphQL schema file")
+	flag.StringVar(&config.SchemaFile, "s", "", "Path to the GraphQL schema file (shorthand)")
+	flag.StringVar(&config.OutputFile, "output", "", "Output file path (default: stdout)")
+	flag.StringVar(&config.OutputFile, "o", "", "Output file path (shorthand)")
+	
+	// Control flags
 	flag.BoolVar(&config.ExcludeInternal, "exclude-internal", false, "Exclude internal queries from output")
-	flag.BoolVar(&config.IncludeMutations, "mutations", true, "Include mutations in the output")
-	flag.BoolVar(&config.IncludeQueries, "queries", true, "Include queries in the output")
-	flag.BoolVar(&config.IncludeSubscriptions, "subscriptions", false, "Include subscriptions in the output")
-	flag.BoolVar(&config.IncludeDirectives, "directives", true, "Include directives in the output")
-	flag.BoolVar(&config.IncludeTypes, "types", true, "Include types in the output")
-	flag.BoolVar(&config.IncludeEnums, "enums", true, "Include enums in the output")
-	flag.BoolVar(&config.IncludeInputs, "inputs", true, "Include inputs in the output")
-	flag.BoolVar(&config.IncludeScalars, "scalars", true, "Include scalars in the output")
+	flag.BoolVar(&config.ExcludeInternal, "x", false, "Exclude internal queries from output (shorthand)")
 	flag.BoolVar(&config.ShowVersion, "version", false, "Show program version and build information")
+	flag.BoolVar(&config.ShowVersion, "v", false, "Show program version and build information (shorthand)")
+	flag.BoolVar(&config.ShowHelp, "help", false, "Show detailed help information")
+	flag.BoolVar(&config.ShowHelp, "h", false, "Show detailed help information (shorthand)")
+
+	// Section inclusion flags
+	flag.BoolVar(&config.IncludeQueries, "queries", true, "Include queries in the output")
+	flag.BoolVar(&config.IncludeQueries, "q", true, "Include queries in the output (shorthand)")
+	flag.BoolVar(&config.IncludeMutations, "mutations", true, "Include mutations in the output")
+	flag.BoolVar(&config.IncludeMutations, "m", true, "Include mutations in the output (shorthand)")
+	flag.BoolVar(&config.IncludeSubscriptions, "subscriptions", false, "Include subscriptions in the output")
+	flag.BoolVar(&config.IncludeTypes, "types", true, "Include types in the output")
+	flag.BoolVar(&config.IncludeTypes, "t", true, "Include types in the output (shorthand)")
+	flag.BoolVar(&config.IncludeEnums, "enums", true, "Include enums in the output")
+	flag.BoolVar(&config.IncludeEnums, "e", true, "Include enums in the output (shorthand)")
+	flag.BoolVar(&config.IncludeInputs, "inputs", true, "Include inputs in the output")
+	flag.BoolVar(&config.IncludeInputs, "i", true, "Include inputs in the output (shorthand)")
+	flag.BoolVar(&config.IncludeDirectives, "directives", true, "Include directives in the output")
+	flag.BoolVar(&config.IncludeDirectives, "d", true, "Include directives in the output (shorthand)")
+	flag.BoolVar(&config.IncludeScalars, "scalars", true, "Include scalars in the output")
+
+	// Custom usage function
+	flag.Usage = PrintUsage
 
 	flag.Parse()
 
@@ -74,17 +98,113 @@ func (c *Config) HandleVersion() bool {
 	return false
 }
 
+// HandleHelp handles the help flag display
+func (c *Config) HandleHelp() bool {
+	if c.ShowHelp {
+		PrintUsage()
+		return true
+	}
+	return false
+}
+
 // Validate validates the configuration
 func (c *Config) Validate() error {
 	if c.SchemaFile == "" {
-		return fmt.Errorf("error: -schema flag is required")
+		return fmt.Errorf("-schema flag is required")
 	}
+	
+	// Check if schema file exists
+	if _, err := os.Stat(c.SchemaFile); os.IsNotExist(err) {
+		return fmt.Errorf("schema file '%s' does not exist", c.SchemaFile)
+	}
+	
+	// Validate output file directory if specified
+	if c.OutputFile != "" {
+		dir := c.OutputFile[:len(c.OutputFile)-len(filepath.Base(c.OutputFile))]
+		if dir != "" && dir != "." {
+			if _, err := os.Stat(dir); os.IsNotExist(err) {
+				return fmt.Errorf("output directory '%s' does not exist", dir)
+			}
+		}
+	}
+	
 	return nil
 }
 
-// PrintUsage prints usage information and exits
+// PrintUsage prints detailed usage information
 func PrintUsage() {
-	fmt.Fprintf(os.Stderr, "Error: -schema flag is required\n")
-	flag.Usage()
+	fmt.Printf(`graphqls-to-asciidoc - Convert GraphQL schema files to comprehensive AsciiDoc documentation
+
+USAGE:
+    graphqls-to-asciidoc [OPTIONS]
+
+REQUIRED:
+    -s, --schema PATH       Path to the GraphQL schema file
+
+OPTIONS:
+    -o, --output PATH       Output file path (default: stdout)
+    -h, --help              Show this help information
+    -v, --version           Show program version and build information
+    -x, --exclude-internal  Exclude internal queries from output
+
+SECTION CONTROL:
+    -q, --queries           Include queries in the output (default: true)
+    -m, --mutations         Include mutations in the output (default: true)
+        --subscriptions     Include subscriptions in the output (default: false)
+    -t, --types             Include types in the output (default: true)
+    -e, --enums             Include enums in the output (default: true)
+    -i, --inputs            Include inputs in the output (default: true)
+    -d, --directives        Include directives in the output (default: true)
+        --scalars           Include scalars in the output (default: true)
+
+EXAMPLES:
+    # Generate documentation to stdout
+    graphqls-to-asciidoc -s schema.graphql
+
+    # Generate documentation to a file
+    graphqls-to-asciidoc -s schema.graphql -o docs.adoc
+
+    # Generate only types and enums
+    graphqls-to-asciidoc -s schema.graphql -o types.adoc -q=false -m=false
+
+    # Exclude internal queries and generate to file
+    graphqls-to-asciidoc -s schema.graphql -o api-docs.adoc -x
+
+    # Generate comprehensive documentation with all sections
+    graphqls-to-asciidoc -s schema.graphql -o full-docs.adoc --subscriptions
+
+FEATURES:
+    ✓ Admonition blocks (NOTE, WARNING, TIP, etc.)
+    ✓ Code callouts with automatic conversion
+    ✓ Anchors and cross-references
+    ✓ Table conversion (markdown to AsciiDoc)
+    ✓ Professional AsciiDoc formatting
+    ✓ Comprehensive type documentation
+
+For more information, visit: https://github.com/bovinemagnet/graphqls-to-asciidoc
+`)
+}
+
+// PrintError prints usage information for errors and exits
+func PrintError(msg string) {
+	fmt.Fprintf(os.Stderr, "Error: %s\n\n", msg)
+	fmt.Fprintf(os.Stderr, "Use -h or --help for detailed usage information.\n")
+	fmt.Fprintf(os.Stderr, "Quick start: graphqls-to-asciidoc -s schema.graphql\n")
 	os.Exit(1)
+}
+
+// GetOutputWriter returns either stdout or a file writer based on configuration
+func (c *Config) GetOutputWriter() (*os.File, bool, error) {
+	if c.OutputFile == "" {
+		// Return stdout, not a file to close
+		return os.Stdout, false, nil
+	}
+	
+	file, err := os.Create(c.OutputFile)
+	if err != nil {
+		return nil, false, fmt.Errorf("failed to create output file '%s': %v", c.OutputFile, err)
+	}
+	
+	// Return file, needs to be closed
+	return file, true, nil
 }
