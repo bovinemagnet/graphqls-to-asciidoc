@@ -61,7 +61,8 @@ func main() {
 	// Convert document to schema-like structure for generator
 	// For now, let's create a simple schema from the doc
 	schema := &ast.Schema{
-		Types: make(map[string]*ast.Definition),
+		Types:      make(map[string]*ast.Definition),
+		Directives: make(map[string]*ast.DirectiveDefinition),
 	}
 	
 	for _, def := range doc.Definitions {
@@ -76,6 +77,11 @@ func main() {
 		case "Subscription":
 			schema.Subscription = def
 		}
+	}
+	
+	// Handle directive definitions
+	for _, def := range doc.Directives {
+		schema.Directives[def.Name] = def
 	}
 
 	// Get output writer

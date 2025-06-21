@@ -13,32 +13,42 @@ import (
 
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/changelog"
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/config"
+	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/metrics"
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/parser"
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/templates"
 )
 
 // Generator handles AsciiDoc generation from GraphQL schemas
 type Generator struct {
-	config *config.Config
-	schema *ast.Schema
-	writer io.Writer
+	config  *config.Config
+	schema  *ast.Schema
+	writer  io.Writer
+	metrics *metrics.Metrics
 }
 
 // New creates a new Generator instance
 func New(cfg *config.Config, schema *ast.Schema, writer io.Writer) *Generator {
 	return &Generator{
-		config: cfg,
-		schema: schema,
-		writer: writer,
+		config:  cfg,
+		schema:  schema,
+		writer:  writer,
+		metrics: metrics.New(cfg),
 	}
 }
 
 // Generate generates the complete AsciiDoc documentation
 func (g *Generator) Generate() error {
+	// Log input parameters
+	g.metrics.LogInputParameters()
+
 	// Print header
+	headerTimer := g.metrics.StartSection("Header")
 	g.printHeader()
+	headerTimer.AddCount(1)
+	headerTimer.Finish()
 
 	// Create definitions map for type processing
+	g.metrics.LogProgress("Setup", "Creating definitions map")
 	definitionsMap := make(map[string]*ast.Definition)
 	for _, def := range g.schema.Types {
 		definitionsMap[def.Name] = def
@@ -53,38 +63,67 @@ func (g *Generator) Generate() error {
 		return sortedDefs[i].Name < sortedDefs[j].Name
 	})
 
+	g.metrics.LogProgress("Setup", fmt.Sprintf("Found %d total definitions", len(g.schema.Types)))
+
 	// Generate sections based on configuration
 	if g.config.IncludeQueries && g.schema.Query != nil {
-		g.generateQueries(definitionsMap)
+		timer := g.metrics.StartSection("Queries")
+		count := g.generateQueries(definitionsMap)
+		timer.AddCount(count)
+		timer.Finish()
 	}
 
 	if g.config.IncludeMutations && g.schema.Mutation != nil {
-		g.generateMutations(definitionsMap)
+		timer := g.metrics.StartSection("Mutations")
+		count := g.generateMutations(definitionsMap)
+		timer.AddCount(count)
+		timer.Finish()
 	}
 
 	if g.config.IncludeSubscriptions && g.schema.Subscription != nil {
-		g.generateSubscriptions(definitionsMap)
+		timer := g.metrics.StartSection("Subscriptions")
+		count := g.generateSubscriptions(definitionsMap)
+		timer.AddCount(count)
+		timer.Finish()
 	}
 
 	if g.config.IncludeTypes {
-		g.generateTypes(sortedDefs, definitionsMap)
+		timer := g.metrics.StartSection("Types")
+		count := g.generateTypes(sortedDefs, definitionsMap)
+		timer.AddCount(count)
+		timer.Finish()
 	}
 
 	if g.config.IncludeEnums {
-		g.generateEnums(sortedDefs, definitionsMap)
+		timer := g.metrics.StartSection("Enums")
+		count := g.generateEnums(sortedDefs, definitionsMap)
+		timer.AddCount(count)
+		timer.Finish()
 	}
 
 	if g.config.IncludeInputs {
-		g.generateInputs(sortedDefs, definitionsMap)
+		timer := g.metrics.StartSection("Inputs")
+		count := g.generateInputs(sortedDefs, definitionsMap)
+		timer.AddCount(count)
+		timer.Finish()
 	}
 
 	if g.config.IncludeDirectives {
-		g.generateDirectives(sortedDefs)
+		timer := g.metrics.StartSection("Directives")
+		count := g.generateDirectives(sortedDefs)
+		timer.AddCount(count)
+		timer.Finish()
 	}
 
 	if g.config.IncludeScalars {
-		g.generateScalars(sortedDefs)
+		timer := g.metrics.StartSection("Scalars")
+		count := g.generateScalars(sortedDefs)
+		timer.AddCount(count)
+		timer.Finish()
 	}
+
+	// Log final metrics table
+	g.metrics.LogMetricsTable()
 
 	return nil
 }
@@ -115,11 +154,13 @@ func (g *Generator) printHeader() {
 }
 
 // generateQueries generates the queries section
-func (g *Generator) generateQueries(definitionsMap map[string]*ast.Definition) {
+func (g *Generator) generateQueries(definitionsMap map[string]*ast.Definition) int {
 	if g.schema.Query == nil {
-		return
+		return 0
 	}
 
+	g.metrics.LogProgress("Queries", "Starting query generation")
+	
 	fmt.Fprintln(g.writer, "== Query")
 	fmt.Fprintln(g.writer)
 	fmt.Fprintln(g.writer)
@@ -127,6 +168,7 @@ func (g *Generator) generateQueries(definitionsMap map[string]*ast.Definition) {
 		fmt.Fprintln(g.writer, parser.ProcessDescription(g.schema.Query.Description))
 	}
 
+	count := 0
 	for _, f := range g.schema.Query.Fields {
 		// Skip internal queries if configured
 		if g.config.ExcludeInternal && strings.Contains(f.Description, "INTERNAL") {
@@ -134,7 +176,11 @@ func (g *Generator) generateQueries(definitionsMap map[string]*ast.Definition) {
 		}
 
 		g.generateQueryField(f, definitionsMap)
+		count++
 	}
+	
+	g.metrics.LogProgress("Queries", fmt.Sprintf("Generated %d queries", count))
+	return count
 }
 
 // generateQueryField generates a single query field
@@ -216,7 +262,9 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 }
 
 // Placeholder implementations for other generators
-func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition) {
+func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition) int {
+	g.metrics.LogProgress("Mutations", "Starting mutations generation")
+	
 	// Implementation would go here - simplified for now
 	fmt.Fprintln(g.writer, "== Mutations")
 	fmt.Fprintln(g.writer)
@@ -225,9 +273,15 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 	fmt.Fprintln(g.writer, "Mutations section - implementation in progress")
 	fmt.Fprintln(g.writer, "====")
 	fmt.Fprintln(g.writer)
+	
+	count := 0  // No actual mutations processed yet
+	g.metrics.LogProgress("Mutations", fmt.Sprintf("Generated %d mutations", count))
+	return count
 }
 
-func (g *Generator) generateSubscriptions(definitionsMap map[string]*ast.Definition) {
+func (g *Generator) generateSubscriptions(definitionsMap map[string]*ast.Definition) int {
+	g.metrics.LogProgress("Subscriptions", "Starting subscriptions generation")
+	
 	// Implementation would go here - simplified for now
 	fmt.Fprintln(g.writer, "== Subscriptions")
 	fmt.Fprintln(g.writer)
@@ -236,10 +290,17 @@ func (g *Generator) generateSubscriptions(definitionsMap map[string]*ast.Definit
 	fmt.Fprintln(g.writer, "Subscriptions section - implementation in progress")
 	fmt.Fprintln(g.writer, "====")
 	fmt.Fprintln(g.writer)
+	
+	count := 0  // No actual subscriptions processed yet
+	g.metrics.LogProgress("Subscriptions", fmt.Sprintf("Generated %d subscriptions", count))
+	return count
 }
 
-func (g *Generator) generateTypes(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) {
+func (g *Generator) generateTypes(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) int {
+	g.metrics.LogProgress("Types", "Starting types generation")
+	
 	var typeInfos []TypeInfo
+	count := 0
 
 	for _, t := range sortedDefs {
 		if t.Kind == ast.Object && !isBuiltInType(t.Name) {
@@ -263,6 +324,7 @@ func (g *Generator) generateTypes(sortedDefs []*ast.Definition, definitionsMap m
 				Changelog:   changelog,
 			}
 			typeInfos = append(typeInfos, typeInfo)
+			count++
 		}
 	}
 
@@ -280,7 +342,8 @@ func (g *Generator) generateTypes(sortedDefs []*ast.Definition, definitionsMap m
 		}).Parse(templates.TypeSectionTemplate)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error parsing type section template: %v\n", err)
-			return
+			g.metrics.LogProgress("Types", fmt.Sprintf("Generated %d types", count))
+			return count
 		}
 
 		err = tmpl.Execute(g.writer, data)
@@ -288,9 +351,14 @@ func (g *Generator) generateTypes(sortedDefs []*ast.Definition, definitionsMap m
 			fmt.Fprintf(os.Stderr, "Error executing type section template: %v\n", err)
 		}
 	}
+	
+	g.metrics.LogProgress("Types", fmt.Sprintf("Generated %d types", count))
+	return count
 }
 
-func (g *Generator) generateEnums(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) {
+func (g *Generator) generateEnums(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) int {
+	g.metrics.LogProgress("Enums", "Starting enums generation")
+	
 	// Implementation would go here - simplified for now
 	fmt.Fprintln(g.writer, "== Enums")
 	fmt.Fprintln(g.writer)
@@ -299,9 +367,15 @@ func (g *Generator) generateEnums(sortedDefs []*ast.Definition, definitionsMap m
 	fmt.Fprintln(g.writer, "Enums section - implementation in progress")
 	fmt.Fprintln(g.writer, "====")
 	fmt.Fprintln(g.writer)
+	
+	count := 0  // No actual enums processed yet
+	g.metrics.LogProgress("Enums", fmt.Sprintf("Generated %d enums", count))
+	return count
 }
 
-func (g *Generator) generateInputs(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) {
+func (g *Generator) generateInputs(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) int {
+	g.metrics.LogProgress("Inputs", "Starting inputs generation")
+	
 	// Implementation would go here - simplified for now
 	fmt.Fprintln(g.writer, "== Inputs")
 	fmt.Fprintln(g.writer)
@@ -310,20 +384,158 @@ func (g *Generator) generateInputs(sortedDefs []*ast.Definition, definitionsMap 
 	fmt.Fprintln(g.writer, "Inputs section - implementation in progress")
 	fmt.Fprintln(g.writer, "====")
 	fmt.Fprintln(g.writer)
+	
+	count := 0  // No actual inputs processed yet
+	g.metrics.LogProgress("Inputs", fmt.Sprintf("Generated %d inputs", count))
+	return count
 }
 
-func (g *Generator) generateDirectives(sortedDefs []*ast.Definition) {
-	// Implementation would go here - simplified for now
+func (g *Generator) generateDirectives(sortedDefs []*ast.Definition) int {
+	g.metrics.LogProgress("Directives", "Starting directives generation")
+	
+	if len(g.schema.Directives) == 0 {
+		g.metrics.LogProgress("Directives", "No directives found")
+		return 0
+	}
+	
 	fmt.Fprintln(g.writer, "== Directives")
 	fmt.Fprintln(g.writer)
-	fmt.Fprintln(g.writer, "[NOTE]")
-	fmt.Fprintln(g.writer, "====")
-	fmt.Fprintln(g.writer, "Directives section - implementation in progress")
-	fmt.Fprintln(g.writer, "====")
+	fmt.Fprintln(g.writer, "// tag::DIRECTIVES[]")
+	fmt.Fprintln(g.writer)
+
+	// Sort directives by name for consistent output
+	var directiveNames []string
+	for name := range g.schema.Directives {
+		directiveNames = append(directiveNames, name)
+	}
+	sort.Strings(directiveNames)
+
+	count := 0
+	for _, name := range directiveNames {
+		directive := g.schema.Directives[name]
+		g.generateDirective(directive)
+		count++
+	}
+	
+	fmt.Fprintln(g.writer, "// end::DIRECTIVES[]")
+	
+	g.metrics.LogProgress("Directives", fmt.Sprintf("Generated %d directives", count))
+	return count
+}
+
+// generateDirective generates documentation for a single directive
+func (g *Generator) generateDirective(directive *ast.DirectiveDefinition) {
+	fmt.Fprintf(g.writer, "// tag::directive-%s[]\n", directive.Name)
+	fmt.Fprintln(g.writer)
+	fmt.Fprintf(g.writer, "[[directive_%s]]\n", strings.ToLower(directive.Name))  
+	fmt.Fprintf(g.writer, "=== @%s\n", directive.Name)
+	fmt.Fprintln(g.writer)
+
+	// Process description
+	if directive.Description != "" {
+		processedDesc := parser.ProcessDescription(directive.Description)
+		fmt.Fprintf(g.writer, "// tag::directive-description-%s[]\n", directive.Name)
+		fmt.Fprintln(g.writer, processedDesc)
+		fmt.Fprintf(g.writer, "// end::directive-description-%s[]\n", directive.Name)
+		fmt.Fprintln(g.writer)
+	}
+
+	// Generate directive signature
+	fmt.Fprintf(g.writer, "// tag::directive-signature-%s[]\n", directive.Name)
+	fmt.Fprintln(g.writer, ".Directive Signature")
+	fmt.Fprintln(g.writer, "[source, graphql]")
+	fmt.Fprintln(g.writer, "----")
+	fmt.Fprintf(g.writer, "directive @%s", directive.Name)
+	
+	if len(directive.Arguments) > 0 {
+		fmt.Fprint(g.writer, "(")
+		for i, arg := range directive.Arguments {
+			if i > 0 {
+				fmt.Fprint(g.writer, ", ")
+			}
+			fmt.Fprintf(g.writer, "%s: %s", arg.Name, arg.Type.String())
+			if arg.DefaultValue != nil {
+				fmt.Fprintf(g.writer, " = %s", arg.DefaultValue.String())
+			}
+		}
+		fmt.Fprint(g.writer, ")")
+	}
+	
+	if len(directive.Locations) > 0 {
+		fmt.Fprint(g.writer, " on ")
+		for i, location := range directive.Locations {
+			if i > 0 {
+				fmt.Fprint(g.writer, " | ")
+			}
+			fmt.Fprint(g.writer, string(location))
+		}
+	}
+	
+	fmt.Fprintln(g.writer)
+	fmt.Fprintln(g.writer, "----")
+	fmt.Fprintf(g.writer, "// end::directive-signature-%s[]\n", directive.Name)
+	fmt.Fprintln(g.writer)
+
+	// Generate arguments table if there are arguments
+	if len(directive.Arguments) > 0 {
+		fmt.Fprintf(g.writer, "// tag::directive-arguments-%s[]\n", directive.Name)
+		fmt.Fprintf(g.writer, ".@%s Arguments\n", directive.Name)
+		fmt.Fprintln(g.writer, "[options=\"header\",stripes=\"even\"]")
+		fmt.Fprintln(g.writer, "|===")
+		fmt.Fprintln(g.writer, "| Argument | Type | Default | Description")
+		
+		for _, arg := range directive.Arguments {
+			fmt.Fprintf(g.writer, "| `%s`", arg.Name)
+			fmt.Fprintf(g.writer, " | `%s`", arg.Type.String())
+			
+			// Default value
+			if arg.DefaultValue != nil {
+				fmt.Fprintf(g.writer, " | `%s`", arg.DefaultValue.String())
+			} else {
+				fmt.Fprint(g.writer, " | _none_")
+			}
+			
+			// Description
+			if arg.Description != "" {
+				processedDesc := parser.ProcessDescription(arg.Description)
+				fmt.Fprintf(g.writer, " | %s", processedDesc)
+			} else {
+				fmt.Fprint(g.writer, " | _No description_")
+			}
+			fmt.Fprintln(g.writer)
+		}
+		
+		fmt.Fprintln(g.writer, "|===")
+		fmt.Fprintf(g.writer, "// end::directive-arguments-%s[]\n", directive.Name)
+		fmt.Fprintln(g.writer)
+	}
+
+	// Generate locations information
+	if len(directive.Locations) > 0 {
+		fmt.Fprintf(g.writer, "// tag::directive-locations-%s[]\n", directive.Name)
+		fmt.Fprintf(g.writer, ".@%s Usage Locations\n", directive.Name)
+		for _, location := range directive.Locations {
+			fmt.Fprintf(g.writer, "* `%s`\n", string(location))
+		}
+		fmt.Fprintf(g.writer, "// end::directive-locations-%s[]\n", directive.Name)
+		fmt.Fprintln(g.writer)
+	}
+
+	// Repeatable information
+	if directive.IsRepeatable {
+		fmt.Fprintf(g.writer, "// tag::directive-repeatable-%s[]\n", directive.Name)
+		fmt.Fprintln(g.writer, "NOTE: This directive is repeatable and can be used multiple times on the same element.")
+		fmt.Fprintf(g.writer, "// end::directive-repeatable-%s[]\n", directive.Name)
+		fmt.Fprintln(g.writer)
+	}
+
+	fmt.Fprintf(g.writer, "// end::directive-%s[]\n", directive.Name)
 	fmt.Fprintln(g.writer)
 }
 
-func (g *Generator) generateScalars(sortedDefs []*ast.Definition) {
+func (g *Generator) generateScalars(sortedDefs []*ast.Definition) int {
+	g.metrics.LogProgress("Scalars", "Starting scalars generation")
+	
 	// Implementation would go here - simplified for now
 	fmt.Fprintln(g.writer, "== Scalars")
 	fmt.Fprintln(g.writer)
@@ -332,6 +544,10 @@ func (g *Generator) generateScalars(sortedDefs []*ast.Definition) {
 	fmt.Fprintln(g.writer, "Scalars section - implementation in progress")
 	fmt.Fprintln(g.writer, "====")
 	fmt.Fprintln(g.writer)
+	
+	count := 0  // No actual scalars processed yet
+	g.metrics.LogProgress("Scalars", fmt.Sprintf("Generated %d scalars", count))
+	return count
 }
 
 // Helper functions

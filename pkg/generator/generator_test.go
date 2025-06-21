@@ -69,7 +69,10 @@ func TestGeneratorPrintHeader(t *testing.T) {
 func TestGenerateWithEmptySchema(t *testing.T) {
 	cfg := config.NewConfig()
 	cfg.SchemaFile = "empty.graphql"
-	schema := &ast.Schema{Types: make(map[string]*ast.Definition)}
+	schema := &ast.Schema{
+		Types:      make(map[string]*ast.Definition),
+		Directives: make(map[string]*ast.DirectiveDefinition),
+	}
 	var buf bytes.Buffer
 	gen := New(cfg, schema, &buf)
 
@@ -88,7 +91,6 @@ func TestGenerateWithEmptySchema(t *testing.T) {
 	expectedPlaceholders := []string{
 		"Enums section - implementation in progress",
 		"Inputs section - implementation in progress", 
-		"Directives section - implementation in progress",
 		"Scalars section - implementation in progress",
 	}
 
@@ -96,6 +98,11 @@ func TestGenerateWithEmptySchema(t *testing.T) {
 		if !strings.Contains(output, placeholder) {
 			t.Errorf("Output should contain placeholder %q", placeholder)
 		}
+	}
+	
+	// Directives section should NOT appear when no directives are present
+	if strings.Contains(output, "== Directives") {
+		t.Error("Output should not contain Directives section when no directives are present")
 	}
 	
 	// Should NOT contain mutation/subscription sections since schema.Mutation and schema.Subscription are nil
@@ -583,5 +590,85 @@ func createTestSchema() *ast.Schema {
 			"Mutation": mutationDef,
 			"User":     userDef,
 		},
+		Directives: make(map[string]*ast.DirectiveDefinition),
+	}
+}
+
+func TestGenerateDirectives(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.SchemaFile = "test.graphql"
+	
+	// Create a directive definition for testing
+	sizeDirective := &ast.DirectiveDefinition{
+		Name:        "size",
+		Description: "Directive to specify size constraints",
+		Arguments: []*ast.ArgumentDefinition{
+			{
+				Name: "min",
+				Type: &ast.Type{NamedType: "Int"},
+				DefaultValue: &ast.Value{Raw: "0", Kind: ast.IntValue},
+			},
+			{
+				Name: "max",
+				Type: &ast.Type{NamedType: "Int", NonNull: true},
+				DefaultValue: &ast.Value{Raw: "100", Kind: ast.IntValue},
+			},
+		},
+		Locations: []ast.DirectiveLocation{
+			ast.LocationArgumentDefinition,
+			ast.LocationInputFieldDefinition,
+		},
+		IsRepeatable: false,
+	}
+	
+	schema := &ast.Schema{
+		Types: make(map[string]*ast.Definition),
+		Directives: map[string]*ast.DirectiveDefinition{
+			"size": sizeDirective,
+		},
+	}
+	
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	err := gen.Generate()
+	if err != nil {
+		t.Errorf("Generate() returned error: %v", err)
+	}
+	output := buf.String()
+
+	// Should contain directives section
+	if !strings.Contains(output, "== Directives") {
+		t.Error("Output should contain Directives section")
+	}
+	
+	// Should contain directive name with @
+	if !strings.Contains(output, "=== @size") {
+		t.Error("Output should contain directive name with @ prefix")
+	}
+	
+	// Should contain directive description
+	if !strings.Contains(output, "Directive to specify size constraints") {
+		t.Error("Output should contain directive description")
+	}
+	
+	// Should contain directive signature
+	if !strings.Contains(output, "directive @size") {
+		t.Error("Output should contain directive signature")
+	}
+	
+	// Should contain arguments table
+	if !strings.Contains(output, "Arguments") {
+		t.Error("Output should contain arguments table")
+	}
+	
+	// Should contain usage locations
+	if !strings.Contains(output, "Usage Locations") {
+		t.Error("Output should contain usage locations")
+	}
+	
+	// Should contain AsciiDoc tags
+	if !strings.Contains(output, "// tag::directive-size[]") {
+		t.Error("Output should contain directive AsciiDoc tags")
 	}
 }

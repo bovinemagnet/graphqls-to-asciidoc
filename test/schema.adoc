@@ -1,7 +1,7 @@
 = GraphQL Documentation
 :toc: left
-:revdate: Sat, 21 Jun 2025 10:08:28 AEST
-:commandline: bin/graphqls-to-asciidoc -s test/schema.graphql -o test/schema.adoc
+:revdate: Sat, 21 Jun 2025 11:05:23 AEST
+:commandline: ./graphqls-to-asciidoc -s test/schema.graphql -o test/schema.adoc --verbose
 :sourceFile: test/schema.graphql
 :reproducible:
 :page-partial:
@@ -722,7 +722,7 @@ const query = `
   }
 `;
 
-const result = await client.request(query, { 
+const result = await client.request(query, {
   ids: ["1", "2", "3"] <5>
 });
 ----
@@ -730,7 +730,7 @@ const result = await client.request(query, {
 **Callout explanations:**
 
 (1) Initialize the GraphQL client with endpoint
-(2) Define the parameterized query with required ID array  
+(2) Define the parameterized query with required ID array
 (3) Fetch tweets using the provided IDs
 (4) Transform results to extract sentiment data
 (5) Pass the actual ID values as variables
@@ -1114,11 +1114,93 @@ Inputs section - implementation in progress
 
 == Directives
 
-[NOTE]
-====
-Directives section - implementation in progress
-====
+// tag::DIRECTIVES[]
 
+// tag::directive-Size[]
+
+[[directive_size]]
+=== @Size
+
+// tag::directive-description-Size[]
+Directive to specify the size constraints on arguments and input fields.
+
+.Arguments:
+* `min`: min the minimum size allowed, default is 0
+* `max`: the maximum size allowed, default is 2147483647
+* `message`: the validation message, default is "graphql.validation.Size.message"
+// end::directive-description-Size[]
+
+// tag::directive-signature-Size[]
+.Directive Signature
+[source, graphql]
+----
+directive @Size(min: Int = 0, max: Int! = 2147483647, message: String = "graphql.validation.Size.message") on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+----
+// end::directive-signature-Size[]
+
+// tag::directive-arguments-Size[]
+.@Size Arguments
+[options="header",stripes="even"]
+|===
+| Argument | Type | Default | Description
+| `min` | `Int` | `0` | _No description_
+| `max` | `Int!` | `2147483647` | _No description_
+| `message` | `String` | `"graphql.validation.Size.message"` | _No description_
+|===
+// end::directive-arguments-Size[]
+
+// tag::directive-locations-Size[]
+.@Size Usage Locations
+* `ARGUMENT_DEFINITION`
+* `INPUT_FIELD_DEFINITION`
+* `FIELD_DEFINITION`
+// end::directive-locations-Size[]
+
+// end::directive-Size[]
+
+// tag::directive-length[]
+
+[[directive_length]]
+=== @length
+
+// tag::directive-description-length[]
+Directive to specify the length constraints on arguments and input fields.
+
+.Arguments:
+* `min`: the minimum length allowed, default is 0
+* `max`: the maximum length allowed, default is 2147483647
+* `message`: the validation message, default is "graphql.validation.Size.message"
+// end::directive-description-length[]
+
+// tag::directive-signature-length[]
+.Directive Signature
+[source, graphql]
+----
+directive @length(min: Int = 0, max: Int! = 2147483647, message: String = "graphql.validation.Size.message") on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+----
+// end::directive-signature-length[]
+
+// tag::directive-arguments-length[]
+.@length Arguments
+[options="header",stripes="even"]
+|===
+| Argument | Type | Default | Description
+| `min` | `Int` | `0` | _No description_
+| `max` | `Int!` | `2147483647` | _No description_
+| `message` | `String` | `"graphql.validation.Size.message"` | _No description_
+|===
+// end::directive-arguments-length[]
+
+// tag::directive-locations-length[]
+.@length Usage Locations
+* `ARGUMENT_DEFINITION`
+* `INPUT_FIELD_DEFINITION`
+* `FIELD_DEFINITION`
+// end::directive-locations-length[]
+
+// end::directive-length[]
+
+// end::DIRECTIVES[]
 == Scalars
 
 [NOTE]

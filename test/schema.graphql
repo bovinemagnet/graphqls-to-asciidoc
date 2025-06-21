@@ -225,6 +225,68 @@ input CLogExampleInput {
     new: String
 }
 
+# tag::graphql_filter_dateFilter[]
+"""
+Defines an inclusive time window used to filter records (e.g. delta changes, events, logs) by their timestamps.
+
+.Use Cases:
+* **Delta queries**: clients can pass a `DateFilter` to `deltaChanges` (or similar endpoints) to retrieve only
+those records whose timestamps fall between two instants.
+* **Searches & reporting**: limit results to objects created, updated, or deleted within a specific date/time range.
+
+.Behavior & Validation:
+* Both `fromDateTime` and `toDateTime` are **inclusive**. Events occurring exactly at `fromDateTime` or `toDateTime`
+should be included.
+* `fromDateTime` **must be less than or equal to** `toDateTime`. If a client sends them in reverse order, the server
+**should** respond with a validation error stating "fromDateTime must be less than or equal to `toDateTime`".
+* Timestamps are expected in the **ISO-8601** format `YYYY-MM-DD'T'HH:mm:ss`.
+* Because this input uses the scalar `LocalDateTime`, it does not carry a timezone offset.
+
+.Example JSON representation (as a request payload in REST, or variables in GraphQL):
+[source,json]
+----
+{
+  "fromDateTime": "2025-01-01T00:00:00",
+  "toDateTime":   "2025-01-01T23:59:59"
+}
+----
+"""
+input DateFilter {
+    """
+    .**Required:** Inclusive start or lower bound of the date/time window.
+    * **Format:** ISO-8601 `YYYY-MM-DD'T'HH:mm:ss` (e.g. _2025-01-01T00:00:00_).
+    * **Constraint:** Must be less than or equal to `toDateTime`.
+    * Any event whose timestamp is exactly equal to `after` must be included in the result.
+
+    .Validation:
+    * If `after` is missing or not a valid ISO-8601 string, return a validation error: +
+    `"Invalid ISO8601DateTime format for field 'after'."`
+
+    .Examples:
+    * `2025-05-01T00:00:00` (midnight UTC on May 1, 2025)
+    * `2025-06-06T14:30:15`
+    * `2025-06-06T00:00:00Z`
+    * `2025-06-06T10:00:00+10:00`
+
+
+    If this field is not strictly earlier than or equal to `toDateTime`, the server will reject the request.
+    """
+    fromDateTime: LocalDateTime!
+
+    """
+    .An explicit inclusive upper bound orr end of the date/time window.
+    * **Format:** ISO-8601 YYYY-MM-DD'T'HH:mm:ss (e.g. 2025-05-31T23:59:59).
+    * **Constraint:** Must be greater than or equal to `fromDateTime`.
+
+    Example:
+    • `2025-05-31T23:59:59` (one second before midnight UTC on May 31, 2025)
+
+    If this field is not strictly later than or equal to fromDateTime, the server will reject the request.
+    """
+    toDateTime: LocalDateTime!
+}
+# end::graphql_filter_dateFilter[]
+
 """
 # tag::SCALAR_URL_DES[]
 A URL string scalar
@@ -238,6 +300,20 @@ A date string scalar
 # end::SCALAR_DATE_DES[]
 """
 scalar Date
+
+# tag::graphql_scalars_ISO8601DateTime[]
+"""
+A custom scalar that enforces full ISO-8601 date‐time strings with time‐zone offsets.
+
+.Example values:
+* "2025-06-06T00:00:00Z"
+* "2025-06-06T14:30:45+10:00"
+* "2025-06-06T18:15:00-05:00"
+Internally, this should map to something like java.time.OffsetDateTime
+ or java.time.Instant (if you normalize to UTC on parse).
+"""
+scalar ISO8601DateTime
+# end::graphql_scalars_ISO8601DateTime[]
 
 """
 # tag::SENTIMENT_DES[]
@@ -290,6 +366,20 @@ enum Direction {
     DOWN
 }
 
+# tag::graphql_enum_MutationMode[]
+"""
+The mode of the mutation.
+
+The mutation can be either `synchronous` or `asynchronous`, depending on if the data requires further processing or not.
+"""
+enum MutationMode {
+    "Synchronous"
+    SYNC
+    "Asynchronous"
+    ASYNC
+}
+# end::graphql_enum_MutationMode[]
+
 """
 The root query
 """
@@ -297,10 +387,10 @@ type Query {
     """
     [#get-tweet]
     Get a tweet by its ID
-    
+
     This is the primary method for retrieving individual tweets.
     For bulk operations, see {ref:get-tweets}.
-    
+
     .Arguments:
     - `id`: the id of the tweet to search by.
     """
@@ -308,7 +398,7 @@ type Query {
     """
     [get-tweets]
     Get a list of tweets, remember that it is `2024-01-08` for testing dates in the conversion.
-    
+
     **Performance notes:**
     - Use pagination with `limit` and `skip` parameters
     - For single tweet access, use {link:get-tweet|the Tweet query}
@@ -463,15 +553,15 @@ type Query {
     ```javascript
     // JavaScript client example
     const client = new GraphQLClient(endpoint); (1)
-    
+
     const query = `
       query MultiExample($ids: [ID!]!) { // 2
         tweets: getTweets(ids: $ids) /* 3 */
           .map(tweet => tweet.sentiment) # 4
       }
     `;
-    
-    const result = await client.request(query, { 
+
+    const result = await client.request(query, {
       ids: ["1", "2", "3"] (5)
     });
     ```
@@ -479,7 +569,7 @@ type Query {
     **Callout explanations:**
 
     (1) Initialize the GraphQL client with endpoint
-    (2) Define the parameterized query with required ID array  
+    (2) Define the parameterized query with required ID array
     (3) Fetch tweets using the provided IDs
     (4) Transform results to extract sentiment data
     (5) Pass the actual ID values as variables
@@ -546,18 +636,18 @@ type Mutation {
         # Validate input # 1
         if not body or len(body) > 280: # 2
             raise ValidationError("Invalid tweet body")
-        
+
         # Create tweet object (3)
         tweet = Tweet.create(
             body=body,
             author=current_user() /* 4 */
         )
-        
+
         return tweet (5)
     ```
 
     # 1 - Always validate user input first
-    # 2 - Check Twitter's character limit  
+    # 2 - Check Twitter's character limit
     (3) Use the domain model to create the tweet
     /* 4 */ Get the authenticated user context
     (5) Return the newly created tweet

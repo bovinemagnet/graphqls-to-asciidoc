@@ -18,6 +18,7 @@ The application is a single-file Go program (`main.go`) that:
 Key architectural components:
 - **Template system**: Uses Go's `text/template` for consistent formatting
 - **Type processing**: Converts GraphQL types to AsciiDoc cross-references
+- **Directive processing**: Full support for custom directive definitions with arguments, locations, and descriptions
 - **Sorting**: All definitions are sorted alphabetically for consistent output
 - **Tagging**: Extensive use of AsciiDoc tags for selective inclusion in larger documents
 
@@ -89,7 +90,8 @@ The project includes basic unit tests (`main_test.go`) focusing on utility funct
 
 Generates comprehensive AsciiDoc documentation with:
 - Table of contents and metadata
-- Separate sections for each GraphQL construct
+- Separate sections for each GraphQL construct (Queries, Mutations, Subscriptions, Types, Enums, Inputs, Directives, Scalars)
 - Cross-references between types
+- Directive documentation with signature, arguments table, usage locations, and repeatability information
 - Extensive tagging for selective inclusion
 - Consistent table formatting and styling

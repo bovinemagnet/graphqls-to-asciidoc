@@ -28,6 +28,7 @@ type Config struct {
 	IncludeScalars      bool
 	ShowVersion         bool
 	ShowHelp            bool
+	Verbose             bool
 }
 
 // NewConfig creates a new Config with default values
@@ -61,6 +62,7 @@ func ParseFlags() *Config {
 	flag.BoolVar(&config.ShowVersion, "v", false, "Show program version and build information (shorthand)")
 	flag.BoolVar(&config.ShowHelp, "help", false, "Show detailed help information")
 	flag.BoolVar(&config.ShowHelp, "h", false, "Show detailed help information (shorthand)")
+	flag.BoolVar(&config.Verbose, "verbose", false, "Enable verbose logging with metrics")
 
 	// Section inclusion flags
 	flag.BoolVar(&config.IncludeQueries, "queries", true, "Include queries in the output")
@@ -146,6 +148,7 @@ OPTIONS:
     -h, --help              Show this help information
     -v, --version           Show program version and build information
     -x, --exclude-internal  Exclude internal queries from output
+        --verbose           Enable verbose logging with processing metrics
 
 SECTION CONTROL:
     -q, --queries           Include queries in the output (default: true)
@@ -172,6 +175,9 @@ EXAMPLES:
 
     # Generate comprehensive documentation with all sections
     graphqls-to-asciidoc -s schema.graphql -o full-docs.adoc --subscriptions
+
+    # Generate with verbose logging and metrics
+    graphqls-to-asciidoc -s schema.graphql -o docs.adoc --verbose
 
 FEATURES:
     ✓ Admonition blocks (NOTE, WARNING, TIP, etc.)
