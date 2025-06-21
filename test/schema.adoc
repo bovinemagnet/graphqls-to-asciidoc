@@ -1,7 +1,7 @@
 = GraphQL Documentation
 :toc: left
-:revdate: Sat, 21 Jun 2025 11:45:04 AEST
-:commandline: ./graphqls-to-asciidoc -s test/schema.graphql -o test/schema.adoc --verbose
+:revdate: Sat, 21 Jun 2025 11:51:24 AEST
+:commandline: ./graphqls-to-asciidoc -s test/schema.graphql -o test/schema.adoc --verbose --subscriptions
 :sourceFile: test/schema.graphql
 :reproducible:
 :page-partial:
@@ -1136,6 +1136,51 @@ removed.version: 2.7.8
 // end::mutation-createMessageDep[]
 
 // end::mutation[]
+
+// tag::subscription[]
+== Subscription
+Subscribe to a tweet by `id` and get updates when a comment is added.
+
+
+ .Arguments:
+ * `id`: the id of the tweet.
+
+
+// tag::subscription-commentAdded[]
+
+[[subscription_commentadded]]
+=== commentAdded
+
+
+// tag::subscription-signature-commentAdded[]
+.subscription: commentAdded
+[source, kotlin]
+----
+commentAdded(
+  id: `ID!` <1> 
+): <<Tweet,`Tweet`>> <2>
+----
+// end::subscription-signature-commentAdded[]
+
+// tag::subscription-name-commentAdded[]
+*Subscription Name:* _commentAdded_
+// end::subscription-name-commentAdded[]
+
+// tag::subscription-return-commentAdded[]
+*Return:* <<Tweet,`Tweet`>>
+// end::subscription-return-commentAdded[]
+
+// tag::subscription-arguments-commentAdded[]
+.Arguments
+* `id : ID!`
+// end::subscription-arguments-commentAdded[]
+
+// end::subscription-commentAdded[]
+
+
+
+
+// end::subscription[]
 
 == Types
 
