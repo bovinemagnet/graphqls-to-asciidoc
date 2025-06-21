@@ -1,6 +1,7 @@
 package config
 
 import (
+	"os"
 	"testing"
 )
 
@@ -95,10 +96,111 @@ func TestVersionOutput(t *testing.T) {
 	// Test that HandleVersion returns true when ShowVersion is set
 	config := NewConfig()
 	config.ShowVersion = true
-	
+
 	// We can't easily test the output, but we can test the return value
 	// In a real test, this would print to stdout, but for testing we just verify the logic
 	if !config.ShowVersion {
 		t.Error("ShowVersion should be true when set")
+	}
+}
+
+func TestConfigWithAllFlags(t *testing.T) {
+	cfg := NewConfig()
+
+	// Test all boolean flags
+	cfg.IncludeQueries = false
+	cfg.IncludeMutations = false
+	cfg.IncludeSubscriptions = false
+	cfg.IncludeTypes = false
+	cfg.IncludeEnums = false
+	cfg.IncludeInputs = false
+	cfg.IncludeDirectives = false
+	cfg.IncludeScalars = false
+	cfg.ExcludeInternal = true
+	cfg.Verbose = true
+
+	// Create a temporary file for validation
+	tmpFile, err := os.CreateTemp("", "test-*.graphql")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	// Test string fields
+	cfg.SchemaFile = tmpFile.Name()
+	cfg.OutputFile = "output.adoc"
+
+	// Test validation
+	err = cfg.Validate()
+	if err != nil {
+		t.Errorf("Config validation failed: %v", err)
+	}
+
+	// Test that all fields are set correctly
+	if cfg.SchemaFile != tmpFile.Name() {
+		t.Error("SchemaFile not set correctly")
+	}
+	if cfg.OutputFile != "output.adoc" {
+		t.Error("OutputFile not set correctly")
+	}
+	if !cfg.ExcludeInternal {
+		t.Error("ExcludeInternal not set correctly")
+	}
+	if !cfg.Verbose {
+		t.Error("Verbose not set correctly")
+	}
+}
+
+func TestConfigValidationErrors(t *testing.T) {
+	cfg := NewConfig()
+
+	// Test empty schema file
+	cfg.SchemaFile = ""
+	err := cfg.Validate()
+	if err == nil {
+		t.Error("Should return error for empty schema file")
+	}
+
+	// Test non-existent schema file
+	cfg.SchemaFile = "nonexistent.graphql"
+	err = cfg.Validate()
+	if err == nil {
+		t.Error("Should return error for non-existent schema file")
+	}
+}
+
+func TestConfigDefaultValues(t *testing.T) {
+	cfg := NewConfig()
+
+	// Test that default values are set correctly
+	if !cfg.IncludeQueries {
+		t.Error("IncludeQueries should be true by default")
+	}
+	if !cfg.IncludeMutations {
+		t.Error("IncludeMutations should be true by default")
+	}
+	if cfg.IncludeSubscriptions {
+		t.Error("IncludeSubscriptions should be false by default")
+	}
+	if !cfg.IncludeTypes {
+		t.Error("IncludeTypes should be true by default")
+	}
+	if !cfg.IncludeEnums {
+		t.Error("IncludeEnums should be true by default")
+	}
+	if !cfg.IncludeInputs {
+		t.Error("IncludeInputs should be true by default")
+	}
+	if !cfg.IncludeDirectives {
+		t.Error("IncludeDirectives should be true by default")
+	}
+	if !cfg.IncludeScalars {
+		t.Error("IncludeScalars should be true by default")
+	}
+	if cfg.ExcludeInternal {
+		t.Error("ExcludeInternal should be false by default")
+	}
+	if cfg.Verbose {
+		t.Error("Verbose should be false by default")
 	}
 }

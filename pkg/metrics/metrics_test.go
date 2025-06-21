@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -112,4 +114,117 @@ func TestFormatEnabled(t *testing.T) {
 	if formatEnabled(false) != "✗ disabled" {
 		t.Error("formatEnabled(false) should return '✗ disabled'")
 	}
+}
+
+func TestMetricsWithEnabledConfig(t *testing.T) {
+	cfg := &config.Config{
+		Verbose: true,
+	}
+
+	metrics := New(cfg)
+	if metrics == nil {
+		t.Fatal("New() returned nil")
+	}
+
+	// Test section timer
+	timer := metrics.StartSection("TestSection")
+	if timer == nil {
+		t.Fatal("StartSection() returned nil")
+	}
+
+	// Test logging
+	metrics.LogProgress("TestSection", "Test message")
+	metrics.LogInputParameters()
+
+	// Test metrics table logging
+	metrics.LogMetricsTable()
+
+	// Test timer operations
+	timer.AddCount(5)
+	timer.Finish()
+}
+
+func TestMetricsWithDisabledConfig(t *testing.T) {
+	cfg := &config.Config{
+		Verbose: false,
+	}
+
+	metrics := New(cfg)
+	if metrics == nil {
+		t.Fatal("New() returned nil")
+	}
+
+	// Test section timer (should be disabled)
+	timer := metrics.StartSection("TestSection")
+	if timer == nil {
+		t.Fatal("StartSection() returned nil even when disabled")
+	}
+
+	// Test logging (should be no-ops)
+	metrics.LogProgress("TestSection", "Test message")
+	metrics.LogInputParameters()
+	metrics.LogMetricsTable()
+
+	// Test timer operations (should be no-ops)
+	timer.AddCount(5)
+	timer.Finish()
+}
+
+func TestSectionTimerOperations(t *testing.T) {
+	cfg := &config.Config{Verbose: true}
+	metrics := New(cfg)
+
+	timer := metrics.StartSection("TestSection")
+
+	// Test multiple count additions
+	timer.AddCount(1)
+	timer.AddCount(2)
+	timer.AddCount(3)
+
+	// Test finish
+	timer.Finish()
+
+	// Test that we can call finish multiple times safely
+	timer.Finish()
+}
+
+func TestFormatDurationEdgeCases(t *testing.T) {
+	// Test zero duration
+	duration := time.Duration(0)
+	formatted := formatDuration(duration)
+	if formatted != "0ns" {
+		t.Errorf("Expected '0ns', got %s", formatted)
+	}
+
+	// Test very small duration
+	duration = time.Microsecond
+	formatted = formatDuration(duration)
+	if formatted != "1.0μs" {
+		t.Errorf("Expected '1.0μs', got %s", formatted)
+	}
+
+	// Test very large duration
+	duration = 25 * time.Hour
+	formatted = formatDuration(duration)
+	if !strings.Contains(formatted, "s") {
+		t.Errorf("Expected seconds in format, got %s", formatted)
+	}
+}
+
+func TestMetricsBasicOperations(t *testing.T) {
+	cfg := &config.Config{Verbose: true}
+	metrics := New(cfg)
+
+	// Test multiple sections
+	sections := []string{"Section1", "Section2", "Section3"}
+
+	for _, section := range sections {
+		timer := metrics.StartSection(section)
+		metrics.LogProgress(section, fmt.Sprintf("Processing %s", section))
+		timer.AddCount(1)
+		timer.Finish()
+	}
+
+	// Test final metrics table
+	metrics.LogMetricsTable()
 }

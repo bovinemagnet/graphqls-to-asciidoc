@@ -710,3 +710,688 @@ func TestIsBuiltInScalar(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateSubscriptions(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.SchemaFile = "test.graphql"
+
+	// Create a schema with subscriptions
+	subscriptionDef := &ast.Definition{
+		Kind: ast.Object,
+		Name: "Subscription",
+		Fields: ast.FieldList{
+			&ast.FieldDefinition{
+				Name:        "userUpdates",
+				Description: "Subscribe to user updates",
+				Type:        &ast.Type{NamedType: "User"},
+				Arguments: ast.ArgumentDefinitionList{
+					&ast.ArgumentDefinition{
+						Name: "userId",
+						Type: &ast.Type{NamedType: "ID", NonNull: true},
+					},
+				},
+			},
+			&ast.FieldDefinition{
+				Name:        "INTERNAL_test",
+				Description: "INTERNAL: Test subscription",
+				Type:        &ast.Type{NamedType: "String"},
+			},
+		},
+	}
+
+	schema := &ast.Schema{
+		Subscription: subscriptionDef,
+		Types: map[string]*ast.Definition{
+			"Subscription": subscriptionDef,
+			"User": {
+				Kind: ast.Object,
+				Name: "User",
+				Fields: ast.FieldList{
+					&ast.FieldDefinition{
+						Name: "id",
+						Type: &ast.Type{NamedType: "ID", NonNull: true},
+					},
+				},
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	// Test with internal filtering enabled
+	cfg.ExcludeInternal = true
+	count := gen.generateSubscriptions(gen.schema.Types)
+	if count != 1 {
+		t.Errorf("Expected 1 subscription, got %d", count)
+	}
+
+	output := buf.String()
+	expectedContent := []string{
+		"== Subscription",
+		"userUpdates",
+		"Subscribe to user updates",
+		"// tag::subscription-userUpdates[]",
+		"[[subscription_userupdates]]",
+		"=== userUpdates",
+		".subscription: userUpdates",
+		"*Subscription Name:* _userUpdates_",
+		"*Return:* <<User,`User`>>",
+		"* `userId : ID!`",
+	}
+
+	for _, expected := range expectedContent {
+		if !strings.Contains(output, expected) {
+			t.Errorf("Subscription output should contain %q, but doesn't", expected)
+		}
+	}
+
+	// Should not contain internal subscription
+	if strings.Contains(output, "INTERNAL_test") {
+		t.Error("Output should not contain internal subscription when ExcludeInternal is true")
+	}
+}
+
+func TestGenerateSubscriptionsEmpty(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: make(map[string]*ast.Definition),
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	count := gen.generateSubscriptions(gen.schema.Types)
+	if count != 0 {
+		t.Errorf("Expected 0 subscriptions, got %d", count)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "No subscriptions exist in this schema") {
+		t.Error("Should show 'No subscriptions exist' message")
+	}
+}
+
+func TestGetSubscriptionDetails(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{
+			"User": {
+				Kind: ast.Object,
+				Name: "User",
+			},
+		},
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	field := &ast.FieldDefinition{
+		Name:        "testSubscription",
+		Description: "Test subscription description",
+		Type:        &ast.Type{NamedType: "User"},
+		Arguments: ast.ArgumentDefinitionList{
+			&ast.ArgumentDefinition{
+				Name: "id",
+				Type: &ast.Type{NamedType: "ID", NonNull: true},
+			},
+		},
+		Directives: ast.DirectiveList{
+			&ast.Directive{Name: "deprecated"},
+		},
+	}
+
+	details := gen.getSubscriptionDetails(field, gen.schema.Types)
+
+	expectedContent := []string{
+		"// tag::subscription-testSubscription[]",
+		"[[subscription_testsubscription]]",
+		"=== testSubscription",
+		".subscription: testSubscription",
+		"*Subscription Name:* _testSubscription_",
+		"*Return:* <<User,`User`>>",
+		"* `id : ID!`",
+		"* @deprecated",
+	}
+
+	for _, expected := range expectedContent {
+		if !strings.Contains(details, expected) {
+			t.Errorf("Subscription details should contain %q, but doesn't", expected)
+		}
+	}
+}
+
+func TestGenerateMutations(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.SchemaFile = "test.graphql"
+
+	// Create a schema with mutations
+	mutationDef := &ast.Definition{
+		Kind:        ast.Object,
+		Name:        "Mutation",
+		Description: "Root mutation type",
+		Fields: ast.FieldList{
+			&ast.FieldDefinition{
+				Name:        "createUser",
+				Description: "Create a new user",
+				Type:        &ast.Type{NamedType: "User"},
+				Arguments: ast.ArgumentDefinitionList{
+					&ast.ArgumentDefinition{
+						Name: "input",
+						Type: &ast.Type{NamedType: "UserInput", NonNull: true},
+					},
+				},
+			},
+			&ast.FieldDefinition{
+				Name:        "INTERNAL_test",
+				Description: "INTERNAL: Test mutation",
+				Type:        &ast.Type{NamedType: "String"},
+			},
+		},
+	}
+
+	schema := &ast.Schema{
+		Mutation: mutationDef,
+		Types: map[string]*ast.Definition{
+			"Mutation": mutationDef,
+			"User": {
+				Kind: ast.Object,
+				Name: "User",
+			},
+			"UserInput": {
+				Kind: ast.InputObject,
+				Name: "UserInput",
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	// Test with internal filtering enabled
+	cfg.ExcludeInternal = true
+	count := gen.generateMutations(gen.schema.Types)
+	if count != 1 {
+		t.Errorf("Expected 1 mutation, got %d", count)
+	}
+
+	output := buf.String()
+	expectedContent := []string{
+		"== Mutations",
+		"createUser",
+		"Create a new user",
+		"// tag::mutation-createUser[]",
+		"[[mutation_createuser]]",
+		"=== createUser",
+		".mutation: createUser",
+		"*Mutation Name:* _createUser_",
+		"*Return:* <<User,`User`>>",
+		"* `input : UserInput!`",
+	}
+
+	for _, expected := range expectedContent {
+		if !strings.Contains(output, expected) {
+			t.Errorf("Mutation output should contain %q, but doesn't", expected)
+		}
+	}
+
+	// Should not contain internal mutation
+	if strings.Contains(output, "INTERNAL_test") {
+		t.Error("Output should not contain internal mutation when ExcludeInternal is true")
+	}
+}
+
+func TestGenerateMutationsEmpty(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: make(map[string]*ast.Definition),
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	count := gen.generateMutations(gen.schema.Types)
+	if count != 0 {
+		t.Errorf("Expected 0 mutations, got %d", count)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "No mutations exist in this schema") {
+		t.Error("Should show 'No mutations exist' message")
+	}
+}
+
+func TestGetMethodSignatureBlock(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{
+			"User": {
+				Kind: ast.Object,
+				Name: "User",
+			},
+			"UserInput": {
+				Kind: ast.InputObject,
+				Name: "UserInput",
+			},
+		},
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	field := &ast.FieldDefinition{
+		Name: "testMutation",
+		Type: &ast.Type{NamedType: "User"},
+		Arguments: ast.ArgumentDefinitionList{
+			&ast.ArgumentDefinition{
+				Name: "input",
+				Type: &ast.Type{NamedType: "UserInput", NonNull: true},
+			},
+			&ast.ArgumentDefinition{
+				Name: "optional",
+				Type: &ast.Type{NamedType: "String"},
+			},
+		},
+	}
+
+	signature := gen.getMethodSignatureBlock(field, gen.schema.Types)
+
+	expectedContent := []string{
+		".mutation: testMutation",
+		"[source, kotlin]",
+		"----",
+		"testMutation(",
+		"  input: UserInput! <1> ",
+		"  optional: String <2> ",
+		") : <<User,`User`>> <3>",
+		"----",
+	}
+
+	for _, expected := range expectedContent {
+		if !strings.Contains(signature, expected) {
+			t.Errorf("Method signature should contain %q, but doesn't", expected)
+		}
+	}
+}
+
+func TestGetArgumentsBlock(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{
+			"UserInput": {
+				Kind: ast.InputObject,
+				Name: "UserInput",
+			},
+		},
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	field := &ast.FieldDefinition{
+		Name: "testMutation",
+		Arguments: ast.ArgumentDefinitionList{
+			&ast.ArgumentDefinition{
+				Name: "input",
+				Type: &ast.Type{NamedType: "UserInput", NonNull: true},
+			},
+			&ast.ArgumentDefinition{
+				Name: "optional",
+				Type: &ast.Type{NamedType: "String"},
+			},
+		},
+	}
+
+	args := gen.getArgumentsBlock(field, gen.schema.Types)
+
+	expectedContent := []string{
+		"* `input : UserInput!`",
+		"* `optional : String`",
+	}
+
+	for _, expected := range expectedContent {
+		if !strings.Contains(args, expected) {
+			t.Errorf("Arguments block should contain %q, but doesn't", expected)
+		}
+	}
+}
+
+func TestGetArgumentsBlockEmpty(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{Types: make(map[string]*ast.Definition)}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	field := &ast.FieldDefinition{
+		Name: "testMutation",
+	}
+
+	args := gen.getArgumentsBlock(field, gen.schema.Types)
+	if args != "" {
+		t.Errorf("Expected empty string for no arguments, got %q", args)
+	}
+}
+
+func TestGetDirectivesBlock(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{Types: make(map[string]*ast.Definition)}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	field := &ast.FieldDefinition{
+		Name: "testMutation",
+		Directives: ast.DirectiveList{
+			&ast.Directive{Name: "deprecated"},
+			&ast.Directive{Name: "auth"},
+		},
+	}
+
+	directives := gen.getDirectivesBlock(field)
+
+	expectedContent := []string{
+		"* @deprecated",
+		"* @auth",
+	}
+
+	for _, expected := range expectedContent {
+		if !strings.Contains(directives, expected) {
+			t.Errorf("Directives block should contain %q, but doesn't", expected)
+		}
+	}
+}
+
+func TestGetDirectivesBlockEmpty(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{Types: make(map[string]*ast.Definition)}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	field := &ast.FieldDefinition{
+		Name: "testMutation",
+	}
+
+	directives := gen.getDirectivesBlock(field)
+	if directives != "" {
+		t.Errorf("Expected empty string for no directives, got %q", directives)
+	}
+}
+
+func TestGetInputFieldsTableString(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{
+			"User": {
+				Kind: ast.Object,
+				Name: "User",
+			},
+		},
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	inputDef := &ast.Definition{
+		Kind: ast.InputObject,
+		Name: "UserInput",
+		Fields: ast.FieldList{
+			&ast.FieldDefinition{
+				Name:        "name",
+				Description: "User's name",
+				Type:        &ast.Type{NamedType: "String", NonNull: true},
+			},
+			&ast.FieldDefinition{
+				Name:        "email",
+				Description: "User's email",
+				Type:        &ast.Type{NamedType: "String"},
+			},
+		},
+	}
+
+	table, err := gen.getInputFieldsTableString(inputDef, gen.schema.Types)
+	if err != nil {
+		t.Fatalf("getInputFieldsTableString returned error: %v", err)
+	}
+
+	expectedContent := []string{
+		".input: UserInput",
+		"[options=\"header\"]",
+		"|===",
+		"| Field | Type | Description",
+		"| `name` | String! | User's name",
+		"| `email` | String | User's email",
+		"|===",
+	}
+
+	for _, expected := range expectedContent {
+		if !strings.Contains(table, expected) {
+			t.Errorf("Input fields table should contain %q, but doesn't", expected)
+		}
+	}
+}
+
+func TestGetEnumValuesTableString(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{Types: make(map[string]*ast.Definition)}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	enumDef := &ast.Definition{
+		Kind: ast.Enum,
+		Name: "Status",
+		EnumValues: ast.EnumValueList{
+			&ast.EnumValueDefinition{
+				Name:        "ACTIVE",
+				Description: "Active status",
+			},
+			&ast.EnumValueDefinition{
+				Name:        "INACTIVE",
+				Description: "Inactive status",
+			},
+		},
+	}
+
+	table, err := gen.getEnumValuesTableString(enumDef)
+	if err != nil {
+		t.Fatalf("getEnumValuesTableString returned error: %v", err)
+	}
+
+	expectedContent := []string{
+		".enum: Status",
+		"[options=\"header\"]",
+		"|===",
+		"| Value | Description",
+		"| `ACTIVE` | Active status",
+		"| `INACTIVE` | Inactive status",
+		"|===",
+	}
+
+	for _, expected := range expectedContent {
+		if !strings.Contains(table, expected) {
+			t.Errorf("Enum values table should contain %q, but doesn't", expected)
+		}
+	}
+}
+
+func TestGenerateEnums(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{
+			"Status": {
+				Kind:        ast.Enum,
+				Name:        "Status",
+				Description: "User status enum",
+				EnumValues: ast.EnumValueList{
+					&ast.EnumValueDefinition{
+						Name:        "ACTIVE",
+						Description: "Active status",
+					},
+					&ast.EnumValueDefinition{
+						Name:        "INACTIVE",
+						Description: "Inactive status",
+					},
+				},
+			},
+		},
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	// Convert map to slice for the function call
+	var sortedDefs []*ast.Definition
+	for _, def := range gen.schema.Types {
+		sortedDefs = append(sortedDefs, def)
+	}
+
+	count := gen.generateEnums(sortedDefs, gen.schema.Types)
+	if count != 1 {
+		t.Errorf("Expected 1 enum, got %d", count)
+	}
+
+	output := buf.String()
+	expectedContent := []string{
+		"== Enums",
+		"Status",
+		"User status enum",
+		".enum: Status",
+		"| `ACTIVE` | Active status",
+		"| `INACTIVE` | Inactive status",
+	}
+
+	for _, expected := range expectedContent {
+		if !strings.Contains(output, expected) {
+			t.Errorf("Enum output should contain %q, but doesn't", expected)
+		}
+	}
+}
+
+func TestGenerateInputs(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{
+			"UserInput": {
+				Kind:        ast.InputObject,
+				Name:        "UserInput",
+				Description: "Input for creating a user",
+				Fields: ast.FieldList{
+					&ast.FieldDefinition{
+						Name:        "name",
+						Description: "User's name",
+						Type:        &ast.Type{NamedType: "String", NonNull: true},
+					},
+					&ast.FieldDefinition{
+						Name:        "email",
+						Description: "User's email",
+						Type:        &ast.Type{NamedType: "String"},
+					},
+				},
+			},
+		},
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	// Convert map to slice for the function call
+	var sortedDefs []*ast.Definition
+	for _, def := range gen.schema.Types {
+		sortedDefs = append(sortedDefs, def)
+	}
+
+	count := gen.generateInputs(sortedDefs, gen.schema.Types)
+	if count != 1 {
+		t.Errorf("Expected 1 input, got %d", count)
+	}
+
+	output := buf.String()
+	expectedContent := []string{
+		"== Inputs",
+		"UserInput",
+		"Input for creating a user",
+		".input: UserInput",
+		"| `name` | String! | User's name",
+		"| `email` | String | User's email",
+	}
+
+	for _, expected := range expectedContent {
+		if !strings.Contains(output, expected) {
+			t.Errorf("Input output should contain %q, but doesn't", expected)
+		}
+	}
+}
+
+func TestGenerateScalars(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{
+			"DateTime": {
+				Kind:        ast.Scalar,
+				Name:        "DateTime",
+				Description: "ISO 8601 date time string",
+			},
+			"JSON": {
+				Kind:        ast.Scalar,
+				Name:        "JSON",
+				Description: "JSON scalar type",
+			},
+		},
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	// Convert map to slice for the function call
+	var sortedDefs []*ast.Definition
+	for _, def := range gen.schema.Types {
+		sortedDefs = append(sortedDefs, def)
+	}
+
+	count := gen.generateScalars(sortedDefs)
+	if count != 2 {
+		t.Errorf("Expected 2 scalars, got %d", count)
+	}
+
+	output := buf.String()
+	expectedContent := []string{
+		"== Scalars",
+		"DateTime",
+		"ISO 8601 date time string",
+		"JSON",
+		"JSON scalar type",
+	}
+
+	for _, expected := range expectedContent {
+		if !strings.Contains(output, expected) {
+			t.Errorf("Scalar output should contain %q, but doesn't", expected)
+		}
+	}
+}
+
+func TestGenerateScalarsWithBuiltIn(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{
+			"String": {
+				Kind: ast.Scalar,
+				Name: "String",
+			},
+			"CustomScalar": {
+				Kind:        ast.Scalar,
+				Name:        "CustomScalar",
+				Description: "A custom scalar",
+			},
+		},
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	// Convert map to slice for the function call
+	var sortedDefs []*ast.Definition
+	for _, def := range gen.schema.Types {
+		sortedDefs = append(sortedDefs, def)
+	}
+
+	count := gen.generateScalars(sortedDefs)
+	if count != 1 {
+		t.Errorf("Expected 1 custom scalar, got %d", count)
+	}
+
+	output := buf.String()
+	if strings.Contains(output, "String") {
+		t.Error("Should not include built-in scalar 'String'")
+	}
+	if !strings.Contains(output, "CustomScalar") {
+		t.Error("Should include custom scalar 'CustomScalar'")
+	}
+}
