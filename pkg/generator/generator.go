@@ -359,16 +359,66 @@ func (g *Generator) generateTypes(sortedDefs []*ast.Definition, definitionsMap m
 func (g *Generator) generateEnums(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) int {
 	g.metrics.LogProgress("Enums", "Starting enums generation")
 
-	// Implementation would go here - simplified for now
-	fmt.Fprintln(g.writer, "== Enums")
-	fmt.Fprintln(g.writer)
-	fmt.Fprintln(g.writer, "[NOTE]")
-	fmt.Fprintln(g.writer, "====")
-	fmt.Fprintln(g.writer, "Enums section - implementation in progress")
-	fmt.Fprintln(g.writer, "====")
-	fmt.Fprintln(g.writer)
+	var enumInfos []EnumInfo
+	count := 0
 
-	count := 0 // No actual enums processed yet
+	// Filter for enum definitions
+	for _, def := range sortedDefs {
+		if def.Kind == ast.Enum {
+			// Generate values table
+			valuesTableString, err := g.getEnumValuesTableString(def)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error generating values table for enum %s: %v\n", def.Name, err)
+				valuesTableString = "[ERROR generating values table]"
+			}
+
+			// Process enum description and extract changelog
+			processedDesc, _ := changelog.ProcessWithChangelog(def.Description, parser.ProcessDescription)
+
+			enumInfo := EnumInfo{
+				Name:        def.Name,
+				AnchorName:  "enum_" + parser.CamelToSnake(def.Name),
+				Description: processedDesc,
+				ValuesTable: valuesTableString,
+			}
+			enumInfos = append(enumInfos, enumInfo)
+			count++
+		}
+	}
+
+	if len(enumInfos) > 0 {
+		data := struct {
+			EnumsTag string
+			Enums    []EnumInfo
+		}{
+			EnumsTag: "== Enums",
+			Enums:    enumInfos,
+		}
+
+		tmpl, err := template.New("enums").Funcs(template.FuncMap{
+			"printAsciiDocTagsTmpl": func(s string) string { return s },
+		}).Parse(templates.EnumSectionTemplate)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error parsing enum section template: %v\n", err)
+			g.metrics.LogProgress("Enums", fmt.Sprintf("Generated %d enums", count))
+			return count
+		}
+
+		err = tmpl.Execute(g.writer, data)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error executing enum section template: %v\n", err)
+		}
+	} else {
+		// No enums found, write a note
+		fmt.Fprintln(g.writer, "== Enums")
+		fmt.Fprintln(g.writer)
+		fmt.Fprintln(g.writer, "[NOTE]")
+		fmt.Fprintln(g.writer, "====")
+		fmt.Fprintln(g.writer, "No enums exist in this schema.")
+		fmt.Fprintln(g.writer, "====")
+		fmt.Fprintln(g.writer)
+	}
+
 	g.metrics.LogProgress("Enums", fmt.Sprintf("Generated %d enums", count))
 	return count
 }
@@ -612,6 +662,23 @@ func (g *Generator) getTypeFieldsTableString(t *ast.Definition, definitionsMap m
 		if err != nil {
 			return "", err
 		}
+	}
+
+	builder.WriteString("|===\n")
+	return builder.String(), nil
+}
+
+func (g *Generator) getEnumValuesTableString(e *ast.Definition) (string, error) {
+	var builder strings.Builder
+
+	builder.WriteString(".enum: " + e.Name + "\n")
+	builder.WriteString("[options=\"header\"]\n")
+	builder.WriteString("|===\n")
+	builder.WriteString("| Value | Description \n")
+
+	for _, value := range e.EnumValues {
+		processedDesc := parser.ProcessDescription(value.Description)
+		fmt.Fprintf(&builder, "| `%s` | %s\n", value.Name, processedDesc)
 	}
 
 	builder.WriteString("|===\n")

@@ -88,7 +88,6 @@ func TestGenerateWithEmptySchema(t *testing.T) {
 
 	// Should contain placeholder messages for empty sections
 	expectedPlaceholders := []string{
-		"Enums section - implementation in progress",
 		"Inputs section - implementation in progress",
 	}
 
@@ -96,6 +95,11 @@ func TestGenerateWithEmptySchema(t *testing.T) {
 		if !strings.Contains(output, placeholder) {
 			t.Errorf("Output should contain placeholder %q", placeholder)
 		}
+	}
+
+	// Enums section should show "No enums exist" when no enums are present
+	if !strings.Contains(output, "No enums exist in this schema") {
+		t.Error("Output should contain 'No enums exist in this schema' when no enums are present")
 	}
 
 	// Scalars section should show "No custom scalars exist" when no custom scalars are present
