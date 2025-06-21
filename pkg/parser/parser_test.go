@@ -484,18 +484,18 @@ func TestConvertMarkdownCodeBlocksWithCallouts(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "code block with parentheses callouts",
-			input: "Example:\n\n```javascript\nfunction test() (1)\n  return value (2)\n```",
+			name:     "code block with parentheses callouts",
+			input:    "Example:\n\n```javascript\nfunction test() (1)\n  return value (2)\n```",
 			expected: "Example:\n\n[source,javascript]\n----\nfunction test() <1>\n  return value <2>\n----",
 		},
 		{
-			name: "code block with comment callouts",
-			input: "Example:\n\n```python\nx = 5 # 1\ny = 10 # 2\n```",
+			name:     "code block with comment callouts",
+			input:    "Example:\n\n```python\nx = 5 # 1\ny = 10 # 2\n```",
 			expected: "Example:\n\n[source,python]\n----\nx = 5 <1>\ny = 10 <2>\n----",
 		},
 		{
-			name: "code block without callouts",
-			input: "Example:\n\n```graphql\nquery {\n  user {\n    name\n  }\n}\n```",
+			name:     "code block without callouts",
+			input:    "Example:\n\n```graphql\nquery {\n  user {\n    name\n  }\n}\n```",
 			expected: "Example:\n\n[source,graphql]\n----\nquery {\n  user {\n    name\n  }\n}\n----",
 		},
 	}
@@ -580,13 +580,13 @@ func TestProcessDescriptionWithAnchors(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "description with anchors and admonitions",
-			input: "[#example-section]\nThis is an example.\n\n**NOTE**: See {ref:related-section} for more info.\n\n{link:api-docs|API documentation} contains details.",
+			name:     "description with anchors and admonitions",
+			input:    "[#example-section]\nThis is an example.\n\n**NOTE**: See {ref:related-section} for more info.\n\n{link:api-docs|API documentation} contains details.",
 			expected: "[[example-section]]\nThis is an example.\n\n[NOTE]\n====\nSee <<related-section>> for more info.\n====\n\n<<api-docs,API documentation>> contains details.",
 		},
 		{
-			name: "description with code blocks and anchors",
-			input: "[#code-example]\n\n```javascript\nfunction example() { (1)\n  return value; // 2\n}\n```\n\nSee {ref:implementation} for details.",
+			name:     "description with code blocks and anchors",
+			input:    "[#code-example]\n\n```javascript\nfunction example() { (1)\n  return value; // 2\n}\n```\n\nSee {ref:implementation} for details.",
 			expected: "[[code-example]]\n\n[source,javascript]\n----\nfunction example() { <1>\n  return value; <2>\n}\n----\n\nSee <<implementation>> for details.",
 		},
 	}
@@ -636,23 +636,23 @@ func TestConvertMarkdownTables(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "simple markdown table",
-			input: "| Name | Type | Description |\n|------|------|-------------|\n| id | String | User ID |\n| name | String | User name |",
+			name:     "simple markdown table",
+			input:    "| Name | Type | Description |\n|------|------|-------------|\n| id | String | User ID |\n| name | String | User name |",
 			expected: "[options=\"header\"]\n|===\n| Name | Type | Description\n| id | String | User ID\n| name | String | User name\n|===",
 		},
 		{
-			name: "markdown table with alignment",
-			input: "| Name | Type | Description |\n|:-----|:----:|------------:|\n| id | String | User ID |\n| name | String | User name |",
+			name:     "markdown table with alignment",
+			input:    "| Name | Type | Description |\n|:-----|:----:|------------:|\n| id | String | User ID |\n| name | String | User name |",
 			expected: "[options=\"header\"]\n|===\n| Name | Type | Description\n| id | String | User ID\n| name | String | User name\n|===",
 		},
 		{
-			name: "markdown table without header separator",
-			input: "| Name | Type | Description |\n| id | String | User ID |\n| name | String | User name |",
+			name:     "markdown table without header separator",
+			input:    "| Name | Type | Description |\n| id | String | User ID |\n| name | String | User name |",
 			expected: "[options=\"header\"]\n|===\n| Name | Type | Description\n| id | String | User ID\n| name | String | User name\n|===",
 		},
 		{
-			name: "table with mixed content",
-			input: "Here's a table:\n\n| Field | Required | Notes |\n|-------|----------|-------|\n| email | Yes | Must be valid |\n| phone | No | Optional field |\n\nEnd of table.",
+			name:     "table with mixed content",
+			input:    "Here's a table:\n\n| Field | Required | Notes |\n|-------|----------|-------|\n| email | Yes | Must be valid |\n| phone | No | Optional field |\n\nEnd of table.",
 			expected: "Here's a table:\n\n[options=\"header\"]\n|===\n| Field | Required | Notes\n| email | Yes | Must be valid\n| phone | No | Optional field\n|===\n\nEnd of table.",
 		},
 		{
@@ -661,8 +661,8 @@ func TestConvertMarkdownTables(t *testing.T) {
 			expected: "This text has no tables in it.",
 		},
 		{
-			name: "malformed table row",
-			input: "| Name | Type\n|------|------|\n| id | String |",
+			name:     "malformed table row",
+			input:    "| Name | Type\n|------|------|\n| id | String |",
 			expected: "[options=\"header\"]\n|===\n| Name | Type\n| id | String\n|===",
 		},
 	}
@@ -738,13 +738,13 @@ func TestProcessDescriptionWithTables(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "markdown table with other features",
-			input: "**NOTE**: Check the parameters table below.\n\n| Parameter | Type | Required |\n|-----------|------|----------|\n| id | String | Yes |\n| name | String | No |\n\nSee {ref:examples} for usage.",
+			name:     "markdown table with other features",
+			input:    "**NOTE**: Check the parameters table below.\n\n| Parameter | Type | Required |\n|-----------|------|----------|\n| id | String | Yes |\n| name | String | No |\n\nSee {ref:examples} for usage.",
 			expected: "[NOTE]\n====\nCheck the parameters table below.\n====\n\n[options=\"header\"]\n|===\n| Parameter | Type | Required\n| id | String | Yes\n| name | String | No\n|===\n\nSee <<examples>> for usage.",
 		},
 		{
-			name: "existing AsciiDoc table preservation",
-			input: "Parameters:\n\n|===\n| Name | Description\n| limit | Maximum results\n| offset | Starting position\n|===\n\nTable complete.",
+			name:     "existing AsciiDoc table preservation",
+			input:    "Parameters:\n\n|===\n| Name | Description\n| limit | Maximum results\n| offset | Starting position\n|===\n\nTable complete.",
 			expected: "Parameters:\n\n|===\n| Name | Description\n| limit | Maximum results\n| offset | Starting position\n|===\n\nTable complete.",
 		},
 	}
@@ -754,6 +754,54 @@ func TestProcessDescriptionWithTables(t *testing.T) {
 			result := ProcessDescription(tt.input)
 			if result != tt.expected {
 				t.Errorf("ProcessDescription() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestConvertArgumentsPatterns(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "convert .Arguments: to .Arguments",
+			input:    "Some description\n\n.Arguments:\n- item 1\n- item 2",
+			expected: "Some description\n\n.Arguments\n- item 1\n- item 2",
+		},
+		{
+			name:     "convert **Arguments:** to .Arguments",
+			input:    "Some description\n\n**Arguments:**\n- item 1\n- item 2",
+			expected: "Some description\n\n.Arguments\n- item 1\n- item 2",
+		},
+		{
+			name:     "convert both patterns",
+			input:    "First section\n.Arguments:\n- item 1\n\nSecond section\n**Arguments:**\n- item 2",
+			expected: "First section\n.Arguments\n- item 1\n\nSecond section\n.Arguments\n- item 2",
+		},
+		{
+			name:     "no arguments patterns",
+			input:    "Just a regular description with no arguments section",
+			expected: "Just a regular description with no arguments section",
+		},
+		{
+			name:     "arguments pattern with extra spaces",
+			input:    "Description\n\n.Arguments:   \n- item 1",
+			expected: "Description\n\n.Arguments\n- item 1",
+		},
+		{
+			name:     "arguments pattern with extra spaces in markdown",
+			input:    "Description\n\n**Arguments:**   \n- item 1",
+			expected: "Description\n\n.Arguments\n- item 1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ConvertArgumentsPatterns(tt.input)
+			if result != tt.expected {
+				t.Errorf("ConvertArgumentsPatterns() = %q, want %q", result, tt.expected)
 			}
 		})
 	}

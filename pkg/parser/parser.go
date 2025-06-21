@@ -26,6 +26,9 @@ func ProcessDescription(description string) string {
 	// Format @deprecated directives with backticks if not already enclosed
 	processed = FormatDeprecatedDirectives(processed)
 
+	// Convert Arguments patterns to AsciiDoc format
+	processed = ConvertArgumentsPatterns(processed)
+
 	// Replace * and - with newline followed by the character, but only when they start list items
 	// Use regex to replace asterisks only when they start list items
 	reAsterisk := regexp.MustCompile(`(^|\s)\*\s`)
@@ -143,10 +146,10 @@ func ProcessAnchorsAndLabels(content string) string {
 func ProcessTables(content string) string {
 	// Convert markdown tables to AsciiDoc format
 	content = ConvertMarkdownTables(content)
-	
+
 	// AsciiDoc tables (|===....|===) are already in correct format, so no conversion needed
 	// They will pass through unchanged
-	
+
 	return content
 }
 
@@ -160,20 +163,20 @@ func ConvertMarkdownTables(content string) string {
 
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		
+
 		// Check if we're entering or exiting an AsciiDoc table
 		if strings.Contains(trimmed, "|===") {
 			inAsciiDocTable = !inAsciiDocTable
 			result = append(result, line)
 			continue
 		}
-		
+
 		// If we're inside an AsciiDoc table, preserve the line as-is
 		if inAsciiDocTable {
 			result = append(result, line)
 			continue
 		}
-		
+
 		// Check if this line looks like a markdown table row
 		if strings.Contains(trimmed, "|") && !strings.HasPrefix(trimmed, "[") {
 			// Check if this is a separator line (|---|---|)
@@ -181,7 +184,7 @@ func ConvertMarkdownTables(content string) string {
 				// Skip separator lines in markdown tables
 				continue
 			}
-			
+
 			// This looks like a table row
 			if !inTable {
 				// Start new table
@@ -189,14 +192,14 @@ func ConvertMarkdownTables(content string) string {
 				result = append(result, "|===")
 				inTable = true
 			}
-			
+
 			// Process the row
 			cells := parseTableRow(trimmed)
 			if len(cells) > 0 {
 				if columnCount == 0 {
 					columnCount = len(cells)
 				}
-				
+
 				// Add the row - put all cells on one line for AsciiDoc
 				rowLine := "| " + strings.Join(cells, " | ")
 				result = append(result, rowLine)
@@ -208,7 +211,7 @@ func ConvertMarkdownTables(content string) string {
 				result = append(result, "|===")
 				inTable = false
 				columnCount = 0
-				
+
 				// Add empty line after table only if the next line isn't empty
 				if trimmed != "" {
 					result = append(result, "")
@@ -217,7 +220,7 @@ func ConvertMarkdownTables(content string) string {
 			result = append(result, line)
 		}
 	}
-	
+
 	// Close table if we ended while still in one
 	if inTable {
 		result = append(result, "|===")
@@ -230,22 +233,22 @@ func ConvertMarkdownTables(content string) string {
 func parseTableRow(row string) []string {
 	// Remove leading and trailing pipes and whitespace
 	row = strings.Trim(row, " \t|")
-	
+
 	if row == "" {
 		return []string{}
 	}
-	
+
 	// Split by pipe and clean up each cell
 	parts := strings.Split(row, "|")
 	var cells []string
-	
+
 	for _, part := range parts {
 		cell := strings.TrimSpace(part)
 		if cell != "" {
 			cells = append(cells, cell)
 		}
 	}
-	
+
 	return cells
 }
 
@@ -253,7 +256,7 @@ func parseTableRow(row string) []string {
 func ConvertAdmonitionBlocks(description string) string {
 	// Define supported admonition types
 	admonitionTypes := []string{"NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"}
-	
+
 	for _, admonType := range admonitionTypes {
 		// Pattern 1: **ADMONITION**: content (single line)
 		pattern1 := regexp.MustCompile(fmt.Sprintf(`\*\*%s\*\*:\s*(.+)`, admonType))
@@ -283,10 +286,10 @@ func ConvertAdmonitionBlocks(description string) string {
 	lines := strings.Split(description, "\n")
 	var result []string
 	i := 0
-	
+
 	for i < len(lines) {
 		line := strings.TrimSpace(lines[i])
-		
+
 		// Check if this line is an admonition marker
 		var admonType string
 		for _, aType := range admonitionTypes {
@@ -295,23 +298,23 @@ func ConvertAdmonitionBlocks(description string) string {
 				break
 			}
 		}
-		
+
 		if admonType != "" {
 			// Found an admonition marker, collect content until next empty line or end
 			result = append(result, fmt.Sprintf("[%s]", admonType))
 			result = append(result, "====")
 			i++ // Move to next line
-			
+
 			// Collect content lines
 			for i < len(lines) {
 				contentLine := lines[i]
 				trimmedContent := strings.TrimSpace(contentLine)
-				
+
 				// Stop if we hit an empty line or another admonition
 				if trimmedContent == "" {
 					break
 				}
-				
+
 				// Check if this is another admonition marker
 				isNextAdmonition := false
 				for _, aType := range admonitionTypes {
@@ -320,15 +323,15 @@ func ConvertAdmonitionBlocks(description string) string {
 						break
 					}
 				}
-				
+
 				if isNextAdmonition {
 					break
 				}
-				
+
 				result = append(result, contentLine)
 				i++
 			}
-			
+
 			result = append(result, "====")
 		} else {
 			result = append(result, lines[i])
@@ -342,32 +345,32 @@ func ConvertAdmonitionBlocks(description string) string {
 // ProcessTypeName converts GraphQL types to AsciiDoc cross-references
 func ProcessTypeName(typeName string, definitionsMap map[string]*ast.Definition) string {
 	// Handle complex type structures
-	
+
 	// Check for list types [Type] or [Type!]
 	if strings.HasPrefix(typeName, "[") && strings.Contains(typeName, "]") {
 		// Extract the inner type
 		innerStart := strings.Index(typeName, "[") + 1
 		innerEnd := strings.LastIndex(typeName, "]")
 		innerType := typeName[innerStart:innerEnd]
-		
+
 		// Process the inner type recursively
 		processedInner := ProcessTypeName(innerType, definitionsMap)
-		
+
 		// Reconstruct with processed inner type
 		result := "[" + processedInner + "]"
-		
+
 		// Add trailing ! if present
 		if strings.HasSuffix(typeName, "!") {
 			result += "!"
 		}
-		
+
 		return result
 	}
-	
+
 	// Handle simple required types Type!
 	isRequired := strings.HasSuffix(typeName, "!")
 	baseTypeName := strings.TrimSuffix(typeName, "!")
-	
+
 	// Check if this is a custom type (exists in definitions)
 	if _, exists := definitionsMap[baseTypeName]; exists {
 		// Create cross-reference
@@ -401,15 +404,15 @@ func CleanDescription(text string, skipCharacter string) string {
 
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		
+
 		// Special case: preserve AsciiDoc code block delimiters
 		if trimmed == "----" {
 			result = append(result, line)
 			continue
 		}
-		
-		// Skip lines starting with the skip character
-		if !strings.HasPrefix(trimmed, skipCharacter) {
+
+		// Skip lines starting with the skip character (both dash and asterisk)
+		if !strings.HasPrefix(trimmed, skipCharacter) && !strings.HasPrefix(trimmed, "* ") {
 			result = append(result, line)
 		}
 	}
@@ -417,7 +420,7 @@ func CleanDescription(text string, skipCharacter string) string {
 	return strings.Join(result, "\n") + "\n"
 }
 
-// ConvertDescriptionToRefNumbers converts dash list items to numbered references
+// ConvertDescriptionToRefNumbers converts dash and asterisk list items to numbered references
 func ConvertDescriptionToRefNumbers(text string, skipNonDash bool) string {
 	lines := strings.Split(text, "\n")
 	var result []string
@@ -425,11 +428,16 @@ func ConvertDescriptionToRefNumbers(text string, skipNonDash bool) string {
 
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		
+
 		// Check for single dash at start (not double dash)
 		if strings.HasPrefix(trimmed, "- ") && !strings.HasPrefix(trimmed, "-- ") {
 			// Convert to numbered reference
 			content := strings.TrimPrefix(trimmed, "- ")
+			result = append(result, fmt.Sprintf("<%d> %s", counter, content))
+			counter++
+		} else if strings.HasPrefix(trimmed, "* ") {
+			// Convert asterisk list items to numbered reference
+			content := strings.TrimPrefix(trimmed, "* ")
 			result = append(result, fmt.Sprintf("<%d> %s", counter, content))
 			counter++
 		} else if !skipNonDash {
@@ -438,4 +446,37 @@ func ConvertDescriptionToRefNumbers(text string, skipNonDash bool) string {
 	}
 
 	return strings.Join(result, "\n") + "\n"
+}
+
+// ConvertArgumentsPatterns converts .Arguments: and **Arguments:** patterns to AsciiDoc format
+func ConvertArgumentsPatterns(description string) string {
+	// Convert .Arguments: to .Arguments
+	re := regexp.MustCompile(`(?m)^\.Arguments:\s*$`)
+	description = re.ReplaceAllString(description, ".Arguments")
+
+	// Convert **Arguments:** to .Arguments
+	re = regexp.MustCompile(`(?m)^\*\*Arguments:\*\*\s*$`)
+	description = re.ReplaceAllString(description, ".Arguments")
+
+	return description
+}
+
+// ConvertDashToAsterisk converts dash list items to asterisk format for main description
+func ConvertDashToAsterisk(text string) string {
+	lines := strings.Split(text, "\n")
+	var result []string
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		// Convert dash list items to asterisk format
+		if strings.HasPrefix(trimmed, "- ") && !strings.HasPrefix(trimmed, "-- ") {
+			content := strings.TrimPrefix(trimmed, "- ")
+			result = append(result, "* "+content)
+		} else {
+			result = append(result, line)
+		}
+	}
+
+	return strings.Join(result, "\n")
 }

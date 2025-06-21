@@ -395,6 +395,7 @@ type Query {
     - `id`: the id of the tweet to search by.
     """
     Tweet(id: ID!): Tweet
+
     """
     [get-tweets]
     Get a list of tweets, remember that it is `2024-01-08` for testing dates in the conversion.
@@ -403,6 +404,14 @@ type Query {
     - Use pagination with `limit` and `skip` parameters
     - For single tweet access, use {link:get-tweet|the Tweet query}
     - See {ref:tweets-meta} for metadata about the collection
+
+
+    **Arguments:**
+    - `limit`:  the max numer; _Required_
+    - `skip`: how many to skip
+    - `sort_field`: what to sort on
+    - `sort_order`: which direction to do you want to sort.
+    - _RETURNS_: an array of `Tweet`.
     """
     Tweets(
         limit: Int!
@@ -410,11 +419,9 @@ type Query {
         sort_field: String
         sort_order: String
     ): [Tweet]
-    """
-    [tweets-meta]
-    Get meta information about the list of tweets. This tests the list to query options.
 
-    This provides pagination and sorting metadata for {link:get-tweets|the Tweets query}.
+    """
+    Get a list of tweets, remember that it is `2024-01-08` for testing dates in the conversion.
 
     - `limit`:  the max numer; _Required_
     - `skip`: how many to skip
@@ -422,7 +429,70 @@ type Query {
     - `sort_order`: which direction to do you want to sort.
     - _RETURNS_: an array of `Tweet`.
     """
+    TweetsTwo(
+        limit: Int!
+        skip: Int
+        sort_field: String
+        sort_order: String
+    ): [Tweet]
+
+    """
+    Get a list of tweets, remember that it is `2024-01-08` for testing dates in the conversion.
+
+    **Random**
+    - This is a random item, it is not at the end, so it can be in the description
+    - So can this, it should not be in the arguments list.
+
+
+    .Arguments:
+    - `limit`:  the max numer; _Required_
+    - `skip`: how many to skip
+    - `sort_field`: what to sort on
+    - `sort_order`: which direction to do you want to sort.
+    - _RETURNS_: an array of `Tweet`.
+    """
+    TweetsThree(
+        limit: Int!
+        skip: Int
+        sort_field: String
+        sort_order: String
+    ): [Tweet]
+
+    """
+    Get a list of tweets, remember that it is `2024-01-08` for testing dates in the conversion.
+
+    **another**
+    - Another list item 1
+    - Another list item 2
+
+    **This is just** bold stuff
+
+    **this is cool**
+    - Another list item z1
+    - Another list item z2
+
+    **Arguments:**
+    - `limit`:  the max numer; _Required_
+    - `skip`: how many to skip
+    - `sort_field`: what to sort on
+    - `sort_order`: which direction to do you want to sort.
+    - _RETURNS_: an array of `Tweet`.
+    """
+    TweetsFour(
+        limit: Int!
+        skip: Int
+        sort_field: String
+        sort_order: String
+    ): [Tweet]
+
+    """
+    [tweets-meta]
+    Get meta information about the list of tweets. This tests the list to query options.
+
+    This provides pagination and sorting metadata for {link:get-tweets|the Tweets query}.
+    """
     TweetsMeta: Meta
+
     """
     Get a user by its ID
     """
@@ -700,21 +770,18 @@ type Mutation {
 # tag::SUBSCRIPTIONs[]
 """
 Some simple subscriptions to test the output.
-
 """
 type Subscription {
-
-   """
-   Subscribe to a tweet by `id` and get updates when a comment is added.
-
-
-    .Arguments:
-    - `id`: the id of the tweet.
     """
-  commentAdded(id: ID!): Tweet
+    Subscribe to a tweet by `id` and get updates when a comment is added.
+
+
+     .Arguments:
+     - `id`: the id of the tweet.
+    """
+    commentAdded(id: ID!): Tweet
 }
 # end::SUBSCRIPTIONs[]
-
 
 # tag::graphql_directives[]
 #

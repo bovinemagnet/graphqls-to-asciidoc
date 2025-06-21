@@ -1,0 +1,67 @@
+// tag::query-TweetsFour[]
+
+[[query_tweetsFour]]
+=== TweetsFour
+
+
+// tag::method-description-TweetsFour[]
+Get a list of tweets, remember that it is `2024-01-08` for testing dates in the conversion.
+
+.another**
+* Another list item 1
+* Another list item 2
+
+**This is just** bold stuff
+
+.this is cool
+* Another list item z1
+* Another list item z2
+
+
+
+
+.Random
+* This is a random item, it is not at the end, so it can be in the description
+* So can this, it should not be in the arguments list.
+
+// end::method-description-TweetsFour[]
+
+// tag::method-signature-TweetsFour[]
+.query: TweetsFour
+[source, kotlin]
+----
+TweetsFour(
+  limit: `Int!` , <1>
+  skip: `Int` , <2>
+  sort_field: `String` , <3>
+  sort_order: `String` <4>
+): [<<Tweet,`Tweet`>>] <5>
+----
+// end::method-signature-TweetsFour[]
+
+// tag::method-args-TweetsFour[]
+<1> `limit`:  the max numer; _Required_
+<2> `skip`: how many to skip
+<3> `sort_field`: what to sort on
+<4> `sort_order`: which direction to do you want to sort.
+<5> _RETURNS_: an array of `Tweet`.
+// end::method-args-TweetsFour[]
+
+// tag::query-name-TweetsFour[]
+*Query Name:* _TweetsFour_
+// end::query-name-TweetsFour[]
+
+// tag::query-return-TweetsFour[]
+*Return:* [<<Tweet,`Tweet`>>]
+// end::query-return-TweetsFour[]
+
+// tag::arguments-TweetsFour[]
+.Arguments
+* `limit`:  the max numer; _Required_
+* `skip`: how many to skip
+* `sort_field`: what to sort on
+* `sort_order`: which direction to do you want to sort.
+* _RETURNS_: an array of `Tweet`.
+// end::arguments-TweetsFour[]
+
+// end::query-TweetsFour[]

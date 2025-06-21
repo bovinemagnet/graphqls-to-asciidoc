@@ -1,6 +1,6 @@
 = GraphQL Documentation
 :toc: left
-:revdate: Sat, 21 Jun 2025 13:30:28 AEST
+:revdate: Sat, 21 Jun 2025 14:36:42 AEST
 :commandline: ./graphqls-to-asciidoc -s test/schema.graphql -o test/schema.adoc --verbose --subscriptions
 :sourceFile: test/schema.graphql
 :reproducible:
@@ -35,9 +35,6 @@ Get a tweet by its ID
 
 This is the primary method for retrieving individual tweets.
 For bulk operations, see <<get-tweets>>.
-
-.Arguments:
-* `id`: the id of the tweet to search by.
 // end::method-description-Tweet[]
 
 // tag::method-signature-Tweet[]
@@ -51,6 +48,7 @@ Tweet(
 // end::method-signature-Tweet[]
 
 // tag::method-args-Tweet[]
+<1> `id`: the id of the tweet to search by.
 // end::method-args-Tweet[]
 
 // tag::query-name-Tweet[]
@@ -98,6 +96,11 @@ Tweets(
 // end::method-signature-Tweets[]
 
 // tag::method-args-Tweets[]
+<1> `limit`:  the max numer; _Required_
+<2> `skip`: how many to skip
+<3> `sort_field`: what to sort on
+<4> `sort_order`: which direction to do you want to sort.
+<5> _RETURNS_: an array of `Tweet`.
 // end::method-args-Tweets[]
 
 // tag::query-name-Tweets[]
@@ -118,6 +121,167 @@ Tweets(
 
 // end::query-Tweets[]
 
+// tag::query-TweetsTwo[]
+
+[[query_tweetstwo]]
+=== TweetsTwo
+
+
+// tag::method-description-TweetsTwo[]
+Get a list of tweets, remember that it is `2024-01-08` for testing dates in the conversion.
+// end::method-description-TweetsTwo[]
+
+// tag::method-signature-TweetsTwo[]
+.query: TweetsTwo
+[source, kotlin]
+----
+TweetsTwo(
+  limit: `Int!` , <1> 
+  skip: `Int` , <2> 
+  sort_field: `String` , <3> 
+  sort_order: `String` <4> 
+): [<<Tweet,`Tweet`>>] <5>
+----
+// end::method-signature-TweetsTwo[]
+
+// tag::method-args-TweetsTwo[]
+<1> `limit`:  the max numer; _Required_
+<2> `skip`: how many to skip
+<3> `sort_field`: what to sort on
+<4> `sort_order`: which direction to do you want to sort.
+<5> _RETURNS_: an array of `Tweet`.
+// end::method-args-TweetsTwo[]
+
+// tag::query-name-TweetsTwo[]
+*Query Name:* _TweetsTwo_
+// end::query-name-TweetsTwo[]
+
+// tag::query-return-TweetsTwo[]
+*Return:* [<<Tweet,`Tweet`>>]
+// end::query-return-TweetsTwo[]
+
+// tag::arguments-TweetsTwo[]
+.Arguments
+* `limit : Int!`
+* `skip : Int`
+* `sort_field : String`
+* `sort_order : String`
+// end::arguments-TweetsTwo[]
+
+// end::query-TweetsTwo[]
+
+// tag::query-TweetsThree[]
+
+[[query_tweetsthree]]
+=== TweetsThree
+
+
+// tag::method-description-TweetsThree[]
+Get a list of tweets, remember that it is `2024-01-08` for testing dates in the conversion.
+
+**Random**
+* This is a random item, it is not at the end, so it can be in the description
+* So can this, it should not be in the arguments list.
+// end::method-description-TweetsThree[]
+
+// tag::method-signature-TweetsThree[]
+.query: TweetsThree
+[source, kotlin]
+----
+TweetsThree(
+  limit: `Int!` , <1> 
+  skip: `Int` , <2> 
+  sort_field: `String` , <3> 
+  sort_order: `String` <4> 
+): [<<Tweet,`Tweet`>>] <5>
+----
+// end::method-signature-TweetsThree[]
+
+// tag::method-args-TweetsThree[]
+<1> `limit`:  the max numer; _Required_
+<2> `skip`: how many to skip
+<3> `sort_field`: what to sort on
+<4> `sort_order`: which direction to do you want to sort.
+<5> _RETURNS_: an array of `Tweet`.
+// end::method-args-TweetsThree[]
+
+// tag::query-name-TweetsThree[]
+*Query Name:* _TweetsThree_
+// end::query-name-TweetsThree[]
+
+// tag::query-return-TweetsThree[]
+*Return:* [<<Tweet,`Tweet`>>]
+// end::query-return-TweetsThree[]
+
+// tag::arguments-TweetsThree[]
+.Arguments
+* `limit : Int!`
+* `skip : Int`
+* `sort_field : String`
+* `sort_order : String`
+// end::arguments-TweetsThree[]
+
+// end::query-TweetsThree[]
+
+// tag::query-TweetsFour[]
+
+[[query_tweetsfour]]
+=== TweetsFour
+
+
+// tag::method-description-TweetsFour[]
+Get a list of tweets, remember that it is `2024-01-08` for testing dates in the conversion.
+
+**another**
+* Another list item 1
+* Another list item 2
+
+**This is just** bold stuff
+
+**this is cool**
+* Another list item z1
+* Another list item z2
+// end::method-description-TweetsFour[]
+
+// tag::method-signature-TweetsFour[]
+.query: TweetsFour
+[source, kotlin]
+----
+TweetsFour(
+  limit: `Int!` , <1> 
+  skip: `Int` , <2> 
+  sort_field: `String` , <3> 
+  sort_order: `String` <4> 
+): [<<Tweet,`Tweet`>>] <5>
+----
+// end::method-signature-TweetsFour[]
+
+// tag::method-args-TweetsFour[]
+<1> `limit`:  the max numer; _Required_
+<2> `skip`: how many to skip
+<3> `sort_field`: what to sort on
+<4> `sort_order`: which direction to do you want to sort.
+<5> _RETURNS_: an array of `Tweet`.
+// end::method-args-TweetsFour[]
+
+// tag::query-name-TweetsFour[]
+*Query Name:* _TweetsFour_
+// end::query-name-TweetsFour[]
+
+// tag::query-return-TweetsFour[]
+*Return:* [<<Tweet,`Tweet`>>]
+// end::query-return-TweetsFour[]
+
+// tag::arguments-TweetsFour[]
+.Arguments
+* `limit : Int!`
+* `skip : Int`
+* `sort_field : String`
+* `sort_order : String`
+// end::arguments-TweetsFour[]
+
+// end::query-TweetsFour[]
+
 // tag::query-TweetsMeta[]
 
 [[query_tweetsmeta]]
@@ -129,12 +293,6 @@ Tweets(
 Get meta information about the list of tweets. This tests the list to query options.
 
 This provides pagination and sorting metadata for <<get-tweets,the Tweets query>>.
-
-* `limit`:  the max numer; _Required_
-* `skip`: how many to skip
-* `sort_field`: what to sort on
-* `sort_order`: which direction to do you want to sort.
-* _RETURNS_: an array of `Tweet`.
 // end::method-description-TweetsMeta[]
 
 // tag::method-signature-TweetsMeta[]
@@ -467,9 +625,6 @@ TweetSentiments4(
 **INTERNAL**:
 
 An example of an internal query.
-
-* `id`: A list of id's that are _REQUIRED_
-* _RETURNS_ :  a list of Sentiments
 // end::method-description-tweetSentiments5[]
 
 // tag::method-signature-tweetSentiments5[]
@@ -483,6 +638,8 @@ tweetSentiments5(
 // end::method-signature-tweetSentiments5[]
 
 // tag::method-args-tweetSentiments5[]
+<1> `id`: A list of id's that are _REQUIRED_
+<2> _RETURNS_ :  a list of Sentiments
 // end::method-args-tweetSentiments5[]
 
 // tag::query-name-tweetSentiments5[]
@@ -513,8 +670,6 @@ tweetSentiments5(
 
 An example of an internal query.
 `@deprecated(reason: "Internal test")`
-* `id`: A list of id's that are _REQUIRED_
-* _RETURNS_ :  a list of Sentiments
 // end::method-description-tweetSentimentsDep[]
 
 // tag::method-signature-tweetSentimentsDep[]
@@ -528,6 +683,8 @@ tweetSentimentsDep(
 // end::method-signature-tweetSentimentsDep[]
 
 // tag::method-args-tweetSentimentsDep[]
+<1> `id`: A list of id's that are _REQUIRED_
+<2> _RETURNS_ :  a list of Sentiments
 // end::method-args-tweetSentimentsDep[]
 
 // tag::query-name-tweetSentimentsDep[]
@@ -569,8 +726,6 @@ query GetTweetSentiment {
 (3) Also retrieve confidence level
 
 `@deprecated(reason: "Internal test")`
-* `id`: An id that is _REQUIRED_
-* _RETURNS_ :  a list of Sentiments
 // end::method-description-tweetSentimentCode[]
 
 // tag::method-signature-tweetSentimentCode[]
@@ -584,6 +739,8 @@ tweetSentimentCode(
 // end::method-signature-tweetSentimentCode[]
 
 // tag::method-args-tweetSentimentCode[]
+<1> `id`: An id that is _REQUIRED_
+<2> _RETURNS_ :  a list of Sentiments
 // end::method-args-tweetSentimentCode[]
 
 // tag::query-name-tweetSentimentCode[]
@@ -616,9 +773,6 @@ tweetSentimentACode(123) {
    Sentiment
 }
 ----
-
-* `id`: An id that are _REQUIRED_
-* _RETURNS_ :  a list of Sentiments
 // end::method-description-tweetSentimentACode[]
 
 // tag::method-signature-tweetSentimentACode[]
@@ -632,6 +786,8 @@ tweetSentimentACode(
 // end::method-signature-tweetSentimentACode[]
 
 // tag::method-args-tweetSentimentACode[]
+<1> `id`: An id that are _REQUIRED_
+<2> _RETURNS_ :  a list of Sentiments
 // end::method-args-tweetSentimentACode[]
 
 // tag::query-name-tweetSentimentACode[]
@@ -659,9 +815,6 @@ tweetSentimentACode(
 An example of an internal query.
 
 `@deprecated(reason: "Internal test")`
-
-* `id`: An id that are _REQUIRED_
-* _RETURNS_ :  a list of Sentiments
 // end::method-description-tweetSentimentDep[]
 
 // tag::method-signature-tweetSentimentDep[]
@@ -675,6 +828,8 @@ tweetSentimentDep(
 // end::method-signature-tweetSentimentDep[]
 
 // tag::method-args-tweetSentimentDep[]
+<1> `id`: An id that are _REQUIRED_
+<2> _RETURNS_ :  a list of Sentiments
 // end::method-args-tweetSentimentDep[]
 
 // tag::query-name-tweetSentimentDep[]
@@ -697,6 +852,7 @@ tweetSentimentDep(
 * update: 1.2.3, 2.0.5
 * deprecated: 2.6.0
 * removed: 2.7.8
+
 // end::query-changelog-tweetSentimentDep[]
 
 // end::query-tweetSentimentDep[]
@@ -1643,7 +1799,7 @@ Example of an input type
 // tag::directive-description-Size[]
 Directive to specify the size constraints on arguments and input fields.
 
-.Arguments:
+.Arguments
 * `min`: min the minimum size allowed, default is 0
 * `max`: the maximum size allowed, default is 2147483647
 * `message`: the validation message, default is "graphql.validation.Size.message"
@@ -1685,7 +1841,7 @@ directive @Size(min: Int = 0, max: Int! = 2147483647, message: String = "graphql
 // tag::directive-description-length[]
 Directive to specify the length constraints on arguments and input fields.
 
-.Arguments:
+.Arguments
 * `min`: the minimum length allowed, default is 0
 * `max`: the maximum length allowed, default is 2147483647
 * `message`: the validation message, default is "graphql.validation.Size.message"

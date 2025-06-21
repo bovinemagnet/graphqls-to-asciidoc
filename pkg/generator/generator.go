@@ -183,7 +183,7 @@ func (g *Generator) generateQueries(definitionsMap map[string]*ast.Definition) i
 	return count
 }
 
-// generateQueryField generates a single query field
+// generateQueryField generates documentation for a single query field
 func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMap map[string]*ast.Definition) {
 	fmt.Fprintf(g.writer, "// tag::query-%s[]\n", field.Name)
 	fmt.Fprintln(g.writer)
@@ -195,9 +195,58 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 	// Process description and extract changelog
 	processedDesc, changelog := changelog.ProcessWithChangelog(field.Description, parser.ProcessDescription)
 
+	// Helper to extract all list items and non-list lines
+	extractLists := func(text string) (nonList, list string) {
+		lines := strings.Split(text, "\n")
+		var nonListLines, listLines []string
+		for _, line := range lines {
+			trimmed := strings.TrimSpace(line)
+			if (strings.HasPrefix(trimmed, "- ") && !strings.HasPrefix(trimmed, "-- ")) || strings.HasPrefix(trimmed, "* ") {
+				listLines = append(listLines, line)
+			} else {
+				nonListLines = append(nonListLines, line)
+			}
+		}
+		return strings.Join(nonListLines, "\n"), strings.Join(listLines, "\n")
+	}
+
+	// Split the description at the Arguments marker (check both original and converted forms)
+	parts := strings.Split(processedDesc, "**Arguments:**")
+	var mainDesc, numberedRefs string
+
+	if len(parts) == 1 {
+		// No **Arguments:** found, check for .Arguments:
+		parts = strings.Split(processedDesc, ".Arguments:")
+		if len(parts) == 1 {
+			// No .Arguments: found, check for converted .Arguments
+			parts = strings.Split(processedDesc, ".Arguments")
+			if len(parts) == 1 {
+				// No Arguments marker at all
+				mainDesc, numberedRefs = extractLists(processedDesc)
+				mainDesc = parser.ConvertDashToAsterisk(mainDesc)
+				if strings.TrimSpace(numberedRefs) != "" {
+					numberedRefs = parser.ConvertDescriptionToRefNumbers(numberedRefs, true)
+				}
+			} else {
+				// Found converted .Arguments marker
+				mainDesc = parser.ConvertDashToAsterisk(parts[0])
+				numberedRefs = parser.ConvertDescriptionToRefNumbers(parts[1], true)
+			}
+		} else {
+			// Found .Arguments: marker
+			mainDesc = parser.ConvertDashToAsterisk(parts[0])
+			numberedRefs = parser.ConvertDescriptionToRefNumbers(parts[1], true)
+		}
+	} else {
+		// Found **Arguments:** marker
+		mainDesc = parser.ConvertDashToAsterisk(parts[0])
+		numberedRefs = parser.ConvertDescriptionToRefNumbers(parts[1], true)
+	}
+
 	fmt.Fprintf(g.writer, "// tag::method-description-%s[]\n", field.Name)
-	if processedDesc != "" {
-		fmt.Fprintln(g.writer, processedDesc)
+	if strings.TrimSpace(mainDesc) != "" {
+		fmt.Fprint(g.writer, strings.TrimSpace(mainDesc))
+		fmt.Fprintln(g.writer)
 	}
 	fmt.Fprintf(g.writer, "// end::method-description-%s[]\n", field.Name)
 	fmt.Fprintln(g.writer)
@@ -224,8 +273,12 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 	fmt.Fprintf(g.writer, "// end::method-signature-%s[]\n", field.Name)
 	fmt.Fprintln(g.writer)
 
-	// Add other sections...
+	// Add numbered references from description
 	fmt.Fprintf(g.writer, "// tag::method-args-%s[]\n", field.Name)
+	if strings.TrimSpace(numberedRefs) != "" {
+		fmt.Fprint(g.writer, strings.TrimSpace(numberedRefs))
+		fmt.Fprintln(g.writer)
+	}
 	fmt.Fprintf(g.writer, "// end::method-args-%s[]\n", field.Name)
 	fmt.Fprintln(g.writer)
 
@@ -253,6 +306,7 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 	if changelog != "" {
 		fmt.Fprintf(g.writer, "// tag::query-changelog-%s[]\n", field.Name)
 		fmt.Fprint(g.writer, changelog)
+		fmt.Fprintln(g.writer)
 		fmt.Fprintf(g.writer, "// end::query-changelog-%s[]\n", field.Name)
 		fmt.Fprintln(g.writer)
 	}
@@ -806,7 +860,8 @@ func (g *Generator) generateDirective(directive *ast.DirectiveDefinition) {
 	if directive.Description != "" {
 		processedDesc := parser.ProcessDescription(directive.Description)
 		fmt.Fprintf(g.writer, "// tag::directive-description-%s[]\n", directive.Name)
-		fmt.Fprintln(g.writer, processedDesc)
+		fmt.Fprint(g.writer, processedDesc)
+		fmt.Fprintln(g.writer)
 		fmt.Fprintf(g.writer, "// end::directive-description-%s[]\n", directive.Name)
 		fmt.Fprintln(g.writer)
 	}
