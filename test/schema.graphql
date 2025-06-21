@@ -697,6 +697,25 @@ type Mutation {
 }
 # end::MUTATIONs[]
 
+# tag::SUBSCRIPTIONs[]
+"""
+Some simple subscriptions to test the output.
+
+"""
+type Subscription {
+
+   """
+   Subscribe to a tweet by `id` and get updates when a comment is added.
+
+
+    .Arguments:
+    - `id`: the id of the tweet.
+    """
+  commentAdded(id: ID!): Tweet
+}
+# end::SUBSCRIPTIONs[]
+
+
 # tag::graphql_directives[]
 #
 # this declares the directive as being possible on arguments and input fields
@@ -730,17 +749,3 @@ directive @length(
 ) on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | FIELD_DEFINITION
 
 # end::graphql_directives[]
-
-
-type Subscription {
-
-
-    """
-Subscribe to a tweet by `id` and get updates when a comment is added.
-
-
-    .Arguments:
-    - `id`: the id of the tweet.
-    """
-  commentAdded(id: ID!): Tweet
-}
