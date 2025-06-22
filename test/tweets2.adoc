@@ -1,0 +1,51 @@
+// tag::query-TweetsTwo[]
+
+[[query_tweetstwo]]
+=== TweetsTwo
+
+
+// tag::method-description-TweetsTwo[]
+[[get-tweets]]
+Get a list of tweets, remember that it is `2024-01-08` for testing dates in the conversion.
+
+// end::method-description-TweetsTwo[]
+
+// tag::method-signature-TweetsTwo[]
+.query: TweetsTwo
+[source, kotlin]
+----
+TweetsTwo(
+  limit: `Int!` , <1> 
+  skip: `Int` , <2> 
+  sort_field: `String` , <3> 
+  sort_order: `String` <4> 
+): [<<Tweet,`Tweet`>>] <5>
+----
+// end::method-signature-TweetsTwo[]
+
+// tag::method-args-TweetsTwo[]
+<1> `limit`:  the max numer; _Required_
+<2> `skip`: how many to skip
+<3> `sort_field`: what to sort on
+<4> `sort_order`: which direction to do you want to sort.
+<5> _RETURNS_: an array of `Tweet`.
+// end::method-args-TweetsTwo[]
+
+// tag::query-name-TweetsTwo[]
+*Query Name:* _TweetsTwo_
+// end::query-name-TweetsTwo[]
+
+// tag::query-return-TweetsTwo[]
+*Return:* [<<Tweet,`Tweet`>>]
+// end::query-return-TweetsTwo[]
+
+// tag::arguments-TweetsTwo[]
+.Arguments
+* `limit`:  the max numer; _Required_
+* `skip`: how many to skip
+* `sort_field`: what to sort on
+* `sort_order`: which direction to do you want to sort.
+* _RETURNS_: an array of `Tweet`.
+// end::arguments-TweetsTwo[]
+
+// end::query-TweetsTwo[]
