@@ -385,6 +385,51 @@ func ProcessTypeName(typeName string, definitionsMap map[string]*ast.Definition)
 	return "`" + typeName + "`"
 }
 
+// ProcessTypeNameForSignature converts GraphQL types to plain type names for method signatures
+// This function does not create cross-references, just returns the plain type name
+func ProcessTypeNameForSignature(typeName string, definitionsMap map[string]*ast.Definition) string {
+	// Handle complex type structures
+
+	// Check for list types [Type] or [Type!]
+	if strings.HasPrefix(typeName, "[") && strings.Contains(typeName, "]") {
+		// Extract the inner type
+		innerStart := strings.Index(typeName, "[") + 1
+		innerEnd := strings.LastIndex(typeName, "]")
+		innerType := typeName[innerStart:innerEnd]
+
+		// Process the inner type recursively
+		processedInner := ProcessTypeNameForSignature(innerType, definitionsMap)
+
+		// Reconstruct with processed inner type
+		result := "[" + processedInner + "]"
+
+		// Add trailing ! if present
+		if strings.HasSuffix(typeName, "!") {
+			result += "!"
+		}
+
+		return result
+	}
+
+	// Handle simple required types Type!
+	isRequired := strings.HasSuffix(typeName, "!")
+	baseTypeName := strings.TrimSuffix(typeName, "!")
+
+	// For method signatures, just return the plain type name without cross-references
+	// Check if this is a custom type (exists in definitions)
+	if _, exists := definitionsMap[baseTypeName]; exists {
+		// Return plain type name without cross-reference
+		result := baseTypeName
+		if isRequired {
+			result += "!"
+		}
+		return result
+	}
+
+	// For built-in types, just return the plain type name
+	return typeName
+}
+
 // CamelToSnake converts CamelCase to snake_case
 func CamelToSnake(s string) string {
 	var result []rune

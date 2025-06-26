@@ -260,7 +260,7 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 
 	// Generate arguments
 	for i, arg := range field.Arguments {
-		argType := parser.ProcessTypeName(arg.Type.String(), definitionsMap)
+		argType := parser.ProcessTypeNameForSignature(arg.Type.String(), definitionsMap)
 		fmt.Fprintf(g.writer, "  %s: %s", arg.Name, argType)
 		if i < len(field.Arguments)-1 {
 			fmt.Fprint(g.writer, " ,")
@@ -268,7 +268,7 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 		fmt.Fprintf(g.writer, " <%d> \n", i+1)
 	}
 
-	fmt.Fprintf(g.writer, "): %s <%d>\n", parser.ProcessTypeName(field.Type.String(), definitionsMap), len(field.Arguments)+1)
+	fmt.Fprintf(g.writer, "): %s <%d>\n", parser.ProcessTypeNameForSignature(field.Type.String(), definitionsMap), len(field.Arguments)+1)
 	fmt.Fprintln(g.writer, "----")
 	fmt.Fprintf(g.writer, "// end::method-signature-%s[]\n", field.Name)
 	fmt.Fprintln(g.writer)
@@ -419,14 +419,14 @@ func (g *Generator) getMethodSignatureBlock(f *ast.FieldDefinition, definitionsM
 	fmt.Fprintln(&b, "----")
 	fmt.Fprintf(&b, "%s(", f.Name)
 	for i, arg := range f.Arguments {
-		typeName := parser.ProcessTypeName(arg.Type.String(), definitionsMap)
+		typeName := parser.ProcessTypeNameForSignature(arg.Type.String(), definitionsMap)
 		fmt.Fprintf(&b, "  %s: %s", arg.Name, typeName)
 		if i < len(f.Arguments)-1 {
 			fmt.Fprint(&b, " ,")
 		}
 		fmt.Fprintf(&b, " <%d> ", i+1)
 	}
-	fmt.Fprintf(&b, ") : %s <%d>\n", parser.ProcessTypeName(f.Type.String(), definitionsMap), len(f.Arguments)+1)
+	fmt.Fprintf(&b, ") : %s <%d>\n", parser.ProcessTypeNameForSignature(f.Type.String(), definitionsMap), len(f.Arguments)+1)
 	fmt.Fprintln(&b, "----")
 	return b.String()
 }
@@ -548,7 +548,7 @@ func (g *Generator) getSubscriptionDetails(f *ast.FieldDefinition, definitionsMa
 
 	// Generate arguments
 	for i, arg := range f.Arguments {
-		argType := parser.ProcessTypeName(arg.Type.String(), definitionsMap)
+		argType := parser.ProcessTypeNameForSignature(arg.Type.String(), definitionsMap)
 		fmt.Fprintf(&b, "  %s: %s", arg.Name, argType)
 		if i < len(f.Arguments)-1 {
 			fmt.Fprint(&b, " ,")
@@ -556,7 +556,7 @@ func (g *Generator) getSubscriptionDetails(f *ast.FieldDefinition, definitionsMa
 		fmt.Fprintf(&b, " <%d> \n", i+1)
 	}
 
-	fmt.Fprintf(&b, "): %s <%d>\n", parser.ProcessTypeName(f.Type.String(), definitionsMap), len(f.Arguments)+1)
+	fmt.Fprintf(&b, "): %s <%d>\n", parser.ProcessTypeNameForSignature(f.Type.String(), definitionsMap), len(f.Arguments)+1)
 	fmt.Fprintln(&b, "----")
 	fmt.Fprintf(&b, "// end::subscription-signature-%s[]\n", f.Name)
 	fmt.Fprintln(&b)

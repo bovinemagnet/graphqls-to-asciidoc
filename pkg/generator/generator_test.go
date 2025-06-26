@@ -358,9 +358,9 @@ func TestGenerateQueryFieldWithArguments(t *testing.T) {
 	expectedContent := []string{
 		"searchUsers",
 		"Search for users",
-		"query: `String!` , <1>",
-		"limit: `Int` <2>",
-		"): [<<User,`User`>>] <3>",
+		"query: String! , <1>",
+		"limit: Int <2>",
+		"): [User] <3>",
 		".Arguments",
 		"`query : String!`",
 		"`limit : Int`",
@@ -1007,9 +1007,9 @@ func TestGetMethodSignatureBlock(t *testing.T) {
 		"[source, kotlin]",
 		"----",
 		"testMutation(",
-		"  input: <<UserInput,`UserInput`>>! , <1>",
-		"  optional: `String` <2>",
-		") : <<User,`User`>> <3>",
+		"  input: UserInput! , <1>",
+		"  optional: String <2>",
+		") : User <3>",
 		"----",
 	}
 
