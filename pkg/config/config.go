@@ -16,6 +16,7 @@ var (
 // Config holds all configuration options for the application
 type Config struct {
 	SchemaFile          string
+	SchemaPattern       string
 	OutputFile          string
 	ExcludeInternal     bool
 	IncludeMutations    bool
@@ -52,6 +53,8 @@ func ParseFlags() *Config {
 	// Core flags with short aliases
 	flag.StringVar(&config.SchemaFile, "schema", "", "Path to the GraphQL schema file")
 	flag.StringVar(&config.SchemaFile, "s", "", "Path to the GraphQL schema file (shorthand)")
+	flag.StringVar(&config.SchemaPattern, "pattern", "", "Pattern to match multiple GraphQL schema files (e.g., 'schemas/**/*.graphqls')")
+	flag.StringVar(&config.SchemaPattern, "p", "", "Pattern to match multiple GraphQL schema files (shorthand)")
 	flag.StringVar(&config.OutputFile, "output", "", "Output file path (default: stdout)")
 	flag.StringVar(&config.OutputFile, "o", "", "Output file path (shorthand)")
 	
@@ -111,13 +114,20 @@ func (c *Config) HandleHelp() bool {
 
 // Validate validates the configuration
 func (c *Config) Validate() error {
-	if c.SchemaFile == "" {
-		return fmt.Errorf("-schema flag is required")
+	// Require either schema file or pattern, but not both
+	if c.SchemaFile == "" && c.SchemaPattern == "" {
+		return fmt.Errorf("either -schema or -pattern flag is required")
 	}
 	
-	// Check if schema file exists
-	if _, err := os.Stat(c.SchemaFile); os.IsNotExist(err) {
-		return fmt.Errorf("schema file '%s' does not exist", c.SchemaFile)
+	if c.SchemaFile != "" && c.SchemaPattern != "" {
+		return fmt.Errorf("-schema and -pattern flags are mutually exclusive")
+	}
+	
+	// Check if schema file exists (single file mode)
+	if c.SchemaFile != "" {
+		if _, err := os.Stat(c.SchemaFile); os.IsNotExist(err) {
+			return fmt.Errorf("schema file '%s' does not exist", c.SchemaFile)
+		}
 	}
 	
 	// Validate output file directory if specified
@@ -140,8 +150,9 @@ func PrintUsage() {
 USAGE:
     graphqls-to-asciidoc [OPTIONS]
 
-REQUIRED:
+REQUIRED (choose one):
     -s, --schema PATH       Path to the GraphQL schema file
+    -p, --pattern PATTERN   Pattern to match multiple GraphQL schema files
 
 OPTIONS:
     -o, --output PATH       Output file path (default: stdout)
@@ -161,23 +172,26 @@ SECTION CONTROL:
         --scalars           Include scalars in the output (default: true)
 
 EXAMPLES:
-    # Generate documentation to stdout
+    # Generate documentation from single file to stdout
     graphqls-to-asciidoc -s schema.graphql
 
-    # Generate documentation to a file
-    graphqls-to-asciidoc -s schema.graphql -o docs.adoc
+    # Generate documentation from multiple files
+    graphqls-to-asciidoc -p "schemas/**/*.graphqls" -o docs.adoc
 
-    # Generate only types and enums
+    # Generate from pattern with specific extensions
+    graphqls-to-asciidoc -p "src/graphql/*.{graphql,graphqls}" -o api-docs.adoc
+
+    # Generate only types and enums from single file
     graphqls-to-asciidoc -s schema.graphql -o types.adoc -q=false -m=false
 
-    # Exclude internal queries and generate to file
-    graphqls-to-asciidoc -s schema.graphql -o api-docs.adoc -x
+    # Exclude internal queries from multiple files
+    graphqls-to-asciidoc -p "**/*.graphqls" -o api-docs.adoc -x
 
     # Generate comprehensive documentation with all sections
     graphqls-to-asciidoc -s schema.graphql -o full-docs.adoc --subscriptions
 
     # Generate with verbose logging and metrics
-    graphqls-to-asciidoc -s schema.graphql -o docs.adoc --verbose
+    graphqls-to-asciidoc -p "schemas/*.graphql" -o docs.adoc --verbose
 
 FEATURES:
     ✓ Admonition blocks (NOTE, WARNING, TIP, etc.)
@@ -196,6 +210,7 @@ func PrintError(msg string) {
 	fmt.Fprintf(os.Stderr, "Error: %s\n\n", msg)
 	fmt.Fprintf(os.Stderr, "Use -h or --help for detailed usage information.\n")
 	fmt.Fprintf(os.Stderr, "Quick start: graphqls-to-asciidoc -s schema.graphql\n")
+	fmt.Fprintf(os.Stderr, "Or with pattern: graphqls-to-asciidoc -p \"**/*.graphqls\"\n")
 	os.Exit(1)
 }
 

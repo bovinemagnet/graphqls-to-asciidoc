@@ -40,11 +40,17 @@ go test -v ./...
 
 ### Run
 ```bash
-# Basic usage
+# Basic usage (single file)
 ./graphqls-to-asciidoc -schema ./schema.graphqls > output.adoc
 
-# With options
+# Multiple files using pattern
+./graphqls-to-asciidoc -pattern "schemas/**/*.graphqls" > output.adoc
+
+# With options (single file)
 ./graphqls-to-asciidoc -schema ./test/schema.graphql -exclude-internal -mutations=false > output.adoc
+
+# With options (multiple files)
+./graphqls-to-asciidoc -pattern "**/*.{graphql,graphqls}" -exclude-internal -o docs.adoc
 
 # Check version information
 ./graphqls-to-asciidoc -version
@@ -67,11 +73,14 @@ Uses GoReleaser for cross-platform builds targeting Linux, macOS, and Windows on
 ## Command-Line Flags
 
 The tool supports extensive customization through flags:
-- `-schema`: Path to GraphQL schema file (required)
+- `-schema`: Path to GraphQL schema file (single file mode)
+- `-pattern`: Pattern to match multiple GraphQL schema files (e.g., `schemas/**/*.graphqls`)
 - `-version`: Show program version and build information
 - `-exclude-internal`: Exclude queries/mutations marked as INTERNAL
 - `-mutations`, `-queries`, `-subscriptions`: Include/exclude specific sections (default: most are true)
 - `-directives`, `-types`, `-enums`, `-inputs`, `-scalars`: Include/exclude type definitions
+
+**Note:** `-schema` and `-pattern` flags are mutually exclusive. Use `-schema` for single file mode or `-pattern` for multiple file mode.
 
 ## Key Functions
 

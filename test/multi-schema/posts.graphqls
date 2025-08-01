@@ -1,0 +1,67 @@
+"""
+Post related types and queries
+"""
+type Post {
+    """
+    The post ID
+    """
+    id: ID!
+    """
+    The post title
+    """
+    title: String!
+    """
+    The post content
+    """
+    content: String
+    """
+    The post author
+    """
+    author: User!
+    """
+    Post creation date
+    """
+    createdAt: DateTime
+    """
+    Post status
+    """
+    status: PostStatus
+}
+
+"""
+Post status enumeration
+"""
+enum PostStatus {
+    """
+    Draft post
+    """
+    DRAFT
+    """
+    Published post
+    """
+    PUBLISHED
+    """
+    Archived post
+    """
+    ARCHIVED
+}
+
+"""
+Input for creating a post
+"""
+input CreatePostInput {
+    """
+    The post title
+    """
+    title: String!
+    """
+    The post content
+    """
+    content: String
+    """
+    The author ID
+    """
+    authorId: ID!
+}
+
+# Query and Mutation extensions will be handled by schema.graphql

@@ -474,15 +474,19 @@ func ConvertDescriptionToRefNumbers(text string, skipNonDash bool) string {
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 
-		// Check for single dash at start (not double dash)
+		// Check for list markers and convert to numbered references
+		var content string
+		var isListItem bool
+		
 		if strings.HasPrefix(trimmed, "- ") && !strings.HasPrefix(trimmed, "-- ") {
-			// Convert to numbered reference
-			content := strings.TrimPrefix(trimmed, "- ")
-			result = append(result, fmt.Sprintf("<%d> %s", counter, content))
-			counter++
+			content = strings.TrimPrefix(trimmed, "- ")
+			isListItem = true
 		} else if strings.HasPrefix(trimmed, "* ") {
-			// Convert asterisk list items to numbered reference
-			content := strings.TrimPrefix(trimmed, "* ")
+			content = strings.TrimPrefix(trimmed, "* ")
+			isListItem = true
+		}
+		
+		if isListItem {
 			result = append(result, fmt.Sprintf("<%d> %s", counter, content))
 			counter++
 		} else if !skipNonDash {

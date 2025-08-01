@@ -1,0 +1,58 @@
+"""
+Root schema definition
+"""
+type Query {
+    """
+    API version
+    """
+    version: String
+    
+    """
+    Get a user by ID
+    """
+    user(id: ID!): User
+    
+    """
+    Get all users
+    """
+    users: [User]
+    
+    """
+    Get a post by ID
+    """
+    post(id: ID!): Post
+    
+    """
+    Get all posts
+    """
+    posts(status: PostStatus): [Post]
+}
+
+type Mutation {
+    """
+    Test mutation
+    """
+    test: String
+    
+    """
+    Create a new user
+    """
+    createUser(input: CreateUserInput!): User
+    
+    """
+    Create a new post
+    """
+    createPost(input: CreatePostInput!): Post
+    
+    """
+    Update post status
+    """
+    updatePostStatus(id: ID!, status: PostStatus!): Post
+}
+
+type Subscription {
+    """
+    Test subscription
+    """
+    testUpdates: String
+}

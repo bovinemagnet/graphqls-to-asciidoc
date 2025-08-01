@@ -6,6 +6,7 @@ A powerful CLI tool that converts GraphQL schema files (.graphqls) to comprehens
 
 ### 🚀 Core Functionality
 - **Complete GraphQL Support**: Queries, Mutations, Subscriptions, Types, Enums, Inputs, Directives, and Scalars
+- **Multi-file Support**: Process single files or combine multiple schema files using glob patterns
 - **Rich Documentation**: Converts GraphQL descriptions to formatted AsciiDoc with tables, cross-references, and metadata
 - **Flexible Output**: Configurable sections with command-line flags to include/exclude specific parts
 
@@ -23,6 +24,15 @@ A powerful CLI tool that converts GraphQL schema files (.graphqls) to comprehens
 - **Internal Filtering**: Exclude queries/mutations marked as `INTERNAL`
 - **Changelog Integration**: Automatic extraction and formatting of version annotations
 - **Cross-Platform**: Supports Linux, macOS, and Windows (amd64 and arm64)
+
+### 📁 Multi-File Schema Support
+- **Glob Patterns**: Use patterns like `schemas/**/*.graphqls` to process multiple files
+- **Absolute & Relative Paths**: Full support for both absolute (`/home/user/schemas/**/*.graphqls`) and relative (`schemas/**/*.graphqls`) path patterns
+- **Mixed Extensions**: Support for `.graphql`, `.graphqls`, and `.gql` files
+- **Brace Expansion**: Patterns like `*.{graphql,graphqls}` for multiple extensions
+- **Conflict Detection**: Automatic detection of duplicate type definitions across files
+- **Deterministic Processing**: Files processed in alphabetical order for consistent output
+- **Source Tracking**: Combined schema includes source file comments for debugging
 
 ## Installation
 
@@ -50,43 +60,90 @@ make build
 
 ### Basic Usage
 ```bash
-# Generate documentation to stdout
+# Generate documentation from single file to stdout
 graphqls-to-asciidoc -s schema.graphql
 
-# Generate documentation to a file  
+# Generate documentation from single file to a file  
 graphqls-to-asciidoc -s schema.graphql -o documentation.adoc
+
+# Generate documentation from multiple files using patterns
+graphqls-to-asciidoc -p "schemas/**/*.graphqls" -o documentation.adoc
+
+# Multiple file extensions
+graphqls-to-asciidoc -p "**/*.{graphql,graphqls,gql}" -o full-schema.adoc
 ```
 
 ### Advanced Usage
 ```bash
-# Exclude internal queries and disable mutations section
+# Single file: Exclude internal queries and disable mutations section
 graphqls-to-asciidoc -s schema.graphql -o api-docs.adoc -x -m=false
 
-# Generate only types and enums using short flags
-graphqls-to-asciidoc -s schema.graphql -o types-only.adoc -q=false -m=false
+# Multiple files: Generate only types and enums using short flags
+graphqls-to-asciidoc -p "types/*.graphql" -o types-only.adoc -q=false -m=false
 
-# Generate comprehensive documentation with all sections
-graphqls-to-asciidoc -s schema.graphql -o full-docs.adoc --subscriptions
+# Multiple files: Generate comprehensive documentation with all sections
+graphqls-to-asciidoc -p "schemas/**/*.graphqls" -o full-docs.adoc --subscriptions
+
+# Pattern with verbose logging to see which files were combined
+graphqls-to-asciidoc -p "**/*.graphql" -o docs.adoc --verbose
 
 # Check version and help
 graphqls-to-asciidoc -v
 graphqls-to-asciidoc -h
 ```
 
+### Pattern Examples
+
+The `--pattern` flag supports various glob patterns for flexible file matching:
+
+```bash
+# All .graphql files in current directory
+graphqls-to-asciidoc -p "*.graphql"
+
+# All GraphQL files recursively
+graphqls-to-asciidoc -p "**/*.graphqls"
+
+# Multiple extensions using brace expansion
+graphqls-to-asciidoc -p "**/*.{graphql,graphqls,gql}"
+
+# Specific subdirectory
+graphqls-to-asciidoc -p "schemas/types/*.graphql"
+
+# Complex pattern with prefix
+graphqls-to-asciidoc -p "api/v1/**/*.{graphql,graphqls}"
+
+# Absolute paths are fully supported
+graphqls-to-asciidoc -p "/home/user/project/src/**/*.graphqls"
+
+# Mixed relative and absolute patterns work
+graphqls-to-asciidoc -p "/absolute/path/**/*.graphql"
+```
+
+**Important Notes:**
+- **Absolute and Relative Paths**: Both absolute paths (e.g., `/home/user/schemas/**/*.graphqls`) and relative paths (e.g., `schemas/**/*.graphqls`) are fully supported
+- **GraphQL Ordering**: GraphQL doesn't require specific ordering of type definitions - the parser handles dependencies automatically
+- **Deterministic Processing**: Files are processed in alphabetical order for consistent output across runs
+- **Conflict Detection**: Duplicate type definitions across files will trigger a clear error message
+- **Debugging**: Use `--verbose` to see exactly which files are being combined and their processing order
+
 ### Command-Line Options
 
 #### Core Options
 | Flag | Short | Description | Default |
 |------|-------|-------------|---------|
-| `--schema` | `-s` | Path to GraphQL schema file | **Required** |
+| `--schema` | `-s` | Path to GraphQL schema file (single file mode) | - |
+| `--pattern` | `-p` | Pattern to match multiple GraphQL schema files | - |
 | `--output` | `-o` | Output file path | stdout |
 | `--help` | `-h` | Show detailed help information | - |
 | `--version` | `-v` | Show version information | - |
+
+**Note:** Either `--schema` or `--pattern` is required, but not both.
 
 #### Control Options  
 | Flag | Short | Description | Default |
 |------|-------|-------------|---------|
 | `--exclude-internal` | `-x` | Exclude queries/mutations marked as INTERNAL | false |
+| `--verbose` | - | Enable verbose logging with processing metrics | false |
 
 #### Section Control
 | Flag | Short | Description | Default |
@@ -191,8 +248,25 @@ The generated AsciiDoc includes:
 ## Examples
 
 The [test](test/) directory contains comprehensive examples:
+
+### Single File Examples
 - **Input**: [schema.graphql](test/schema.graphql) - Feature-rich GraphQL schema
 - **Output**: [schema.adoc](test/schema.adoc) - Generated AsciiDoc documentation
+
+### Multi-File Examples
+- **Input**: [test/multi-schema/](test/multi-schema/) - Multiple schema files split by domain:
+  - `schema.graphql` - Root Query, Mutation, and Subscription definitions
+  - `users.graphql` - User-related types and inputs
+  - `posts.graphqls` - Post-related types, enums, and inputs  
+  - `scalars.gql` - Custom scalar definitions
+
+```bash
+# Generate documentation from the multi-file example
+graphqls-to-asciidoc -p "test/multi-schema/*.{graphql,graphqls,gql}" -o multi-schema-docs.adoc --verbose
+
+# Example with absolute path (useful for CI/CD pipelines)
+graphqls-to-asciidoc -p "/absolute/path/to/schemas/**/*.graphqls" -o docs.adoc --verbose
+```
 
 ## Development
 
@@ -223,6 +297,34 @@ The project includes comprehensive unit tests covering:
 - Type name processing and cross-references
 - Template rendering and output generation
 - Command-line flag handling and validation
+- Multi-file pattern matching and schema combining
+
+## Troubleshooting
+
+### Common Pattern Issues
+
+**"No GraphQL schema files found matching pattern"**
+- Verify the directory path exists: `ls -la /your/path/to/schemas/`
+- Check file extensions are correct (`.graphql`, `.graphqls`, or `.gql`)
+- Use `--verbose` to see the search process
+- Test with a simpler pattern first: `graphqls-to-asciidoc -p "*.graphql"`
+
+**"Duplicate definition error"**
+- This occurs when the same type is defined in multiple files
+- Use `--verbose` to see which files contain the conflict
+- Consider splitting conflicting types into separate files or removing duplicates
+
+**Pattern syntax examples:**
+```bash
+# ✅ Correct patterns
+graphqls-to-asciidoc -p "schemas/**/*.graphqls"           # Recursive
+graphqls-to-asciidoc -p "/home/user/api/**/*.{graphql,graphqls}"  # Absolute + brace expansion  
+graphqls-to-asciidoc -p "src/graphql/*.graphql"          # Single directory
+
+# ❌ Common mistakes
+graphqls-to-asciidoc -p schemas/**/*.graphqls             # Missing quotes
+graphqls-to-asciidoc -p "schemas/*/*.graphqls"           # Single * won't recurse
+```
 
 ## Schema Requirements
 
