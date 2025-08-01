@@ -9,6 +9,7 @@ import (
 
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/config"
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/generator"
+	schemaParser "github.com/bovinemagnet/graphqls-to-asciidoc/pkg/parser"
 )
 
 var (
@@ -41,16 +42,42 @@ func main() {
 		config.PrintError(err.Error())
 	}
 
-	// Read schema file
-	schemaBytes, err := os.ReadFile(cfg.SchemaFile)
-	if err != nil {
-		log.Fatalf("Failed to read schema file %s: %v", cfg.SchemaFile, err)
+	// Read schema content (single file or multiple files)
+	var schemaContent string
+	if cfg.SchemaPattern != "" {
+		// Multi-file mode using pattern
+		files, err := schemaParser.FindSchemaFiles(cfg.SchemaPattern)
+		if err != nil {
+			log.Fatalf("Failed to find schema files with pattern '%s': %v", cfg.SchemaPattern, err)
+		}
+		
+		// Validate files are accessible and have correct extensions
+		if err := schemaParser.ValidateSchemaFiles(files); err != nil {
+			log.Fatalf("Schema file validation failed: %v", err)
+		}
+		
+		// Combine multiple schema files
+		schemaContent, err = schemaParser.CombineSchemaFiles(files)
+		if err != nil {
+			log.Fatalf("Failed to combine schema files: %v", err)
+		}
+		
+		if cfg.Verbose {
+			log.Printf("Combined %d schema files: %v", len(files), files)
+		}
+	} else {
+		// Single file mode
+		schemaBytes, err := os.ReadFile(cfg.SchemaFile)
+		if err != nil {
+			log.Fatalf("Failed to read schema file %s: %v", cfg.SchemaFile, err)
+		}
+		schemaContent = string(schemaBytes)
 	}
 
 	// Parse GraphQL schema
 	source := &ast.Source{
 		Name:  "GraphQL schema",
-		Input: string(schemaBytes),
+		Input: schemaContent,
 	}
 
 	doc, gqlErr := parser.ParseSchema(source)

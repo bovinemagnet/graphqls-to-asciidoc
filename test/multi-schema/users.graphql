@@ -1,0 +1,37 @@
+"""
+User related types and queries
+"""
+type User {
+    """
+    The user ID
+    """
+    id: ID!
+    """
+    The user's name
+    """
+    name: String
+    """
+    The user's email
+    """
+    email: String
+    """
+    Posts by this user
+    """
+    posts: [Post]
+}
+
+"""
+Input for creating a user
+"""
+input CreateUserInput {
+    """
+    The user's name
+    """
+    name: String!
+    """
+    The user's email
+    """
+    email: String!
+}
+
+# Query and Mutation extensions will be handled by schema.graphql

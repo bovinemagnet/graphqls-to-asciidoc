@@ -1,0 +1,10 @@
+# Custom scalar types used throughout the schema
+
+# A date-time string at UTC, such as 2007-12-03T10:15:30Z
+scalar DateTime
+
+# A URL string
+scalar URL
+
+# An email address
+scalar Email

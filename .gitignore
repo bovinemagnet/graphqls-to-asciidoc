@@ -26,10 +26,12 @@ bin/
 graphqls-to-asciidoc
 main
 
-# Test output file
+# Test output files
 test.adoc
 test.graphqls
 test.md
+test/*test*.adoc
+test/final_test.adoc
 
 ## Ignore internal files
 internal.graphqls
