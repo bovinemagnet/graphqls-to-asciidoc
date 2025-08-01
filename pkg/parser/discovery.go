@@ -52,17 +52,7 @@ func FindSchemaFiles(pattern string) ([]string, error) {
 					continue // Skip invalid patterns
 				}
 				
-				// Filter out directories
-				for _, match := range matches {
-					info, err := os.Stat(match)
-					if err != nil {
-						continue
-					}
-					
-					if !info.IsDir() {
-						files = append(files, match)
-					}
-				}
+				files = append(files, filterFiles(matches)...)
 			}
 		} else {
 			// Use filepath.Glob for simple patterns
@@ -71,17 +61,7 @@ func FindSchemaFiles(pattern string) ([]string, error) {
 				return nil, fmt.Errorf("invalid pattern '%s': %v", pattern, err)
 			}
 			
-			// Filter out directories
-			for _, match := range matches {
-				info, err := os.Stat(match)
-				if err != nil {
-					continue // Skip files that can't be accessed
-				}
-				
-				if !info.IsDir() {
-					files = append(files, match)
-				}
-			}
+			files = append(files, filterFiles(matches)...)
 		}
 	}
 	
@@ -243,4 +223,20 @@ func extractRootDir(pattern string) string {
 	}
 	
 	return beforeDoubleStar
+}
+
+// filterFiles filters out directories from a list of file paths
+func filterFiles(matches []string) []string {
+	var files []string
+	for _, match := range matches {
+		info, err := os.Stat(match)
+		if err != nil {
+			continue // Skip files that can't be accessed
+		}
+		
+		if !info.IsDir() {
+			files = append(files, match)
+		}
+	}
+	return files
 }

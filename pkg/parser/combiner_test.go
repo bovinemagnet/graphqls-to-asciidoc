@@ -115,109 +115,50 @@ func TestCombineSchemaFilesConflicts(t *testing.T) {
 }
 
 func TestCheckForConflicts(t *testing.T) {
-	definedTypes := make(map[string]string)
-	
-	tests := []struct {
+	testCases := []struct {
 		name     string
 		content  string
 		filename string
-		setup    func()
+		setup    func(map[string]string)
 		wantErr  bool
 	}{
-		{
-			name:     "new type definition",
-			content:  "type User { id: ID! }",
-			filename: "user.graphql",
-			setup:    func() {},
-			wantErr:  false,
-		},
-		{
-			name:     "duplicate type definition",
-			content:  "type User { email: String }",
-			filename: "user2.graphql",
-			setup: func() {
-				definedTypes["User"] = "user.graphql"
-			},
-			wantErr: true,
-		},
-		{
-			name:     "input type",
-			content:  "input UserInput { name: String }",
-			filename: "input.graphql",
-			setup:    func() {},
-			wantErr:  false,
-		},
-		{
-			name:     "enum type",
-			content:  "enum Status { ACTIVE INACTIVE }",
-			filename: "enum.graphql",
-			setup:    func() {},
-			wantErr:  false,
-		},
-		{
-			name:     "scalar type",
-			content:  "scalar DateTime",
-			filename: "scalar.graphql",
-			setup:    func() {},
-			wantErr:  false,
-		},
-		{
-			name:     "directive definition",
-			content:  "directive @auth on FIELD_DEFINITION",
-			filename: "directive.graphql",
-			setup:    func() {},
-			wantErr:  false,
-		},
-		{
-			name:     "built-in type (allowed)",
-			content:  "scalar String",
-			filename: "builtin.graphql",
-			setup:    func() {},
-			wantErr:  false,
-		},
+		{"new type definition", "type User { id: ID! }", "user.graphql", nil, false},
+		{"duplicate type definition", "type User { email: String }", "user2.graphql", 
+			func(dt map[string]string) { dt["User"] = "user.graphql" }, true},
+		{"input type", "input UserInput { name: String }", "input.graphql", nil, false},
+		{"enum type", "enum Status { ACTIVE INACTIVE }", "enum.graphql", nil, false},
+		{"scalar type", "scalar DateTime", "scalar.graphql", nil, false},
+		{"directive definition", "directive @auth on FIELD_DEFINITION", "directive.graphql", nil, false},
+		{"built-in type (allowed)", "scalar String", "builtin.graphql", nil, false},
 	}
 	
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Reset map for each test
-			definedTypes = make(map[string]string)
-			tt.setup()
-			
-			err := checkForConflicts(tt.content, tt.filename, definedTypes)
-			
-			if tt.wantErr && err == nil {
-				t.Errorf("checkForConflicts() expected error but got none")
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			definedTypes := make(map[string]string)
+			if tc.setup != nil {
+				tc.setup(definedTypes)
 			}
 			
-			if !tt.wantErr && err != nil {
-				t.Errorf("checkForConflicts() unexpected error: %v", err)
+			err := checkForConflicts(tc.content, tc.filename, definedTypes)
+			
+			if (err != nil) != tc.wantErr {
+				t.Errorf("checkForConflicts() error = %v, wantErr %v", err, tc.wantErr)
 			}
 		})
 	}
 }
 
 func TestIsBuiltInType(t *testing.T) {
-	tests := []struct {
-		typeName string
-		expected bool
-	}{
-		{"String", true},
-		{"Int", true},
-		{"Float", true},
-		{"Boolean", true},
-		{"ID", true},
-		{"Query", false},    // Allow redefinition
-		{"Mutation", false}, // Allow redefinition
-		{"Subscription", false}, // Allow redefinition
-		{"User", false},     // Custom type
-		{"DateTime", false}, // Custom scalar
+	testCases := map[string]bool{
+		"String": true, "Int": true, "Float": true, "Boolean": true, "ID": true,
+		"Query": false, "Mutation": false, "Subscription": false, // Allow redefinition
+		"User": false, "DateTime": false, // Custom types
 	}
 	
-	for _, tt := range tests {
-		t.Run(tt.typeName, func(t *testing.T) {
-			result := isBuiltInType(tt.typeName)
-			if result != tt.expected {
-				t.Errorf("isBuiltInType(%s) = %v, expected %v", tt.typeName, result, tt.expected)
+	for typeName, expected := range testCases {
+		t.Run(typeName, func(t *testing.T) {
+			if result := isBuiltInType(typeName); result != expected {
+				t.Errorf("isBuiltInType(%s) = %v, expected %v", typeName, result, expected)
 			}
 		})
 	}

@@ -187,73 +187,31 @@ func TestMatchesPattern(t *testing.T) {
 		os.WriteFile(filePath, []byte("type Test { id: ID! }"), 0644)
 	}
 	
-	tests := []struct {
-		name     string
-		path     string
-		pattern  string
+	testCases := []struct {
+		name, file, pattern string
 		expected bool
-		wantErr  bool
 	}{
-		{
-			name:     "simple match",
-			path:     testFiles["schema.graphql"],
-			pattern:  filepath.Join(tempDir, "*.graphql"),
-			expected: true,
-			wantErr:  false,
-		},
-		{
-			name:     "no match",
-			path:     testFiles["schema.txt"],
-			pattern:  filepath.Join(tempDir, "*.graphql"),
-			expected: false,
-			wantErr:  false,
-		},
-		{
-			name:     "recursive match",
-			path:     testFiles["subdirectory/schema.graphql"],
-			pattern:  filepath.Join(tempDir, "**/*.graphql"),
-			expected: true,
-			wantErr:  false,
-		},
-		{
-			name:     "deep recursive match",
-			path:     testFiles["a/b/c/schema.graphql"],
-			pattern:  filepath.Join(tempDir, "**/*.graphql"),
-			expected: true,
-			wantErr:  false,
-		},
-		{
-			name:     "prefix with recursive",
-			path:     testFiles["schemas/types.graphql"],
-			pattern:  filepath.Join(tempDir, "schemas/**/*.graphql"),
-			expected: true,
-			wantErr:  false,
-		},
-		{
-			name:     "prefix mismatch",
-			path:     testFiles["other/types.graphql"],
-			pattern:  filepath.Join(tempDir, "schemas/**/*.graphql"),
-			expected: false,
-			wantErr:  false,
-		},
+		{"simple match", "schema.graphql", "*.graphql", true},
+		{"no match", "schema.txt", "*.graphql", false},
+		{"recursive match", "subdirectory/schema.graphql", "**/*.graphql", true},
+		{"deep recursive match", "a/b/c/schema.graphql", "**/*.graphql", true},
+		{"prefix with recursive", "schemas/types.graphql", "schemas/**/*.graphql", true},
+		{"prefix mismatch", "other/types.graphql", "schemas/**/*.graphql", false},
 	}
 	
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			matched, err := matchesPattern(tt.path, tt.pattern)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			path := testFiles[tc.file]
+			pattern := filepath.Join(tempDir, tc.pattern)
 			
-			if tt.wantErr && err == nil {
-				t.Errorf("matchesPattern() expected error but got none")
-				return
-			}
-			
-			if !tt.wantErr && err != nil {
+			matched, err := matchesPattern(path, pattern)
+			if err != nil {
 				t.Errorf("matchesPattern() unexpected error: %v", err)
 				return
 			}
 			
-			if matched != tt.expected {
-				t.Errorf("matchesPattern() = %v, expected %v", matched, tt.expected)
+			if matched != tc.expected {
+				t.Errorf("matchesPattern() = %v, expected %v", matched, tc.expected)
 			}
 		})
 	}
