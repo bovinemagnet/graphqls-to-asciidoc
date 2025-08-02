@@ -8,19 +8,46 @@ This is a Go CLI tool that converts GraphQL schema files (.graphqls) to AsciiDoc
 
 ## Architecture
 
-The application is a single-file Go program (`main.go`) that:
+The application follows a **modular architecture** with clear separation of concerns across multiple packages:
 
-1. **Parses command-line flags** for customizing output (exclude internal queries, include/exclude specific sections like mutations, types, enums, etc.)
-2. **Reads and parses GraphQL schema** using `github.com/vektah/gqlparser/v2`
-3. **Generates AsciiDoc output** using Go templates and string builders
-4. **Supports multiple output sections**: Queries, Mutations, Subscriptions, Types, Enums, Inputs, Directives, and Scalars
+### Core Structure
+- **`main.go`**: Entry point that orchestrates the conversion process
+- **`pkg/config/`**: Configuration management and command-line flag parsing
+- **`pkg/parser/`**: GraphQL schema parsing, file discovery, and schema combination
+- **`pkg/generator/`**: AsciiDoc generation logic and template processing
+- **`pkg/templates/`**: Template management and rendering
+- **`pkg/changelog/`**: Changelog extraction and formatting from GraphQL descriptions
+- **`pkg/metrics/`**: Performance monitoring and processing statistics
 
-Key architectural components:
-- **Template system**: Uses Go's `text/template` for consistent formatting
-- **Type processing**: Converts GraphQL types to AsciiDoc cross-references
-- **Directive processing**: Full support for custom directive definitions with arguments, locations, and descriptions
-- **Sorting**: All definitions are sorted alphabetically for consistent output
-- **Tagging**: Extensive use of AsciiDoc tags for selective inclusion in larger documents
+### Key Features
+1. **Configuration Management** (`pkg/config/`):
+   - Centralized command-line flag parsing and validation
+   - Support for single file (`-schema`) or multiple files (`-pattern`) 
+   - Output file support (`-output`) or stdout
+   - Comprehensive validation with helpful error messages
+
+2. **Schema Processing** (`pkg/parser/`):
+   - File discovery using glob patterns (e.g., `schemas/**/*.graphqls`)
+   - Schema file combination with conflict detection
+   - Support for `.graphql`, `.graphqls`, and `.gql` extensions
+   - Validation of file accessibility and GraphQL syntax
+
+3. **Documentation Generation** (`pkg/generator/`):
+   - Template-based AsciiDoc generation
+   - Support for all GraphQL constructs (Queries, Mutations, Subscriptions, Types, Enums, Inputs, Directives, Scalars)
+   - Advanced description processing (changelog extraction, markdown conversion, cross-references)
+   - Configurable section inclusion/exclusion
+
+4. **Performance Monitoring** (`pkg/metrics/`):
+   - Processing time tracking per section
+   - Memory usage monitoring  
+   - Detailed performance reports with efficiency calculations
+
+### Architectural Benefits
+- **Modularity**: Clear separation of concerns enables easier testing and maintenance
+- **Testability**: Each package has comprehensive unit tests (100+ test cases)
+- **Extensibility**: Interface-based design allows for future output formats
+- **Configurability**: Extensive customization options via flags and configuration
 
 ## Common Commands
 
@@ -82,25 +109,80 @@ The tool supports extensive customization through flags:
 
 **Note:** `-schema` and `-pattern` flags are mutually exclusive. Use `-schema` for single file mode or `-pattern` for multiple file mode.
 
-## Key Functions
+## Key Components
 
-- `main()`: Entry point, orchestrates the entire conversion process
-- `printXxxTmpl()` functions: Template-based rendering for each section type
-- `processTypeName()`: Converts GraphQL types to AsciiDoc cross-references
-- `camelToSnake()`: Converts names for anchor generation
-- `getArgsString()`: Formats GraphQL arguments for display
-- `printAsciiDocTagsTmpl()`: Processes embedded AsciiDoc tags in descriptions
+### Package Functions by Module
+
+**`pkg/config/`**:
+- `ParseFlags()`: Command-line argument parsing and validation
+- `GetOutputWriter()`: Output destination management (file or stdout)
+- `Validate()`: Configuration validation with detailed error messages
+
+**`pkg/parser/`**:
+- `FindSchemaFiles()`: File discovery using glob patterns
+- `CombineSchemaFiles()`: Multi-file schema combination with conflict detection
+- `ValidateSchemaFiles()`: File accessibility and extension validation
+
+**`pkg/generator/`**:
+- `New()`: Generator initialization with configuration and schema
+- `Generate()`: Main generation orchestration
+- `ProcessTypeName()`: GraphQL type to AsciiDoc cross-reference conversion
+- `ProcessDescription()`: Advanced description processing (changelog, markdown, cross-refs)
+
+**`pkg/templates/`**:
+- Template management and rendering for consistent output formatting
+- Support for customizable templates and formatting
+
+**`pkg/changelog/`**:
+- `Extract()`: Version annotation extraction from GraphQL descriptions
+- `ProcessWithChangelog()`: Changelog integration into documentation
+
+**`pkg/metrics/`**:
+- `New()`: Performance monitoring initialization
+- `SectionTimer()`: Per-section timing and statistics
+- `PrintSummary()`: Detailed performance and efficiency reporting
 
 ## Testing
 
-The project includes basic unit tests (`main_test.go`) focusing on utility functions like `camelToSnake()`.
+The project has **comprehensive test coverage** with 100+ test cases across all packages:
+
+### Test Structure
+- **`main_test.go`**: Integration tests and version output validation
+- **`pkg/*/`**: Each package has dedicated `*_test.go` files with extensive unit tests
+- **Coverage**: High test coverage across all modules including edge cases and error scenarios
+
+### Test Categories
+- **Unit Tests**: Individual function testing with various input scenarios
+- **Integration Tests**: End-to-end testing of complete workflows  
+- **Error Handling**: Validation of error conditions and edge cases
+- **Performance Tests**: Benchmark tests for critical code paths
+
+### Running Tests
+```bash
+make test              # Run all tests
+make test-coverage     # Run tests with coverage report
+make test-bench        # Run benchmark tests
+```
 
 ## Output Format
 
 Generates comprehensive AsciiDoc documentation with:
-- Table of contents and metadata
-- Separate sections for each GraphQL construct (Queries, Mutations, Subscriptions, Types, Enums, Inputs, Directives, Scalars)
-- Cross-references between types
-- Directive documentation with signature, arguments table, usage locations, and repeatability information
-- Extensive tagging for selective inclusion
-- Consistent table formatting and styling
+
+### Documentation Features
+- **Table of contents and metadata**: Automatic generation with version information
+- **Modular sections**: Separate sections for each GraphQL construct (Queries, Mutations, Subscriptions, Types, Enums, Inputs, Directives, Scalars)
+- **Cross-references**: Intelligent linking between types and definitions
+- **Advanced formatting**: 
+  - Changelog integration from `@version` annotations
+  - Markdown to AsciiDoc conversion
+  - Code block processing with syntax highlighting
+  - Table generation and formatting
+- **Tagging system**: Extensive AsciiDoc tags for selective inclusion in larger documents
+- **Directive documentation**: Complete signature, arguments table, usage locations, and repeatability information
+
+### Performance Monitoring
+The tool provides detailed performance metrics including:
+- Processing time per section
+- Memory usage statistics  
+- Processing efficiency calculations
+- Items processed per second
