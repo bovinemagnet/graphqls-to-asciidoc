@@ -1009,7 +1009,7 @@ func TestGetMethodSignatureBlock(t *testing.T) {
 		"testMutation(",
 		"  input: UserInput! , <1>",
 		"  optional: String <2>",
-		") : User <3>",
+		"): User <3>",
 		"----",
 	}
 

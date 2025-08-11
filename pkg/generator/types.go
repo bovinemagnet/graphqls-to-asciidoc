@@ -56,6 +56,7 @@ type MutationInfo struct {
 	HasDirectives        bool
 	IsInternal           bool
 	Changelog            string
+	NumberedRefs         string
 }
 
 // ScalarData represents scalar information for template rendering
