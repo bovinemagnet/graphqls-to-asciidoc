@@ -322,7 +322,7 @@ func TestTemplateFunctionRequirements(t *testing.T) {
 		{
 			name:          "MutationTemplate",
 			templateText:  MutationTemplate,
-			requiredFuncs: []string{"printAsciiDocTagsTmpl", "convertDescriptionToRefNumbers"},
+			requiredFuncs: []string{"printAsciiDocTagsTmpl"},
 		},
 		{
 			name:          "TypeSectionTemplate",

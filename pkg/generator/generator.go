@@ -292,6 +292,15 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 	fmt.Fprintf(g.writer, "// end::query-return-%s[]\n", field.Name)
 	fmt.Fprintln(g.writer)
 
+	// Add changelog section right after return
+	if changelog != "" {
+		fmt.Fprintf(g.writer, "// tag::query-changelog-%s[]\n", field.Name)
+		fmt.Fprint(g.writer, changelog)
+		fmt.Fprintln(g.writer)
+		fmt.Fprintf(g.writer, "// end::query-changelog-%s[]\n", field.Name)
+		fmt.Fprintln(g.writer)
+	}
+
 	if len(field.Arguments) > 0 {
 		fmt.Fprintf(g.writer, "// tag::arguments-%s[]\n", field.Name)
 		fmt.Fprintln(g.writer, ".Arguments")
@@ -299,15 +308,6 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 			fmt.Fprintf(g.writer, "* `%s : %s`\n", arg.Name, arg.Type.String())
 		}
 		fmt.Fprintf(g.writer, "// end::arguments-%s[]\n", field.Name)
-		fmt.Fprintln(g.writer)
-	}
-
-	// Add changelog section
-	if changelog != "" {
-		fmt.Fprintf(g.writer, "// tag::query-changelog-%s[]\n", field.Name)
-		fmt.Fprint(g.writer, changelog)
-		fmt.Fprintln(g.writer)
-		fmt.Fprintf(g.writer, "// end::query-changelog-%s[]\n", field.Name)
 		fmt.Fprintln(g.writer)
 	}
 
@@ -355,6 +355,60 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 		}
 
 		processedDesc, changelog := changelog.ProcessWithChangelog(f.Description, parser.ProcessDescription)
+		
+		// Helper to extract all list items and non-list lines
+		extractLists := func(text string) (nonList, list string) {
+			lines := strings.Split(text, "\n")
+			var nonListLines, listLines []string
+			for _, line := range lines {
+				trimmed := strings.TrimSpace(line)
+				if (strings.HasPrefix(trimmed, "- ") && !strings.HasPrefix(trimmed, "-- ")) || strings.HasPrefix(trimmed, "* ") {
+					listLines = append(listLines, line)
+				} else {
+					nonListLines = append(nonListLines, line)
+				}
+			}
+			return strings.Join(nonListLines, "\n"), strings.Join(listLines, "\n")
+		}
+		
+		// Extract numbered references from description (similar to query processing)
+		numberedRefs := ""
+		if len(f.Arguments) > 0 && f.Description != "" {
+			// Try to extract argument descriptions
+			parts := strings.Split(processedDesc, "**Arguments:**")
+			var mainDesc string
+			
+			if len(parts) == 1 {
+				// No **Arguments:** found, check for .Arguments:
+				parts = strings.Split(processedDesc, ".Arguments:")
+				if len(parts) == 1 {
+					// No .Arguments: found, check for converted .Arguments
+					parts = strings.Split(processedDesc, ".Arguments")
+					if len(parts) == 1 {
+						// No Arguments marker at all - extract list items as arguments
+						mainDesc, numberedRefs = extractLists(processedDesc)
+						mainDesc = parser.ConvertDashToAsterisk(mainDesc)
+						if strings.TrimSpace(numberedRefs) != "" {
+							numberedRefs = parser.ConvertDescriptionToRefNumbers(numberedRefs, true)
+						}
+						processedDesc = mainDesc
+					} else {
+						// Found converted .Arguments marker
+						numberedRefs = parser.ConvertDescriptionToRefNumbers(parts[1], true)
+						processedDesc = parser.ConvertDashToAsterisk(parts[0])
+					}
+				} else {
+					// Found .Arguments: marker
+					numberedRefs = parser.ConvertDescriptionToRefNumbers(parts[1], true)
+					processedDesc = parser.ConvertDashToAsterisk(parts[0])
+				}
+			} else {
+				// Found **Arguments:** marker
+				numberedRefs = parser.ConvertDescriptionToRefNumbers(parts[1], true)
+				processedDesc = parser.ConvertDashToAsterisk(parts[0])
+			}
+		}
+		
 		methodSignature := g.getMethodSignatureBlock(f, definitionsMap)
 		argsBlock := g.getArgumentsBlock(f, definitionsMap)
 		directivesBlock := g.getDirectivesBlock(f)
@@ -371,6 +425,7 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 			HasDirectives:        len(f.Directives) > 0,
 			IsInternal:           g.config.ExcludeInternal && strings.Contains(f.Description, "INTERNAL"),
 			Changelog:            changelog,
+			NumberedRefs:         numberedRefs,
 		}
 		mutationInfos = append(mutationInfos, mutationInfo)
 	}
@@ -417,16 +472,16 @@ func (g *Generator) getMethodSignatureBlock(f *ast.FieldDefinition, definitionsM
 	fmt.Fprintf(&b, ".mutation: %s\n", f.Name)
 	fmt.Fprintln(&b, "[source, kotlin]")
 	fmt.Fprintln(&b, "----")
-	fmt.Fprintf(&b, "%s(", f.Name)
+	fmt.Fprintf(&b, "%s(\n", f.Name)
 	for i, arg := range f.Arguments {
 		typeName := parser.ProcessTypeNameForSignature(arg.Type.String(), definitionsMap)
 		fmt.Fprintf(&b, "  %s: %s", arg.Name, typeName)
 		if i < len(f.Arguments)-1 {
 			fmt.Fprint(&b, " ,")
 		}
-		fmt.Fprintf(&b, " <%d> ", i+1)
+		fmt.Fprintf(&b, " <%d> \n", i+1)
 	}
-	fmt.Fprintf(&b, ") : %s <%d>\n", parser.ProcessTypeNameForSignature(f.Type.String(), definitionsMap), len(f.Arguments)+1)
+	fmt.Fprintf(&b, "): %s <%d>\n", parser.ProcessTypeNameForSignature(f.Type.String(), definitionsMap), len(f.Arguments)+1)
 	fmt.Fprint(&b, "----")
 	return b.String()
 }

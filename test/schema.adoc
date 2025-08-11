@@ -1,7 +1,7 @@
 = GraphQL Documentation
 :toc: left
-:revdate: Sat, 21 Jun 2025 14:36:42 AEST
-:commandline: ./graphqls-to-asciidoc -s test/schema.graphql -o test/schema.adoc --verbose --subscriptions
+:revdate: Mon, 11 Aug 2025 11:36:53 AEST
+:commandline: /tmp/go-build109527934/b001/exe/main -schema test/schema.graphql
 :sourceFile: test/schema.graphql
 :reproducible:
 :page-partial:
@@ -42,8 +42,8 @@ For bulk operations, see <<get-tweets>>.
 [source, kotlin]
 ----
 Tweet(
-  id: `ID!` <1> 
-): <<Tweet,`Tweet`>> <2>
+  id: ID! <1> 
+): Tweet <2>
 ----
 // end::method-signature-Tweet[]
 
@@ -87,11 +87,11 @@ Get a list of tweets, remember that it is `2024-01-08` for testing dates in the 
 [source, kotlin]
 ----
 Tweets(
-  limit: `Int!` , <1> 
-  skip: `Int` , <2> 
-  sort_field: `String` , <3> 
-  sort_order: `String` <4> 
-): [<<Tweet,`Tweet`>>] <5>
+  limit: Int! , <1> 
+  skip: Int , <2> 
+  sort_field: String , <3> 
+  sort_order: String <4> 
+): [Tweet] <5>
 ----
 // end::method-signature-Tweets[]
 
@@ -136,11 +136,11 @@ Get a list of tweets, remember that it is `2024-01-08` for testing dates in the 
 [source, kotlin]
 ----
 TweetsTwo(
-  limit: `Int!` , <1> 
-  skip: `Int` , <2> 
-  sort_field: `String` , <3> 
-  sort_order: `String` <4> 
-): [<<Tweet,`Tweet`>>] <5>
+  limit: Int! , <1> 
+  skip: Int , <2> 
+  sort_field: String , <3> 
+  sort_order: String <4> 
+): [Tweet] <5>
 ----
 // end::method-signature-TweetsTwo[]
 
@@ -189,11 +189,11 @@ Get a list of tweets, remember that it is `2024-01-08` for testing dates in the 
 [source, kotlin]
 ----
 TweetsThree(
-  limit: `Int!` , <1> 
-  skip: `Int` , <2> 
-  sort_field: `String` , <3> 
-  sort_order: `String` <4> 
-): [<<Tweet,`Tweet`>>] <5>
+  limit: Int! , <1> 
+  skip: Int , <2> 
+  sort_field: String , <3> 
+  sort_order: String <4> 
+): [Tweet] <5>
 ----
 // end::method-signature-TweetsThree[]
 
@@ -248,11 +248,11 @@ Get a list of tweets, remember that it is `2024-01-08` for testing dates in the 
 [source, kotlin]
 ----
 TweetsFour(
-  limit: `Int!` , <1> 
-  skip: `Int` , <2> 
-  sort_field: `String` , <3> 
-  sort_order: `String` <4> 
-): [<<Tweet,`Tweet`>>] <5>
+  limit: Int! , <1> 
+  skip: Int , <2> 
+  sort_field: String , <3> 
+  sort_order: String <4> 
+): [Tweet] <5>
 ----
 // end::method-signature-TweetsFour[]
 
@@ -300,7 +300,7 @@ This provides pagination and sorting metadata for <<get-tweets,the Tweets query>
 [source, kotlin]
 ----
 TweetsMeta(
-): <<Meta,`Meta`>> <1>
+): Meta <1>
 ----
 // end::method-signature-TweetsMeta[]
 
@@ -332,8 +332,8 @@ Get a user by its ID
 [source, kotlin]
 ----
 User(
-  id: `ID!` <1> 
-): <<User,`User`>> <2>
+  id: ID! <1> 
+): User <2>
 ----
 // end::method-signature-User[]
 
@@ -370,8 +370,8 @@ Get a list of users
 [source, kotlin]
 ----
 Notifications(
-  limit: `Int` <1> 
-): [<<Notification,`Notification`>>] <2>
+  limit: Int <1> 
+): [Notification] <2>
 ----
 // end::method-signature-Notifications[]
 
@@ -408,7 +408,7 @@ Get meta information about the list of notifications
 [source, kotlin]
 ----
 NotificationsMeta(
-): <<Meta,`Meta`>> <1>
+): Meta <1>
 ----
 // end::method-signature-NotificationsMeta[]
 
@@ -440,8 +440,8 @@ Get a tweet's sentiment by its ID
 [source, kotlin]
 ----
 TweetSentiment(
-  id: `ID!` <1> 
-): <<Sentiment,`Sentiment`>> <2>
+  id: ID! <1> 
+): Sentiment <2>
 ----
 // end::method-signature-TweetSentiment[]
 
@@ -478,8 +478,8 @@ TweetSentiment(
 [source, kotlin]
 ----
 TweetSentiments1(
-  id: [`ID`] <1> 
-): [<<Sentiment,`Sentiment`>>] <2>
+  id: [ID] <1> 
+): [Sentiment] <2>
 ----
 // end::method-signature-TweetSentiments1[]
 
@@ -516,8 +516,8 @@ TweetSentiments1(
 [source, kotlin]
 ----
 TweetSentiments2(
-  id: [`ID!`] <1> 
-): [<<Sentiment,`Sentiment`>>] <2>
+  id: [ID!] <1> 
+): [Sentiment] <2>
 ----
 // end::method-signature-TweetSentiments2[]
 
@@ -554,8 +554,8 @@ TweetSentiments2(
 [source, kotlin]
 ----
 TweetSentiments3(
-  id: [`ID`]! <1> 
-): [<<Sentiment,`Sentiment`>>] <2>
+  id: [ID]! <1> 
+): [Sentiment] <2>
 ----
 // end::method-signature-TweetSentiments3[]
 
@@ -592,8 +592,8 @@ TweetSentiments3(
 [source, kotlin]
 ----
 TweetSentiments4(
-  id: [`ID!`]! <1> 
-): [<<Sentiment,`Sentiment`>>] <2>
+  id: [ID!]! <1> 
+): [Sentiment] <2>
 ----
 // end::method-signature-TweetSentiments4[]
 
@@ -632,8 +632,8 @@ An example of an internal query.
 [source, kotlin]
 ----
 tweetSentiments5(
-  id: [`ID!`]! <1> 
-): [<<Sentiment,`Sentiment`>>] <2>
+  id: [ID!]! <1> 
+): [Sentiment] <2>
 ----
 // end::method-signature-tweetSentiments5[]
 
@@ -677,8 +677,8 @@ An example of an internal query.
 [source, kotlin]
 ----
 tweetSentimentsDep(
-  id: [`ID!`]! <1> 
-): [<<Sentiment,`Sentiment`>>] <2>
+  id: [ID!]! <1> 
+): [Sentiment] <2>
 ----
 // end::method-signature-tweetSentimentsDep[]
 
@@ -733,8 +733,8 @@ query GetTweetSentiment {
 [source, kotlin]
 ----
 tweetSentimentCode(
-  id: `ID!` <1> 
-): <<Sentiment,`Sentiment`>> <2>
+  id: ID! <1> 
+): Sentiment <2>
 ----
 // end::method-signature-tweetSentimentCode[]
 
@@ -780,8 +780,8 @@ tweetSentimentACode(123) {
 [source, kotlin]
 ----
 tweetSentimentACode(
-  id: `ID!` <1> 
-): <<Sentiment,`Sentiment`>> <2>
+  id: ID! <1> 
+): Sentiment <2>
 ----
 // end::method-signature-tweetSentimentACode[]
 
@@ -822,8 +822,8 @@ An example of an internal query.
 [source, kotlin]
 ----
 tweetSentimentDep(
-  id: `ID!` <1> 
-): <<Sentiment,`Sentiment`>> <2>
+  id: ID! <1> 
+): Sentiment <2>
 ----
 // end::method-signature-tweetSentimentDep[]
 
@@ -840,11 +840,6 @@ tweetSentimentDep(
 *Return:* <<Sentiment,`Sentiment`>>
 // end::query-return-tweetSentimentDep[]
 
-// tag::arguments-tweetSentimentDep[]
-.Arguments
-* `id : ID!`
-// end::arguments-tweetSentimentDep[]
-
 // tag::query-changelog-tweetSentimentDep[]
 
 .Changelog
@@ -854,6 +849,11 @@ tweetSentimentDep(
 * removed: 2.7.8
 
 // end::query-changelog-tweetSentimentDep[]
+
+// tag::arguments-tweetSentimentDep[]
+.Arguments
+* `id : ID!`
+// end::arguments-tweetSentimentDep[]
 
 // end::query-tweetSentimentDep[]
 
@@ -902,8 +902,8 @@ This demonstrates all supported callout patterns in code blocks.
 [source, kotlin]
 ----
 multiCalloutExample(
-  ids: [`ID!`]! <1> 
-): [<<Sentiment,`Sentiment`>>] <2>
+  ids: [ID!]! <1> 
+): [Sentiment] <2>
 ----
 // end::method-signature-multiCalloutExample[]
 
@@ -958,11 +958,11 @@ For more advanced queries, see <<advanced-search>>.
 [source, kotlin]
 ----
 searchTweets(
-  query: `String!` , <1> 
-  limit: `Int` , <2> 
-  offset: `Int` , <3> 
-  sortBy: `String` <4> 
-): [<<Tweet,`Tweet`>>] <5>
+  query: String! , <1> 
+  limit: Int , <2> 
+  offset: Int , <3> 
+  sortBy: String <4> 
+): [Tweet] <5>
 ----
 // end::method-signature-searchTweets[]
 
@@ -1017,7 +1017,7 @@ Changing these settings affects all API operations.
 [source, kotlin]
 ----
 getConfig(
-): `String` <1>
+): String <1>
 ----
 // end::method-signature-getConfig[]
 
@@ -1043,9 +1043,7 @@ The root mutation
 GraphQL Mutations are entry points on a GraphQL server that provides write access to our data sources.
 // tag::mutation-createTweet[]
 [[mutation_create_tweet]]
-// tag::method-signature-createTweet[]
 === createTweet
-// end::method-signature-createTweet[]
 
 // tag::method-description-createTweet[]
 Create a new tweet with validation.
@@ -1075,38 +1073,17 @@ def create_tweet(body: str) -> Tweet:
 (5) Return the newly created tweet
 // end::method-description-createTweet[]
 
+// tag::method-signature-createTweet[]
 .mutation: createTweet
 [source, kotlin]
 ----
-createTweet(  body: `String` <1> ) : <<Tweet,`Tweet`>> <2>
+createTweet(
+  body: String <1> 
+): Tweet <2>
 ----
-
+// end::method-signature-createTweet[]
 
 // tag::method-args-createTweet[]
-Create a new tweet with validation.
-
-Example implementation pattern:
-
-```python
-def create_tweet(body: str) -> Tweet:
-    # Validate input # 1
-    if not body or len(body) > 280: # 2
-        raise ValidationError("Invalid tweet body")
-
-    # Create tweet object (3)
-    tweet = Tweet.create(
-        body=body,
-        author=current_user() /* 4 */
-    )
-
-    return tweet (5)
-```
-
-# 1 - Always validate user input first
-# 2 - Check Twitter's character limit
-(3) Use the domain model to create the tweet
-/* 4 */ Get the authenticated user context
-(5) Return the newly created tweet
 // end::method-args-createTweet[]
 
 // tag::mutation-name-createTweet[]
@@ -1126,23 +1103,23 @@ def create_tweet(body: str) -> Tweet:
 
 // tag::mutation-deleteTweet[]
 [[mutation_delete_tweet]]
-// tag::method-signature-deleteTweet[]
 === deleteTweet
-// end::method-signature-deleteTweet[]
 
 // tag::method-description-deleteTweet[]
 Delete a tweet
 // end::method-description-deleteTweet[]
 
+// tag::method-signature-deleteTweet[]
 .mutation: deleteTweet
 [source, kotlin]
 ----
-deleteTweet(  id: `ID!` <1> ) : <<Tweet,`Tweet`>> <2>
+deleteTweet(
+  id: ID! <1> 
+): Tweet <2>
 ----
-
+// end::method-signature-deleteTweet[]
 
 // tag::method-args-deleteTweet[]
-Delete a tweet
 // end::method-args-deleteTweet[]
 
 // tag::mutation-name-deleteTweet[]
@@ -1162,23 +1139,23 @@ Delete a tweet
 
 // tag::mutation-markTweetRead[]
 [[mutation_mark_tweet_read]]
-// tag::method-signature-markTweetRead[]
 === markTweetRead
-// end::method-signature-markTweetRead[]
 
 // tag::method-description-markTweetRead[]
 Mark a tweet as read
 // end::method-description-markTweetRead[]
 
+// tag::method-signature-markTweetRead[]
 .mutation: markTweetRead
 [source, kotlin]
 ----
-markTweetRead(  id: `ID!` <1> ) : `Boolean` <2>
+markTweetRead(
+  id: ID! <1> 
+): Boolean <2>
 ----
-
+// end::method-signature-markTweetRead[]
 
 // tag::method-args-markTweetRead[]
-Mark a tweet as read
 // end::method-args-markTweetRead[]
 
 // tag::mutation-name-markTweetRead[]
@@ -1198,23 +1175,23 @@ Mark a tweet as read
 
 // tag::mutation-createMessage[]
 [[mutation_create_message]]
-// tag::method-signature-createMessage[]
 === createMessage
-// end::method-signature-createMessage[]
 
 // tag::method-description-createMessage[]
 Create a new message example.
 // end::method-description-createMessage[]
 
+// tag::method-signature-createMessage[]
 .mutation: createMessage
 [source, kotlin]
 ----
-createMessage(  input: <<MessageInput,`MessageInput`>> <1> ) : <<Message,`Message`>> <2>
+createMessage(
+  input: MessageInput <1> 
+): Message <2>
 ----
-
+// end::method-signature-createMessage[]
 
 // tag::method-args-createMessage[]
-Create a new message example.
 // end::method-args-createMessage[]
 
 // tag::mutation-name-createMessage[]
@@ -1234,37 +1211,28 @@ Create a new message example.
 
 // tag::mutation-createMessageDep[]
 [[mutation_create_message_dep]]
-// tag::method-signature-createMessageDep[]
 === createMessageDep
-// end::method-signature-createMessageDep[]
 
 // tag::method-description-createMessageDep[]
 Create a new message example.
 
 `@deprecated(reason: "Internal test")`
 
-* `input` is the input message.
 // end::method-description-createMessageDep[]
 
+// tag::method-signature-createMessageDep[]
 .mutation: createMessageDep
 [source, kotlin]
 ----
-createMessageDep(  input: <<MessageInput,`MessageInput`>> <1> ) : <<Message,`Message`>> <2>
+createMessageDep(
+  input: MessageInput <1> 
+): Message <2>
 ----
-
+// end::method-signature-createMessageDep[]
 
 // tag::method-args-createMessageDep[]
-Create a new message example.
+<1> `input` is the input message.
 
-@deprecated(reason: "Internal test")
-
-add.version: 1.0.0
-update.version: 1.2.3
-update.version: 2.0.5
-deprecated.version: 2.6.0
-removed.version: 2.7.8
-
-- `input` is the input message.
 // end::method-args-createMessageDep[]
 
 // tag::mutation-name-createMessageDep[]
@@ -1274,11 +1242,6 @@ removed.version: 2.7.8
 // tag::mutation-return-createMessageDep[]
 *Return:* <<Message,`Message`>>
 // end::mutation-return-createMessageDep[]
-// tag::arguments-createMessageDep[]
-.Arguments
-* `input : <<MessageInput,`MessageInput`>>`
-
-// end::arguments-createMessageDep[]
 // tag::mutation-changelog-createMessageDep[]
 
 .Changelog
@@ -1288,55 +1251,66 @@ removed.version: 2.7.8
 * removed: 2.7.8
 
 // end::mutation-changelog-createMessageDep[]
+// tag::arguments-createMessageDep[]
+.Arguments
+* `input : <<MessageInput,`MessageInput`>>`
+
+// end::arguments-createMessageDep[]
 
 // end::mutation-createMessageDep[]
 
-// end::mutation[]
+// tag::mutation-createMessageDepB[]
+[[mutation_create_message_dep_b]]
+=== createMessageDepB
 
-// tag::subscription[]
-== Subscription
-Subscribe to a tweet by `id` and get updates when a comment is added.
+// tag::method-description-createMessageDepB[]
+Create a new message example.
 
+`@deprecated(reason: "Internal test B")`
 
- .Arguments:
- * `id`: the id of the tweet.
+// end::method-description-createMessageDepB[]
 
-
-// tag::subscription-commentAdded[]
-
-[[subscription_commentadded]]
-=== commentAdded
-
-
-// tag::subscription-signature-commentAdded[]
-.subscription: commentAdded
+// tag::method-signature-createMessageDepB[]
+.mutation: createMessageDepB
 [source, kotlin]
 ----
-commentAdded(
-  id: `ID!` <1> 
-): <<Tweet,`Tweet`>> <2>
+createMessageDepB(
+  input: MessageInput <1> 
+): Message <2>
 ----
-// end::subscription-signature-commentAdded[]
+// end::method-signature-createMessageDepB[]
 
-// tag::subscription-name-commentAdded[]
-*Subscription Name:* _commentAdded_
-// end::subscription-name-commentAdded[]
+// tag::method-args-createMessageDepB[]
+<1> `input` is the input message.
+<2> _RETURNS_ the created message.
 
-// tag::subscription-return-commentAdded[]
-*Return:* <<Tweet,`Tweet`>>
-// end::subscription-return-commentAdded[]
+// end::method-args-createMessageDepB[]
 
-// tag::subscription-arguments-commentAdded[]
+// tag::mutation-name-createMessageDepB[]
+*Mutation Name:* _createMessageDepB_
+// end::mutation-name-createMessageDepB[]
+
+// tag::mutation-return-createMessageDepB[]
+*Return:* <<Message,`Message`>>
+// end::mutation-return-createMessageDepB[]
+// tag::mutation-changelog-createMessageDepB[]
+
+.Changelog
+* add: 1.0.0
+* update: 1.2.3, 2.0.5
+* deprecated: 2.6.0
+* removed: 2.7.8
+
+// end::mutation-changelog-createMessageDepB[]
+// tag::arguments-createMessageDepB[]
 .Arguments
-* `id : ID!`
-// end::subscription-arguments-commentAdded[]
+* `input : <<MessageInput,`MessageInput`>>`
 
-// end::subscription-commentAdded[]
+// end::arguments-createMessageDepB[]
 
+// end::mutation-createMessageDepB[]
 
-
-
-// end::subscription[]
+// end::mutation[]
 
 == Types
 

@@ -764,6 +764,25 @@ type Mutation {
     """
     createMessageDep(input: MessageInput): Message
     # end::MUTATION_CREATE_MESSAGE[]
+    #
+    #
+    # tag::MUTATION_CREATE_MESSAGE_B[]
+    """
+    Create a new message example.
+
+    @deprecated(reason: "Internal test B")
+
+    add.version: 1.0.0
+    update.version: 1.2.3
+    update.version: 2.0.5
+    deprecated.version: 2.6.0
+    removed.version: 2.7.8
+
+    - `input` is the input message.
+    - _RETURNS_ the created message.
+    """
+    createMessageDepB(input: MessageInput): Message
+    # end::MUTATION_CREATE_MESSAGE_B[]
 }
 # end::MUTATIONs[]
 

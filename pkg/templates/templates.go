@@ -110,7 +110,9 @@ GraphQL Mutations are entry points on a GraphQL server that provides write acces
 // end::method-signature-{{.Name}}[]
 
 // tag::method-args-{{.Name}}[]
-{{ convertDescriptionToRefNumbers .Description true }}
+{{- if .NumberedRefs }}
+{{ .NumberedRefs }}
+{{- end }}
 // end::method-args-{{.Name}}[]
 
 // tag::mutation-name-{{.Name}}[]
@@ -120,6 +122,12 @@ GraphQL Mutations are entry points on a GraphQL server that provides write acces
 // tag::mutation-return-{{.Name}}[]
 *Return:* {{ .TypeName }}
 // end::mutation-return-{{.Name}}[]
+
+{{- if .Changelog }}
+// tag::mutation-changelog-{{.Name}}[]
+{{ .Changelog }}
+// end::mutation-changelog-{{.Name}}[]
+{{- end }}
 
 {{- if .HasArguments }}
 // tag::arguments-{{.Name}}[]
@@ -133,12 +141,6 @@ GraphQL Mutations are entry points on a GraphQL server that provides write acces
 .Directives
 {{ .Directives }}
 // end::mutation-directives-{{.Name}}[]
-{{- end }}
-
-{{- if .Changelog }}
-// tag::mutation-changelog-{{.Name}}[]
-{{ .Changelog }}
-// end::mutation-changelog-{{.Name}}[]
 {{- end }}
 
 // end::mutation-{{.Name}}[]
