@@ -97,9 +97,7 @@ GraphQL Mutations are entry points on a GraphQL server that provides write acces
 {{- range .Mutations }}
 // tag::mutation-{{.Name}}[]
 [[{{.AnchorName}}]]
-// tag::method-signature-{{.Name}}[]
 === {{.Name}}{{ if .IsInternal }} [INTERNAL]{{ end }}
-// end::method-signature-{{.Name}}[]
 
 // tag::method-description-{{.Name}}[]
 {{- if .CleanedDescription }}
@@ -107,7 +105,9 @@ GraphQL Mutations are entry points on a GraphQL server that provides write acces
 {{- end }}
 // end::method-description-{{.Name}}[]
 
+// tag::method-signature-{{.Name}}[]
 {{ .MethodSignatureBlock }}
+// end::method-signature-{{.Name}}[]
 
 // tag::method-args-{{.Name}}[]
 {{ convertDescriptionToRefNumbers .Description true }}

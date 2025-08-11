@@ -427,7 +427,7 @@ func (g *Generator) getMethodSignatureBlock(f *ast.FieldDefinition, definitionsM
 		fmt.Fprintf(&b, " <%d> ", i+1)
 	}
 	fmt.Fprintf(&b, ") : %s <%d>\n", parser.ProcessTypeNameForSignature(f.Type.String(), definitionsMap), len(f.Arguments)+1)
-	fmt.Fprintln(&b, "----")
+	fmt.Fprint(&b, "----")
 	return b.String()
 }
 
