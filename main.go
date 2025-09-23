@@ -74,15 +74,43 @@ func main() {
 		schemaContent = string(schemaBytes)
 	}
 
-	// Parse GraphQL schema
+	// Remove fragments from schema content before parsing
+	// Fragments are client-side constructs and don't belong in schema files
+	cleanedSchema := schemaParser.RemoveFragments(schemaContent)
+	
+	if cfg.Verbose && cleanedSchema != schemaContent {
+		log.Printf("Removed fragment definitions from schema")
+	}
+	
+	// Strip code blocks from descriptions to prevent parser from treating
+	// example code as actual schema definitions
+	strippedSchema := schemaParser.StripCodeBlocksFromDescriptions(cleanedSchema)
+	
+	if cfg.Verbose && strippedSchema != cleanedSchema {
+		log.Printf("Stripped code blocks from descriptions to prevent duplicate definitions")
+	}
+	
+	// Parse GraphQL schema (without fragments and code blocks in descriptions)
 	source := &ast.Source{
 		Name:  "GraphQL schema",
-		Input: schemaContent,
+		Input: strippedSchema,
 	}
 
 	doc, gqlErr := parser.ParseSchema(source)
 	if gqlErr != nil {
 		log.Fatalf("Failed to parse GraphQL schema: %v", gqlErr)
+	}
+	
+	// Now parse the original schema (with code blocks intact) to get the full descriptions
+	originalSource := &ast.Source{
+		Name:  "GraphQL schema",
+		Input: cleanedSchema,
+	}
+	
+	originalDoc, originalErr := parser.ParseSchema(originalSource)
+	if originalErr != nil {
+		// Fall back to using the stripped version if original fails
+		originalDoc = doc
 	}
 
 	// Convert document to schema-like structure for generator
@@ -93,6 +121,23 @@ func main() {
 	}
 	
 	for _, def := range doc.Definitions {
+		// Find corresponding definition in original to get full description
+		for _, origDef := range originalDoc.Definitions {
+			if origDef.Name == def.Name {
+				// Restore original description
+				def.Description = origDef.Description
+				// Also restore field descriptions
+				for _, field := range def.Fields {
+					for _, origField := range origDef.Fields {
+						if origField.Name == field.Name {
+							field.Description = origField.Description
+							break
+						}
+					}
+				}
+				break
+			}
+		}
 		schema.Types[def.Name] = def
 		
 		// Identify special root types

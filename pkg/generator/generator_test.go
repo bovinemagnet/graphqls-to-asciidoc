@@ -1578,3 +1578,4 @@ func TestFieldWithOnlyChangelog(t *testing.T) {
 		t.Error("Output should contain changelog")
 	}
 }
+

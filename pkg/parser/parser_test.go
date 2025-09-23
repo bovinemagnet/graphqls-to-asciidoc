@@ -759,6 +759,128 @@ func TestProcessDescriptionWithTables(t *testing.T) {
 	}
 }
 
+func TestStripCodeBlocksFromDescriptions(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name: "strip AsciiDoc code block from description",
+			input: `type Query {
+	"""
+	Get user by ID.
+	
+	.Example:
+	[source,kotlin]
+	----
+	input DateFilter {
+	  startDateTime: LocalDateTime!
+	  endDateTime: LocalDateTime!
+	}
+	----
+	"""
+	getUser(id: ID!): User
+}`,
+			expected: `type Query {
+	"""
+	Get user by ID.
+	
+	.Example:
+	[CODE_BLOCK_REMOVED]
+	"""
+	getUser(id: ID!): User
+}`,
+		},
+		{
+			name: "strip markdown code block from description",
+			input: `type Query {
+	"""
+	Example query.
+	
+	` + "```graphql" + `
+	query {
+	  user {
+	    name
+	  }
+	}
+	` + "```" + `
+	"""
+	test: String
+}`,
+			expected: `type Query {
+	"""
+	Example query.
+	
+	[CODE_BLOCK_REMOVED]
+	"""
+	test: String
+}`,
+		},
+		{
+			name: "strip multiple code blocks",
+			input: `"""
+Multiple examples.
+
+[source,graphql]
+----
+query { field1 }
+----
+
+And another:
+
+` + "```json" + `
+{ "key": "value" }
+` + "```" + `
+"""`,
+			expected: `"""
+Multiple examples.
+
+[CODE_BLOCK_REMOVED]
+
+And another:
+
+[CODE_BLOCK_REMOVED]
+"""`,
+		},
+		{
+			name: "preserve non-code content",
+			input: `"""
+This is a description with:
+- List items
+- More items
+
+**Important:** Some text
+"""`,
+			expected: `"""
+This is a description with:
+- List items
+- More items
+
+**Important:** Some text
+"""`,
+		},
+		{
+			name: "no descriptions",
+			input: `type Query {
+	test: String
+}`,
+			expected: `type Query {
+	test: String
+}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := StripCodeBlocksFromDescriptions(tt.input)
+			if result != tt.expected {
+				t.Errorf("StripCodeBlocksFromDescriptions() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
 func TestConvertArgumentsPatterns(t *testing.T) {
 	tests := []struct {
 		name     string

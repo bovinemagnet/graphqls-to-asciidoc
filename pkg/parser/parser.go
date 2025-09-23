@@ -465,6 +465,33 @@ func CleanDescription(text string, skipCharacter string) string {
 	return strings.Join(result, "\n") + "\n"
 }
 
+// StripCodeBlocksFromDescriptions removes code blocks from GraphQL triple-quoted descriptions
+// to prevent the parser from treating example code as actual schema definitions.
+// It replaces code blocks with a placeholder to maintain structure.
+func StripCodeBlocksFromDescriptions(schemaContent string) string {
+	// Match triple-quoted strings (GraphQL descriptions)
+	descriptionPattern := regexp.MustCompile(`(?s)"""(.*?)"""`)
+	
+	return descriptionPattern.ReplaceAllStringFunc(schemaContent, func(match string) string {
+		// Extract the content between triple quotes
+		content := match[3 : len(match)-3]
+		
+		// Pattern to match AsciiDoc code blocks: [source,*] followed by ---- block
+		// More flexible pattern to handle various whitespace
+		asciidocPattern := regexp.MustCompile(`(?s)\[source[^\]]*\][^\n]*\n\s*----[^\n]*\n.*?\n\s*----`)
+		
+		// Pattern to match markdown code blocks: ```lang\n...\n```
+		markdownPattern := regexp.MustCompile("(?s)```[^`]*```")
+		
+		// Replace code blocks with placeholder text that won't be parsed as GraphQL
+		cleaned := asciidocPattern.ReplaceAllString(content, "[CODE_BLOCK_REMOVED]")
+		cleaned = markdownPattern.ReplaceAllString(cleaned, "[CODE_BLOCK_REMOVED]")
+		
+		// Return the description with code blocks replaced
+		return `"""` + cleaned + `"""`
+	})
+}
+
 // ConvertDescriptionToRefNumbers converts dash and asterisk list items to numbered references
 func ConvertDescriptionToRefNumbers(text string, skipNonDash bool) string {
 	lines := strings.Split(text, "\n")
@@ -528,4 +555,41 @@ func ConvertDashToAsterisk(text string) string {
 	}
 
 	return strings.Join(result, "\n")
+}
+
+// RemoveFragments removes fragment definitions from schema content
+// Fragments are client-side query constructs and don't belong in schema files
+func RemoveFragments(schemaContent string) string {
+	lines := strings.Split(schemaContent, "\n")
+	var cleanedLines []string
+	inFragment := false
+	braceCount := 0
+	
+	for _, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+		
+		// Check if this line starts a fragment definition
+		if strings.HasPrefix(trimmedLine, "fragment ") && !inFragment {
+			inFragment = true
+			// Count opening braces on the same line
+			braceCount = strings.Count(line, "{") - strings.Count(line, "}")
+			continue
+		}
+		
+		// If we're inside a fragment, skip lines until fragment is complete
+		if inFragment {
+			braceCount += strings.Count(line, "{") - strings.Count(line, "}")
+			
+			// Check if fragment is complete
+			if braceCount == 0 {
+				inFragment = false
+			}
+			continue
+		}
+		
+		// Not in a fragment, keep the line
+		cleanedLines = append(cleanedLines, line)
+	}
+	
+	return strings.Join(cleanedLines, "\n")
 }

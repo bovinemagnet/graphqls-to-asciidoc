@@ -36,6 +36,7 @@ func New(cfg *config.Config, schema *ast.Schema, writer io.Writer) *Generator {
 	}
 }
 
+
 // Generate generates the complete AsciiDoc documentation
 func (g *Generator) Generate() error {
 	// Log input parameters
@@ -211,6 +212,12 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 	}
 
 	// Split the description at the Arguments marker (check both original and converted forms)
+	// First, remove .Parameters: section and anything after it
+	paramSplit := strings.Split(processedDesc, ".Parameters:")
+	if len(paramSplit) > 1 {
+		processedDesc = paramSplit[0]
+	}
+	
 	parts := strings.Split(processedDesc, "**Arguments:**")
 	var mainDesc, numberedRefs string
 
@@ -1098,6 +1105,7 @@ func (g *Generator) getTypeFieldsTableString(t *ast.Definition, definitionsMap m
 	builder.WriteString("|===\n")
 	return builder.String(), nil
 }
+
 
 func (g *Generator) getEnumValuesTableString(e *ast.Definition) (string, error) {
 	var builder strings.Builder
