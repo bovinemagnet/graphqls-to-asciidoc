@@ -6,6 +6,97 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
+func TestNormalizeIndentation(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "no indentation",
+			input:    "Line 1\nLine 2\nLine 3",
+			expected: "Line 1\nLine 2\nLine 3",
+		},
+		{
+			name:     "consistent indentation",
+			input:    "    Line 1\n    Line 2\n    Line 3",
+			expected: "Line 1\nLine 2\nLine 3",
+		},
+		{
+			name:     "mixed indentation with empty lines",
+			input:    "    Line 1\n\n    Line 2\n        Indented more\n    Line 3",
+			expected: "Line 1\n\nLine 2\n    Indented more\nLine 3",
+		},
+		{
+			name:     "GraphQL-style description",
+			input:    "    ## Overview\n    This is the overview.\n    \n    ## Details\n    Some details here.",
+			expected: "## Overview\nThis is the overview.\n\n## Details\nSome details here.",
+		},
+		{
+			name:     "leading and trailing empty lines",
+			input:    "\n\n    Content\n    More content\n\n\n",
+			expected: "Content\nMore content",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := NormalizeIndentation(tt.input)
+			if result != tt.expected {
+				t.Errorf("expected:\n%q\ngot:\n%q", tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestConvertMarkdownHeadersToAsciiDoc(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "single level header",
+			input:    "# Main Title",
+			expected: "== Main Title",
+		},
+		{
+			name:     "second level header",
+			input:    "## Section Header",
+			expected: "=== Section Header",
+		},
+		{
+			name:     "third level header",
+			input:    "### Subsection",
+			expected: "==== Subsection",
+		},
+		{
+			name:     "mixed content with headers",
+			input:    "Some text\n## Overview\nContent here\n### Details\nMore content",
+			expected: "Some text\n=== Overview\nContent here\n==== Details\nMore content",
+		},
+		{
+			name:     "no headers",
+			input:    "Just plain text\nNo headers here",
+			expected: "Just plain text\nNo headers here",
+		},
+		{
+			name:     "header with trailing spaces",
+			input:    "## Header   ",
+			expected: "=== Header",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ConvertMarkdownHeadersToAsciiDoc(tt.input)
+			if result != tt.expected {
+				t.Errorf("expected:\n%s\ngot:\n%s", tt.expected, result)
+			}
+		})
+	}
+}
+
 func TestCamelToSnake(t *testing.T) {
 	testCases := []struct {
 		input    string

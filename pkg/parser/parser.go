@@ -10,9 +10,31 @@ import (
 )
 
 // ProcessDescription processes GraphQL description text for AsciiDoc output
+// This is the main entry point that supports both structured and unstructured descriptions
 func ProcessDescription(description string) string {
-	// First convert markdown code blocks to AsciiDoc format
-	processed := ConvertMarkdownCodeBlocks(description)
+	// First normalize indentation - GraphQL descriptions often have leading whitespace
+	description = NormalizeIndentation(description)
+
+	// Try to parse as structured description first
+	parser := NewDescriptionParser()
+	parsed := parser.ParseDescription(description)
+
+	// If it's a structured description, process it specially
+	if parsed.Structured != nil && parsed.Structured.IsStructured {
+		return processStructuredDescription(parsed.Structured)
+	}
+
+	// Fall back to original processing for unstructured descriptions
+	return processUnstructuredDescription(description)
+}
+
+// processUnstructuredDescription handles traditional non-structured descriptions
+func processUnstructuredDescription(description string) string {
+	// Convert markdown headers to AsciiDoc format FIRST
+	processed := ConvertMarkdownHeadersToAsciiDoc(description)
+
+	// Then convert markdown code blocks to AsciiDoc format
+	processed = ConvertMarkdownCodeBlocks(processed)
 
 	// Process anchors and labels before table processing to avoid conflicts with pipe characters
 	processed = ProcessAnchorsAndLabels(processed)
@@ -41,6 +63,318 @@ func ProcessDescription(description string) string {
 
 	// Remove newline at start if present
 	return strings.TrimPrefix(processed, "\n")
+}
+
+// processStructuredDescription handles structured descriptions with sections
+func processStructuredDescription(structured *DescriptionStructure) string {
+	var parts []string
+
+	// Add overview if present
+	if structured.Overview != "" {
+		processed := processUnstructuredDescription(structured.Overview)
+		parts = append(parts, processed)
+	}
+
+	// Add parameters section if present
+	if len(structured.Parameters) > 0 {
+		parts = append(parts, formatParametersSection(structured.Parameters))
+	}
+
+	// Add returns section if present
+	if structured.Returns != "" {
+		parts = append(parts, ".Returns")
+		parts = append(parts, processUnstructuredDescription(structured.Returns))
+	}
+
+	// Add errors section if present
+	if len(structured.Errors) > 0 {
+		parts = append(parts, formatErrorsSection(structured.Errors))
+	}
+
+	// Add examples section if present
+	if len(structured.Examples) > 0 {
+		parts = append(parts, formatExamplesSection(structured.Examples))
+	}
+
+	// Add custom sections
+	for sectionName, sectionContent := range structured.Sections {
+		// Skip sections we've already processed
+		if isProcessedSection(sectionName) {
+			continue
+		}
+		// Use === for subsection headings in AsciiDoc
+		parts = append(parts, fmt.Sprintf("=== %s", sectionName))
+		parts = append(parts, processUnstructuredDescription(sectionContent))
+	}
+
+	// Add changelog if present
+	if len(structured.Changelog) > 0 {
+		parts = append(parts, formatChangelogSection(structured.Changelog))
+	}
+
+	// Add metadata annotations if present
+	if len(structured.Metadata) > 0 {
+		parts = append(parts, formatMetadataSection(structured.Metadata))
+	}
+
+	return strings.Join(parts, "\n\n")
+}
+
+// formatParametersSection formats parameter documentation
+func formatParametersSection(params []ParameterDoc) string {
+	if len(params) == 0 {
+		return ""
+	}
+
+	var lines []string
+	lines = append(lines, ".Parameters")
+
+	for i, param := range params {
+		// Format main parameter
+		paramLine := fmt.Sprintf("<%d> `%s`", i+1, param.Name)
+		if param.Type != "" {
+			paramLine += fmt.Sprintf(" (%s)", param.Type)
+		}
+		if param.Description != "" {
+			paramLine += fmt.Sprintf(" - %s", param.Description)
+		}
+		if param.Default != "" {
+			paramLine += fmt.Sprintf(" (default: %s)", param.Default)
+		}
+		lines = append(lines, paramLine)
+
+		// Format sub-parameters if present
+		for _, subParam := range param.SubParams {
+			subLine := fmt.Sprintf("  * `%s`", subParam.Name)
+			if subParam.Description != "" {
+				subLine += fmt.Sprintf(" - %s", subParam.Description)
+			}
+			lines = append(lines, subLine)
+		}
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+// formatErrorsSection formats error documentation
+func formatErrorsSection(errors []ErrorDoc) string {
+	if len(errors) == 0 {
+		return ""
+	}
+
+	var lines []string
+	lines = append(lines, ".Errors")
+
+	for _, err := range errors {
+		errLine := fmt.Sprintf("* `%s`", err.Code)
+		if err.Description != "" {
+			errLine += fmt.Sprintf(" - %s", err.Description)
+		}
+		if err.When != "" {
+			errLine += fmt.Sprintf(" (when: %s)", err.When)
+		}
+		lines = append(lines, errLine)
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+// formatExamplesSection formats code examples
+func formatExamplesSection(examples []Example) string {
+	if len(examples) == 0 {
+		return ""
+	}
+
+	var lines []string
+
+	for _, example := range examples {
+		if example.Title != "" && example.Title != "Example" {
+			lines = append(lines, fmt.Sprintf(".%s", example.Title))
+		} else {
+			lines = append(lines, ".Example")
+		}
+
+		if example.Description != "" {
+			lines = append(lines, example.Description)
+		}
+
+		// Format code block
+		lang := example.Language
+		if lang == "" {
+			lang = "graphql"
+		}
+		lines = append(lines, fmt.Sprintf("[source,%s]", lang))
+		lines = append(lines, "----")
+		lines = append(lines, ProcessCallouts(example.Code))
+		lines = append(lines, "----")
+	}
+
+	return strings.Join(lines, "\n\n")
+}
+
+// formatChangelogSection formats version history
+func formatChangelogSection(changelog []ChangelogEntry) string {
+	if len(changelog) == 0 {
+		return ""
+	}
+
+	var lines []string
+	lines = append(lines, ".Version History")
+
+	for _, entry := range changelog {
+		line := fmt.Sprintf("* %s %s", entry.Type, entry.Version)
+		if entry.Description != "" {
+			line += fmt.Sprintf(" - %s", entry.Description)
+		}
+		lines = append(lines, line)
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+// formatMetadataSection formats metadata annotations
+func formatMetadataSection(metadata map[string]string) string {
+	var lines []string
+
+	if since, ok := metadata["since"]; ok {
+		lines = append(lines, fmt.Sprintf("_Since: %s_", since))
+	}
+
+	if deprecated, ok := metadata["deprecated"]; ok {
+		lines = append(lines, fmt.Sprintf("_Deprecated: %s_", deprecated))
+	}
+
+	if _, ok := metadata["beta"]; ok {
+		lines = append(lines, "_Beta: This feature is in beta and may change_")
+	}
+
+	if _, ok := metadata["experimental"]; ok {
+		lines = append(lines, "_Experimental: This feature is experimental and subject to change_")
+	}
+
+	if _, ok := metadata["internal"]; ok {
+		lines = append(lines, "_Internal: This is an internal API_")
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+// isProcessedSection checks if a section name has already been processed
+func isProcessedSection(name string) bool {
+	processed := []string{
+		"overview", "parameters", "params", "returns", "return",
+		"errors", "throws", "exceptions", "examples", "example",
+	}
+
+	lowerName := strings.ToLower(name)
+	for _, p := range processed {
+		if lowerName == p {
+			return true
+		}
+	}
+	return false
+}
+
+// NormalizeIndentation removes common leading whitespace from all lines in a description
+// This handles GraphQL triple-quoted strings that often have indentation
+func NormalizeIndentation(description string) string {
+	if description == "" {
+		return description
+	}
+
+	lines := strings.Split(description, "\n")
+	if len(lines) == 0 {
+		return description
+	}
+
+	// Find the minimum indentation (excluding empty lines)
+	minIndent := -1
+	for _, line := range lines {
+		if len(strings.TrimSpace(line)) == 0 {
+			continue // Skip empty lines
+		}
+
+		// Count leading spaces/tabs
+		indent := 0
+		for _, char := range line {
+			if char == ' ' || char == '\t' {
+				indent++
+			} else {
+				break
+			}
+		}
+
+		if minIndent == -1 || indent < minIndent {
+			minIndent = indent
+		}
+	}
+
+	// If no indentation found, return as-is
+	if minIndent <= 0 {
+		return description
+	}
+
+	// Remove the common indentation from all lines
+	var result []string
+	for _, line := range lines {
+		if len(strings.TrimSpace(line)) == 0 {
+			result = append(result, "") // Preserve empty lines
+		} else if len(line) > minIndent {
+			result = append(result, line[minIndent:])
+		} else {
+			result = append(result, strings.TrimSpace(line))
+		}
+	}
+
+	// Also trim leading and trailing empty lines
+	// Trim leading empty lines
+	for len(result) > 0 && strings.TrimSpace(result[0]) == "" {
+		result = result[1:]
+	}
+
+	// Trim trailing empty lines
+	for len(result) > 0 && strings.TrimSpace(result[len(result)-1]) == "" {
+		result = result[:len(result)-1]
+	}
+
+	return strings.Join(result, "\n")
+}
+
+// ConvertMarkdownHeadersToAsciiDoc converts markdown headers to AsciiDoc format
+// # -> =, ## -> ==, ### -> ===, etc.
+func ConvertMarkdownHeadersToAsciiDoc(description string) string {
+	lines := strings.Split(description, "\n")
+	var result []string
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		// Check if this line is a markdown header
+		if strings.HasPrefix(trimmed, "#") {
+			// Count the number of # symbols
+			level := 0
+			for _, char := range trimmed {
+				if char == '#' {
+					level++
+				} else {
+					break
+				}
+			}
+
+			// Extract the header text
+			headerText := strings.TrimSpace(strings.TrimPrefix(trimmed, strings.Repeat("#", level)))
+
+			// Convert to AsciiDoc format
+			// Note: In AsciiDoc, = is for document title, == is for level 1, === is for level 2, etc.
+			// So we need to add one more = than the number of #
+			asciidocLevel := strings.Repeat("=", level+1)
+			result = append(result, fmt.Sprintf("%s %s", asciidocLevel, headerText))
+		} else {
+			result = append(result, line)
+		}
+	}
+
+	return strings.Join(result, "\n")
 }
 
 // FormatDeprecatedDirectives wraps @deprecated directives in backticks if not already enclosed
@@ -83,6 +417,11 @@ func ConvertMarkdownCodeBlocks(description string) string {
 		// Default to generic source block if no language specified
 		if language == "" {
 			language = "text"
+		}
+
+		// Use kotlin syntax highlighting for GraphQL as it provides better colors in AsciiDoc
+		if language == "graphql" || language == "gql" {
+			language = "kotlin"
 		}
 
 		// Process callouts in the content

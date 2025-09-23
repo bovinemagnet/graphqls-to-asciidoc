@@ -1,0 +1,473 @@
+"""
+Root schema definition
+"""
+type Query {
+    """
+    **INTERNAL:**
+
+    **PERMISSION**: INTERNAL-ONLY
+
+    Specify an ID and get one, otherwise get all.
+
+    - `id` : A string representing the client access id.
+    - _RETURNS_ `ClientAccess` A JSON array of client access records.
+    """
+    clientAccess(id: ID): [ClientAccess]
+
+    """
+    Get user information by ID.
+
+    ## Overview
+    Retrieves detailed user information from the system. This query supports
+    multiple data inclusion options through field selection and can return
+    partial data if some services are unavailable.
+
+    ## Parameters
+    @param id - The unique identifier of the user. Must be a valid UUID v4.
+                Example: "550e8400-e29b-41d4-a716-446655440000"
+    @param includeMetadata - Optional. When true, includes additional metadata
+                            such as creation date, last modified, and audit trail.
+                            Default: false
+
+    ## Returns
+    Returns a User object containing the requested information. Fields not
+    explicitly requested will not be included in the response.
+
+    ## Errors
+    @throws USER_NOT_FOUND - The specified user ID does not exist
+    @throws INVALID_ID_FORMAT - The ID is not a valid UUID v4
+    @throws PERMISSION_DENIED - The current user lacks permission to view this user
+
+    ## Examples
+    ### Basic Usage
+    ```graphql
+    query {
+      getUser(id: "550e8400-e29b-41d4-a716-446655440000") {
+        id
+        name
+        email
+      }
+    }
+    ```
+
+    ### With Metadata
+    ```graphql
+    query {
+      getUser(
+        id: "550e8400-e29b-41d4-a716-446655440000"
+        includeMetadata: true
+      ) {
+        id
+        name
+        email
+        metadata {
+          createdAt
+          updatedAt
+          lastAccessedBy
+        }
+      }
+    }
+    ```
+
+    ## Performance Considerations
+    This query may perform multiple service calls. Consider using DataLoader
+    for batch operations when fetching multiple users.
+
+    ## See Also
+    - `listUsers`: For paginated user lists
+    - `searchUsers`: For text-based user search
+    - `User`: The User type definition
+
+    @version add.1.0.0
+    @version update.2.1.0 Added includeMetadata parameter
+    @version update.2.5.0 Added support for partial responses
+    @since 1.0.0
+    @beta
+    """
+    getUser(id: ID!, includeMetadata: Boolean = false): User
+
+    """
+    Search for products with advanced filtering.
+
+    @param filter - Product filter criteria
+    @param filter.name - Product name pattern (supports wildcards)
+    @param filter.category - Product category
+    @param filter.minPrice - Minimum price in cents
+    @param filter.maxPrice - Maximum price in cents
+    @param page - Page number (default: 1)
+    @param pageSize - Items per page (default: 20, max: 100)
+
+    @returns ProductSearchResult containing products and pagination info
+
+    @throws INVALID_FILTER - Filter validation failed
+    @throws RATE_LIMIT_EXCEEDED - Too many requests
+
+    @example
+    query {
+      searchProducts(filter: { category: "electronics" }) {
+        products { id name price }
+        totalCount
+      }
+    }
+
+    @since 2.0.0
+    """
+    searchProducts(
+        filter: ProductFilter
+        page: Int = 1
+        pageSize: Int = 20
+    ): ProductSearchResult
+}
+
+"""
+User type representing a system user.
+
+## Overview
+The User type contains all information about a user in the system,
+including profile data, preferences, and metadata.
+
+## Field Groups
+
+### Basic Information
+Core user identification and contact fields.
+
+### Profile Data
+Extended user profile including bio, avatar, and social links.
+
+### System Metadata
+Internal system fields for audit and tracking.
+
+@version add.1.0.0
+@version update.1.5.0 Added socialLinks field
+@version update.2.0.0 Added metadata field group
+"""
+type User {
+    """
+    User's unique identifier
+    """
+    id: ID!
+
+    """
+    User's display name
+    """
+    name: String!
+
+    """
+    User's email address
+    """
+    email: String!
+
+    """
+    User's biography or description
+    """
+    bio: String
+
+    """
+    URL to user's avatar image
+    """
+    avatarUrl: String
+
+    """
+    List of user's social media links
+    """
+    socialLinks: [SocialLink!]
+
+    """
+    System metadata for this user
+    """
+    metadata: UserMetadata
+}
+
+"""
+Filter options for product searches.
+
+All fields are optional and can be combined for complex queries.
+Multiple filters are combined with AND logic.
+
+## Performance Notes
+- Text searches may be slower on large datasets
+- Consider using category filters for better performance
+- Price range queries are optimized for common ranges
+
+@since 2.0.0
+"""
+input ProductFilter {
+    """
+    Product name pattern.
+
+    Supports:
+    - Wildcards: "widget*"
+    - Exact match: "Premium Widget"
+    - Case-insensitive search
+
+    @example "premium*"
+    """
+    name: String
+
+    """
+    Product category.
+
+    Must be one of the predefined categories.
+    Child categories are automatically included.
+
+    @example "ELECTRONICS"
+    """
+    category: String
+
+    """
+    Minimum price in cents (inclusive)
+    """
+    minPrice: Int
+
+    """
+    Maximum price in cents (inclusive)
+    """
+    maxPrice: Int
+
+    """
+    Availability status filter.
+
+    @deprecated 3.0.0 Use availabilityStatuses array instead
+    """
+    availability: String
+
+    """
+    Multiple availability statuses (OR condition).
+
+    @since 3.0.0
+    """
+    availabilityStatuses: [String!]
+}
+
+"""
+Product search result with pagination.
+
+Contains the matching products and metadata about the search results.
+"""
+type ProductSearchResult {
+    """
+    List of products matching the search criteria
+    """
+    products: [Product!]!
+
+    """
+    Total number of matching products
+    """
+    totalCount: Int!
+
+    """
+    Current page number
+    """
+    page: Int!
+
+    """
+    Number of items per page
+    """
+    pageSize: Int!
+
+    """
+    Total number of pages
+    """
+    totalPages: Int!
+
+    """
+    Whether there are more results
+    """
+    hasNextPage: Boolean!
+
+    """
+    Whether there are previous results
+    """
+    hasPreviousPage: Boolean!
+}
+
+"""
+Product type
+"""
+type Product {
+    id: ID!
+    name: String!
+    price: Int!
+    category: String!
+    availability: String!
+}
+
+"""
+Social media link
+"""
+type SocialLink {
+    platform: String!
+    url: String!
+}
+
+"""
+User metadata
+"""
+type UserMetadata {
+    createdAt: String!
+    updatedAt: String!
+    lastAccessedBy: String
+}
+
+"""
+Product availability status.
+
+## Status Transitions
+```
+IN_STOCK ←→ OUT_OF_STOCK ←→ BACKORDER
+    ↓           ↓              ↓
+    └──────> DISCONTINUED <────┘
+
+PREORDER → IN_STOCK
+```
+
+@version add.1.0.0 Initial statuses
+@version add.1.5.0 Added PREORDER status
+@version add.2.0.0 Added BACKORDER status
+"""
+enum AvailabilityStatus {
+    """
+    Product is currently in stock.
+
+    Display: "Add to Cart" button
+    Inventory: quantity > 0
+
+    @since 1.0.0
+    """
+    IN_STOCK
+
+    """
+    Product is temporarily out of stock.
+
+    Display: "Out of Stock" badge
+    Notifications: enabled for restock
+
+    @since 1.0.0
+    """
+    OUT_OF_STOCK
+
+    """
+    Product has been permanently discontinued.
+
+    Display: "Discontinued" badge
+    Visibility: hidden from category pages
+
+    @since 1.0.0
+    """
+    DISCONTINUED
+
+    """
+    Product is available for pre-order.
+
+    Payment: authorized but not captured
+    Fulfillment: on release date
+
+    @since 1.5.0
+    """
+    PREORDER
+
+    """
+    Product can be ordered despite being out of stock.
+
+    Fulfillment: FIFO when stock arrives
+    Notifications: delay warnings sent
+
+    @since 2.0.0
+    @beta
+    """
+    BACKORDER
+}
+
+"""
+Apply rate limiting to queries and mutations.
+
+## Algorithm
+Uses token bucket algorithm:
+1. Each user has a bucket with `limit` tokens
+2. Each request consumes `cost` tokens
+3. Tokens regenerate over `window` duration
+4. Requests are rejected when tokens exhausted
+
+## Examples
+### Basic Usage
+```graphql
+type Query {
+  searchProducts(query: String!): [Product!]!
+    @rateLimit(limit: 100, window: "1h")
+}
+```
+
+### Variable Cost
+```graphql
+type Query {
+  generateReport(input: ReportInput!): Report!
+    @rateLimit(limit: 100, window: "1h", cost: 10)
+}
+```
+
+@param limit - Maximum number of requests allowed
+@param window - Time window (e.g., "1h", "15m", "1d")
+@param cost - Token cost per request (default: 1)
+@param burst - Maximum burst size (default: equals limit)
+@param identifier - Custom identifier for shared limits
+@param message - Custom error message when limit exceeded
+
+@version add.2.0.0 Initial implementation
+@version update.2.5.0 Added burst parameter
+@version update.3.0.0 Added custom identifier support
+"""
+directive @rateLimit(
+    limit: Int!
+    window: String!
+    cost: Int = 1
+    burst: Int
+    identifier: String
+    message: String
+) on FIELD_DEFINITION
+
+"""
+DateTime scalar type representing ISO 8601 date-time strings.
+
+## Format
+Accepts and returns dates in ISO 8601 format:
+- `2024-01-15T10:30:00Z` (UTC)
+- `2024-01-15T10:30:00+02:00` (with timezone)
+
+## Examples
+```graphql
+query {
+  user(id: "123") {
+    createdAt  # Returns: "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+@since 1.0.0
+"""
+scalar DateTime
+
+# tag::graphql_type_client_access[]
+
+"""
+Testing access by thing.
+"""
+type ClientAccess {
+    "Generated client id"
+    id: ID!
+
+    "Client description"
+    clientDescription: String!
+
+    "The date the client was created"
+    created: Date!
+
+    "The date the client was last updated"
+    updated: Date!
+
+    "The monitors on event log that have been configured for this client"
+    entries: [ClientEventLogMonitor]
+
+    "The last id that was processed by the client"
+    latestId: ID
+}
+# end::graphql_type_client_access[]
