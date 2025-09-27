@@ -312,7 +312,7 @@ func TestTemplateFunctionRequirements(t *testing.T) {
 		{
 			name:          "FieldTemplate",
 			templateText:  FieldTemplate,
-			requiredFuncs: []string{"processDescription"},
+			requiredFuncs: []string{}, // processDescription is now done before template execution
 		},
 		{
 			name:          "ScalarTemplate",

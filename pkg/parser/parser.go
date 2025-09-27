@@ -467,8 +467,26 @@ func ProcessAnchorsAndLabels(content string) string {
 
 	// Pattern 4: [label] format -> [[label]] (simple label to anchor conversion)
 	// Only convert if it's not already a cross-reference or other AsciiDoc construct
+	// Exclude admonition blocks (NOTE, TIP, IMPORTANT, WARNING, CAUTION)
 	pattern4 := regexp.MustCompile(`(?m)^\[([a-zA-Z0-9_-]+)\]\s*$`)
-	content = pattern4.ReplaceAllString(content, "[[$1]]")
+	content = pattern4.ReplaceAllStringFunc(content, func(match string) string {
+		// Extract the label content
+		submatches := pattern4.FindStringSubmatch(match)
+		if len(submatches) > 1 {
+			label := submatches[1]
+			// Check if this is an admonition block
+			admonitions := []string{"NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"}
+			for _, admon := range admonitions {
+				if label == admon {
+					// Don't convert admonition blocks
+					return match
+				}
+			}
+			// Convert to anchor
+			return "[[" + label + "]]"
+		}
+		return match
+	})
 
 	// Pattern 5: Convert reference patterns like {ref:anchor} to <<anchor>>
 	pattern5 := regexp.MustCompile(`\{ref:([a-zA-Z0-9_-]+)\}`)

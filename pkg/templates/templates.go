@@ -1,7 +1,7 @@
 package templates
 
 const FieldTemplate = `
-| {{.Type}} | {{.Name}} | {{processDescription .Description}}
+| {{.Type}} | {{.Name}} | {{.Description}}
 {{- if .RequiredOrArray}}
 
 .Notes:
