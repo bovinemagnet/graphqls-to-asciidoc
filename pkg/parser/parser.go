@@ -850,6 +850,7 @@ func StripCodeBlocksFromDescriptions(schemaContent string) string {
 }
 
 // ConvertDescriptionToRefNumbers converts dash and asterisk list items to numbered references
+// Only converts items that look like parameter descriptions (start with backtick or _RETURNS_)
 func ConvertDescriptionToRefNumbers(text string, skipNonDash bool) string {
 	lines := strings.Split(text, "\n")
 	var result []string
@@ -861,7 +862,7 @@ func ConvertDescriptionToRefNumbers(text string, skipNonDash bool) string {
 		// Check for list markers and convert to numbered references
 		var content string
 		var isListItem bool
-		
+
 		if strings.HasPrefix(trimmed, "- ") && !strings.HasPrefix(trimmed, "-- ") {
 			content = strings.TrimPrefix(trimmed, "- ")
 			isListItem = true
@@ -869,10 +870,17 @@ func ConvertDescriptionToRefNumbers(text string, skipNonDash bool) string {
 			content = strings.TrimPrefix(trimmed, "* ")
 			isListItem = true
 		}
-		
+
 		if isListItem {
-			result = append(result, fmt.Sprintf("<%d> %s", counter, content))
-			counter++
+			// Only convert to callout if it looks like a parameter description
+			// (starts with backtick for param name) or is a RETURNS line
+			if strings.HasPrefix(content, "`") || strings.HasPrefix(content, "_RETURNS_") {
+				result = append(result, fmt.Sprintf("<%d> %s", counter, content))
+				counter++
+			} else if !skipNonDash {
+				// Preserve regular bullet points
+				result = append(result, line)
+			}
 		} else if !skipNonDash {
 			result = append(result, line)
 		}

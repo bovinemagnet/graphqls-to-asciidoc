@@ -433,22 +433,34 @@ func TestConvertDescriptionToRefNumbers(t *testing.T) {
 		expected    string
 	}{
 		{
-			name:        "convert dash list to numbered refs",
-			text:        "Description\n- First item\n- Second item\nNormal line",
+			name:        "convert parameter-like items with backticks",
+			text:        "Description\n- `param1`: First parameter\n- `param2`: Second parameter\nNormal line",
 			skipNonDash: false,
-			expected:    "Description\n<1> First item\n<2> Second item\nNormal line\n",
+			expected:    "Description\n<1> `param1`: First parameter\n<2> `param2`: Second parameter\nNormal line\n",
 		},
 		{
-			name:        "skip non-dash lines",
-			text:        "Description\n- First item\nNormal line\n- Second item",
-			skipNonDash: true,
-			expected:    "<1> First item\n<2> Second item\n",
+			name:        "skip non-parameter list items",
+			text:        "Description\n- Regular bullet point\n- `param1`: Parameter description",
+			skipNonDash: false,
+			expected:    "Description\n- Regular bullet point\n<1> `param1`: Parameter description\n",
 		},
 		{
 			name:        "ignore double dashes",
-			text:        "Description\n-- This is ignored\n- This is converted",
+			text:        "Description\n-- This is ignored\n- `param`: This is converted",
 			skipNonDash: false,
-			expected:    "Description\n-- This is ignored\n<1> This is converted\n",
+			expected:    "Description\n-- This is ignored\n<1> `param`: This is converted\n",
+		},
+		{
+			name:        "include _RETURNS_ as last callout",
+			text:        "- `param1`: First param\n- `param2`: Second param\n- _RETURNS_ the result",
+			skipNonDash: true,
+			expected:    "<1> `param1`: First param\n<2> `param2`: Second param\n<3> _RETURNS_ the result\n",
+		},
+		{
+			name:        "preserve regular bullets, convert param bullets",
+			text:        "* Regular bullet\n- Another regular bullet\n- `param`: Parameter\n- _RETURNS_ result",
+			skipNonDash: false,
+			expected:    "* Regular bullet\n- Another regular bullet\n<1> `param`: Parameter\n<2> _RETURNS_ result\n",
 		},
 	}
 
