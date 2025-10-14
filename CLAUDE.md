@@ -35,6 +35,7 @@ The application follows a **modular architecture** with clear separation of conc
 3. **Documentation Generation** (`pkg/generator/`):
    - Template-based AsciiDoc generation
    - Support for all GraphQL constructs (Queries, Mutations, Subscriptions, Types, Enums, Inputs, Directives, Scalars)
+   - Catalogue mode for quick reference tables of queries, mutations, and subscriptions
    - Advanced description processing (changelog extraction, markdown conversion, cross-references)
    - Configurable section inclusion/exclusion
 
@@ -73,11 +74,17 @@ go test -v ./...
 # Multiple files using pattern
 ./graphqls-to-asciidoc -pattern "schemas/**/*.graphqls" > output.adoc
 
+# Generate catalogue mode (quick reference)
+./graphqls-to-asciidoc -schema ./test/schema.graphql -catalogue -o api-catalogue.adoc
+
 # With options (single file)
 ./graphqls-to-asciidoc -schema ./test/schema.graphql -exclude-internal -mutations=false > output.adoc
 
 # With options (multiple files)
 ./graphqls-to-asciidoc -pattern "**/*.{graphql,graphqls}" -exclude-internal -o docs.adoc
+
+# Catalogue with filtering
+./graphqls-to-asciidoc -pattern "schemas/**/*.graphqls" -catalogue -exclude-internal -o public-api.adoc
 
 # Check version information
 ./graphqls-to-asciidoc -version
@@ -103,6 +110,7 @@ The tool supports extensive customization through flags:
 - `-schema`: Path to GraphQL schema file (single file mode)
 - `-pattern`: Pattern to match multiple GraphQL schema files (e.g., `schemas/**/*.graphqls`)
 - `-version`: Show program version and build information
+- `-catalogue`: Generate quick reference catalogue with queries, mutations, and subscriptions tables only
 - `-exclude-internal`: Exclude queries/mutations marked as INTERNAL
 - `-mutations`, `-queries`, `-subscriptions`: Include/exclude specific sections (default: most are true)
 - `-directives`, `-types`, `-enums`, `-inputs`, `-scalars`: Include/exclude type definitions
@@ -125,7 +133,8 @@ The tool supports extensive customization through flags:
 
 **`pkg/generator/`**:
 - `New()`: Generator initialization with configuration and schema
-- `Generate()`: Main generation orchestration
+- `Generate()`: Main generation orchestration (supports both full documentation and catalogue mode)
+- `generateCatalogue()`: Catalogue mode generation with queries, mutations, and subscriptions tables
 - `ProcessTypeName()`: GraphQL type to AsciiDoc cross-reference conversion
 - `ProcessDescription()`: Advanced description processing (changelog, markdown, cross-refs)
 
@@ -169,10 +178,16 @@ make test-bench        # Run benchmark tests
 Generates comprehensive AsciiDoc documentation with:
 
 ### Documentation Features
-- **Table of contents and metadata**: Automatic generation with version information
+- **Table of contents and metadata**: Automatic generation with version information and command line tracking
 - **Modular sections**: Separate sections for each GraphQL construct (Queries, Mutations, Subscriptions, Types, Enums, Inputs, Directives, Scalars)
+- **Catalogue mode**: Quick reference tables with GraphQL introduction, queries, mutations, and subscriptions
+  - Includes `:revdate:` attribute with generation timestamp
+  - Includes `:commandline:` attribute with the exact command used
+  - Includes `_attributes.adoc` for consistent styling
+  - Provides explanatory text about GraphQL concepts
+  - Shows "No subscriptions exist in this schema" note when applicable
 - **Cross-references**: Intelligent linking between types and definitions
-- **Advanced formatting**: 
+- **Advanced formatting**:
   - Changelog integration from `@version` annotations
   - Markdown to AsciiDoc conversion
   - Code block processing with syntax highlighting

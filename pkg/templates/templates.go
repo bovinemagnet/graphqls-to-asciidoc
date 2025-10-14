@@ -252,3 +252,89 @@ const InputSectionTemplate = `
 
 {{end}}
 `
+
+const CatalogueTemplate = `{{- if .SubTitle -}}
+= GraphQL API Catalogue: {{.SubTitle}}
+{{- else -}}
+= GraphQL API Catalogue
+{{- end }}
+:toc: left
+:revdate: {{.RevDate}}
+:commandline: {{.CommandLine}}
+:reproducible:
+:page-partial:
+:sect-anchors:
+:table-caption!:
+:table-stripes: even
+:pdf-page-size: A4
+:tags: api, GraphQL, nodes, types, query
+
+include::_attributes.adoc[]
+
+GraphQL is a modern API query language and runtime that provides a more flexible and efficient way for clients (like web or mobile apps) 
+to request data from servers compared to traditional REST APIs.
+
+Instead of having multiple endpoints returning fixed data (like in REST).
+GraphQL exposes a *single endpoint* where clients can *ask for exactly the data they need and nothing more.*
+
+
+{{ if .Queries }}
+== Queries
+
+*Queries* are how clients *read or fetch data* in GraphQL.  
+They describe _what_ data the client wants, not _how_ to get it.
+
+The following table provides a quick reference to all available queries in the GraphQL API.
+
+[options="header",cols="2m,5a"]
+|===
+| Name | Description
+{{- range .Queries }}
+| {{.Name}} | {{.Description}}
+{{- end }}
+|===
+{{ end }}
+
+{{ if .Mutations }}
+== Mutations
+
+
+*Mutations* are how clients *write or modify data* for example, creating, updating, or deleting records.
+
+A mutation looks similar to a query, but it describes an action that changes data.
+
+The following table provides a quick reference to all available mutations in the GraphQL API.
+
+[options="header",cols="2m,5a"]
+|===
+| Name | Description
+{{- range .Mutations }}
+| {{.Name}} | {{.Description}}
+{{- end }}
+|===
+{{ end }}
+
+== Subscriptions
+
+{{- if .Subscriptions }}
+
+*Subscriptions* are used to *receive real-time updates* from the server.  
+They let the client “subscribe” to data changes and get notified instantly when something new happens, without needing to poll for updates.
+
+The following table provides a quick reference to all available subscriptions in the GraphQL API.
+
+[options="header",cols="2m,5a"]
+|===
+| Name | Description
+{{- range .Subscriptions }}
+| {{.Name}} | {{.Description}}
+{{- end }}
+|===
+{{- else }}
+
+[NOTE]
+====
+No subscriptions exist in this schema.
+====
+{{- end }}
+`

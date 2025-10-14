@@ -36,9 +36,13 @@ func New(cfg *config.Config, schema *ast.Schema, writer io.Writer) *Generator {
 	}
 }
 
-
 // Generate generates the complete AsciiDoc documentation
 func (g *Generator) Generate() error {
+	// Check if catalogue mode is enabled
+	if g.config.Catalogue {
+		return g.generateCatalogue()
+	}
+
 	// Log input parameters
 	g.metrics.LogInputParameters()
 
@@ -171,8 +175,23 @@ func (g *Generator) generateQueries(definitionsMap map[string]*ast.Definition) i
 
 	count := 0
 	for _, f := range g.schema.Query.Fields {
-		// Skip internal queries if configured
-		if g.config.ExcludeInternal && strings.Contains(f.Description, "INTERNAL") {
+		// Skip internal queries unless IncludeInternal is set
+		if !g.config.IncludeInternal && isInternal(f.Name, f.Description) {
+			continue
+		}
+
+		// Skip deprecated queries unless IncludeDeprecated is set
+		if !g.config.IncludeDeprecated && isDeprecated(f.Description, f.Directives) {
+			continue
+		}
+
+		// Skip preview queries unless IncludePreview is set
+		if !g.config.IncludePreview && isPreview(f.Description) {
+			continue
+		}
+
+		// Skip legacy queries unless IncludeLegacy is set
+		if !g.config.IncludeLegacy && isLegacy(f.Description) {
 			continue
 		}
 
@@ -217,7 +236,7 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 	if len(paramSplit) > 1 {
 		processedDesc = paramSplit[0]
 	}
-	
+
 	parts := strings.Split(processedDesc, "**Arguments:**")
 	var mainDesc, numberedRefs string
 
@@ -356,13 +375,28 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 
 	var mutationInfos []MutationInfo
 	for _, f := range g.schema.Mutation.Fields {
-		// Skip internal mutations if configured
-		if g.config.ExcludeInternal && strings.Contains(f.Description, "INTERNAL") {
+		// Skip internal mutations unless IncludeInternal is set
+		if !g.config.IncludeInternal && isInternal(f.Name, f.Description) {
+			continue
+		}
+
+		// Skip deprecated mutations unless IncludeDeprecated is set
+		if !g.config.IncludeDeprecated && isDeprecated(f.Description, f.Directives) {
+			continue
+		}
+
+		// Skip preview mutations unless IncludePreview is set
+		if !g.config.IncludePreview && isPreview(f.Description) {
+			continue
+		}
+
+		// Skip legacy mutations unless IncludeLegacy is set
+		if !g.config.IncludeLegacy && isLegacy(f.Description) {
 			continue
 		}
 
 		processedDesc, changelog := changelog.ProcessWithChangelog(f.Description, parser.ProcessDescription)
-		
+
 		// Helper to extract all list items and non-list lines
 		extractLists := func(text string) (nonList, list string) {
 			lines := strings.Split(text, "\n")
@@ -377,14 +411,14 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 			}
 			return strings.Join(nonListLines, "\n"), strings.Join(listLines, "\n")
 		}
-		
+
 		// Extract numbered references from description (similar to query processing)
 		numberedRefs := ""
 		if len(f.Arguments) > 0 && f.Description != "" {
 			// Try to extract argument descriptions
 			parts := strings.Split(processedDesc, "**Arguments:**")
 			var mainDesc string
-			
+
 			if len(parts) == 1 {
 				// No **Arguments:** found, check for .Arguments:
 				parts = strings.Split(processedDesc, ".Arguments:")
@@ -415,7 +449,7 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 				processedDesc = parser.ConvertDashToAsterisk(parts[0])
 			}
 		}
-		
+
 		methodSignature := g.getMethodSignatureBlock(f, definitionsMap)
 		argsBlock := g.getArgumentsBlock(f, definitionsMap)
 		directivesBlock := g.getDirectivesBlock(f)
@@ -430,7 +464,7 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 			Directives:           directivesBlock,
 			HasArguments:         len(f.Arguments) > 0,
 			HasDirectives:        len(f.Directives) > 0,
-			IsInternal:           g.config.ExcludeInternal && strings.Contains(f.Description, "INTERNAL"),
+			IsInternal:           isInternal(f.Name, f.Description),
 			Changelog:            changelog,
 			NumberedRefs:         numberedRefs,
 		}
@@ -548,8 +582,23 @@ func (g *Generator) generateSubscriptions(definitionsMap map[string]*ast.Definit
 
 	var subscriptionInfos []SubscriptionInfo
 	for _, f := range g.schema.Subscription.Fields {
-		// Skip internal subscriptions if configured
-		if g.config.ExcludeInternal && strings.Contains(f.Description, "INTERNAL") {
+		// Skip internal subscriptions unless IncludeInternal is set
+		if !g.config.IncludeInternal && isInternal(f.Name, f.Description) {
+			continue
+		}
+
+		// Skip deprecated subscriptions unless IncludeDeprecated is set
+		if !g.config.IncludeDeprecated && isDeprecated(f.Description, f.Directives) {
+			continue
+		}
+
+		// Skip preview subscriptions unless IncludePreview is set
+		if !g.config.IncludePreview && isPreview(f.Description) {
+			continue
+		}
+
+		// Skip legacy subscriptions unless IncludeLegacy is set
+		if !g.config.IncludeLegacy && isLegacy(f.Description) {
 			continue
 		}
 
@@ -1106,7 +1155,6 @@ func (g *Generator) getTypeFieldsTableString(t *ast.Definition, definitionsMap m
 	return builder.String(), nil
 }
 
-
 func (g *Generator) getEnumValuesTableString(e *ast.Definition) (string, error) {
 	var builder strings.Builder
 
@@ -1147,4 +1195,208 @@ func isBuiltInScalar(typeName string) bool {
 		"ID":      true,
 	}
 	return builtInScalars[typeName]
+}
+
+// isInternal checks if a field is internal based on name or description
+// A field is considered internal if:
+// - Its name starts with "internal" (case-insensitive)
+// - Its description contains "INTERNAL" (case-insensitive)
+func isInternal(name string, description string) bool {
+	// Check if name starts with "internal"
+	if len(name) >= 8 && strings.ToLower(name[:8]) == "internal" {
+		return true
+	}
+
+	// Check if description contains "INTERNAL"
+	if strings.Contains(strings.ToUpper(description), "INTERNAL") {
+		return true
+	}
+
+	return false
+}
+
+// isDeprecated checks if a field is deprecated
+// A field is considered deprecated if:
+// - It has a @deprecated directive (checked via directives parameter)
+// - Its description contains "@deprecated" or "deprecated" (case-insensitive)
+func isDeprecated(description string, directives ast.DirectiveList) bool {
+	// Check if field has @deprecated directive
+	for _, d := range directives {
+		if strings.ToLower(d.Name) == "deprecated" {
+			return true
+		}
+	}
+
+	// Check if description contains deprecation markers
+	descUpper := strings.ToUpper(description)
+	if strings.Contains(descUpper, "@DEPRECATED") || strings.Contains(descUpper, "DEPRECATED") {
+		return true
+	}
+
+	return false
+}
+
+// isPreview checks if a field is in preview status
+// A field is considered preview if:
+// - Its description contains "PREVIEW" or "preview" markers
+func isPreview(description string) bool {
+	// Check if description contains "PREVIEW"
+	if strings.Contains(strings.ToUpper(description), "PREVIEW") {
+		return true
+	}
+
+	return false
+}
+
+// isLegacy checks if a field is legacy
+// A field is considered legacy if:
+// - Its description contains "LEGACY" or "legacy" markers
+func isLegacy(description string) bool {
+	// Check if description contains "LEGACY"
+	if strings.Contains(strings.ToUpper(description), "LEGACY") {
+		return true
+	}
+
+	return false
+}
+
+// generateCatalogue generates a catalogue table of queries, mutations, and subscriptions
+func (g *Generator) generateCatalogue() error {
+	var queries []CatalogueEntry
+	var mutations []CatalogueEntry
+	var subscriptions []CatalogueEntry
+
+	// Collect queries
+	if g.schema.Query != nil {
+		for _, field := range g.schema.Query.Fields {
+			// Skip internal queries unless IncludeInternal is set
+			if !g.config.IncludeInternal && isInternal(field.Name, field.Description) {
+				continue
+			}
+
+			// Skip deprecated queries unless IncludeDeprecated is set
+			if !g.config.IncludeDeprecated && isDeprecated(field.Description, field.Directives) {
+				continue
+			}
+
+			// Skip preview queries unless IncludePreview is set
+			if !g.config.IncludePreview && isPreview(field.Description) {
+				continue
+			}
+
+			// Skip legacy queries unless IncludeLegacy is set
+			if !g.config.IncludeLegacy && isLegacy(field.Description) {
+				continue
+			}
+
+			description := parser.ExtractFirstSentence(field.Description)
+			queries = append(queries, CatalogueEntry{
+				Name:        field.Name,
+				Description: description,
+			})
+		}
+	}
+
+	// Collect mutations
+	if g.schema.Mutation != nil {
+		for _, field := range g.schema.Mutation.Fields {
+			// Skip internal mutations unless IncludeInternal is set
+			if !g.config.IncludeInternal && isInternal(field.Name, field.Description) {
+				continue
+			}
+
+			// Skip deprecated mutations unless IncludeDeprecated is set
+			if !g.config.IncludeDeprecated && isDeprecated(field.Description, field.Directives) {
+				continue
+			}
+
+			// Skip preview mutations unless IncludePreview is set
+			if !g.config.IncludePreview && isPreview(field.Description) {
+				continue
+			}
+
+			// Skip legacy mutations unless IncludeLegacy is set
+			if !g.config.IncludeLegacy && isLegacy(field.Description) {
+				continue
+			}
+
+			description := parser.ExtractFirstSentence(field.Description)
+			mutations = append(mutations, CatalogueEntry{
+				Name:        field.Name,
+				Description: description,
+			})
+		}
+	}
+
+	// Collect subscriptions
+	if g.schema.Subscription != nil {
+		for _, field := range g.schema.Subscription.Fields {
+			// Skip internal subscriptions unless IncludeInternal is set
+			if !g.config.IncludeInternal && isInternal(field.Name, field.Description) {
+				continue
+			}
+
+			// Skip deprecated subscriptions unless IncludeDeprecated is set
+			if !g.config.IncludeDeprecated && isDeprecated(field.Description, field.Directives) {
+				continue
+			}
+
+			// Skip preview subscriptions unless IncludePreview is set
+			if !g.config.IncludePreview && isPreview(field.Description) {
+				continue
+			}
+
+			// Skip legacy subscriptions unless IncludeLegacy is set
+			if !g.config.IncludeLegacy && isLegacy(field.Description) {
+				continue
+			}
+
+			description := parser.ExtractFirstSentence(field.Description)
+			subscriptions = append(subscriptions, CatalogueEntry{
+				Name:        field.Name,
+				Description: description,
+			})
+		}
+	}
+
+	// Sort queries alphabetically by name
+	sort.Slice(queries, func(i, j int) bool {
+		return queries[i].Name < queries[j].Name
+	})
+
+	// Sort mutations alphabetically by name
+	sort.Slice(mutations, func(i, j int) bool {
+		return mutations[i].Name < mutations[j].Name
+	})
+
+	// Sort subscriptions alphabetically by name
+	sort.Slice(subscriptions, func(i, j int) bool {
+		return subscriptions[i].Name < subscriptions[j].Name
+	})
+
+	// Render the catalogue template
+	data := CatalogueData{
+		SubTitle:      g.config.SubTitle,
+		RevDate:       time.Now().Format("Mon, 02 Jan 2006 15:04:05 MST"),
+		CommandLine:   strings.Join(os.Args, " "),
+		Queries:       queries,
+		Mutations:     mutations,
+		Subscriptions: subscriptions,
+	}
+
+	tmpl, err := template.New("catalogue").Parse(templates.CatalogueTemplate)
+	if err != nil {
+		return fmt.Errorf("error parsing catalogue template: %v", err)
+	}
+
+	err = tmpl.Execute(g.writer, data)
+	if err != nil {
+		return fmt.Errorf("error executing catalogue template: %v", err)
+	}
+
+	if g.config.Verbose {
+		fmt.Fprintf(os.Stderr, "Generated catalogue with %d queries, %d mutations, and %d subscriptions\n", len(queries), len(mutations), len(subscriptions))
+	}
+
+	return nil
 }

@@ -8,6 +8,7 @@ A powerful CLI tool that converts GraphQL schema files (.graphqls) to comprehens
 - **Complete GraphQL Support**: Queries, Mutations, Subscriptions, Types, Enums, Inputs, Directives, and Scalars
 - **Multi-file Support**: Process single files or combine multiple schema files using glob patterns
 - **Rich Documentation**: Converts GraphQL descriptions to formatted AsciiDoc with tables, cross-references, and metadata
+- **Catalogue Mode**: Generate quick reference tables of queries, mutations, and subscriptions with introductory text
 - **Flexible Output**: Configurable sections with command-line flags to include/exclude specific parts
 
 ### 📝 Advanced Markup Support
@@ -63,7 +64,7 @@ make build
 # Generate documentation from single file to stdout
 graphqls-to-asciidoc -s schema.graphql
 
-# Generate documentation from single file to a file  
+# Generate documentation from single file to a file
 graphqls-to-asciidoc -s schema.graphql -o documentation.adoc
 
 # Generate documentation from multiple files using patterns
@@ -72,6 +73,28 @@ graphqls-to-asciidoc -p "schemas/**/*.graphqls" -o documentation.adoc
 # Multiple file extensions
 graphqls-to-asciidoc -p "**/*.{graphql,graphqls,gql}" -o full-schema.adoc
 ```
+
+### Catalogue Mode
+Generate a quick reference catalogue of all queries, mutations, and subscriptions:
+
+```bash
+# Generate a catalogue from a schema file
+graphqls-to-asciidoc -s schema.graphql --catalogue -o api-catalogue.adoc
+
+# Generate catalogue from multiple files
+graphqls-to-asciidoc -p "schemas/**/*.graphqls" --catalogue -o api-catalogue.adoc
+
+# Catalogue with filtering
+graphqls-to-asciidoc -s schema.graphql --catalogue --exclude-internal -o public-api.adoc
+```
+
+The catalogue output includes:
+- **Introduction**: Brief overview of GraphQL and its key concepts
+- **Queries table**: Quick reference to all available queries with descriptions
+- **Mutations table**: Summary of all mutations for data modification
+- **Subscriptions section**: Real-time subscription endpoints (or note if none exist)
+- **Metadata**: Generation timestamp (`:revdate:`) and command line used (`:commandline:`)
+- **Attributes**: Includes `_attributes.adoc` for consistent styling
 
 ### Advanced Usage
 ```bash
@@ -139,9 +162,10 @@ graphqls-to-asciidoc -p "/absolute/path/**/*.graphql"
 
 **Note:** Either `--schema` or `--pattern` is required, but not both.
 
-#### Control Options  
+#### Control Options
 | Flag | Short | Description | Default |
 |------|-------|-------------|---------|
+| `--catalogue` | `-c` | Generate quick reference catalogue (queries, mutations, subscriptions tables only) | false |
 | `--exclude-internal` | `-x` | Exclude queries/mutations marked as INTERNAL | false |
 | `--verbose` | - | Enable verbose logging with processing metrics | false |
 

@@ -61,9 +61,9 @@ type MutationInfo struct {
 
 // ScalarData represents scalar information for template rendering
 type ScalarData struct {
-	ScalarTag     string
-	FoundScalars  bool
-	Scalars       []ScalarInfo
+	ScalarTag    string
+	FoundScalars bool
+	Scalars      []ScalarInfo
 }
 
 // ScalarInfo represents individual scalar information
@@ -86,10 +86,10 @@ type SubscriptionInfo struct {
 
 // DirectiveData represents directive information for template rendering
 type DirectiveData struct {
-	DirectivesTag    string
-	FoundDirectives  bool
-	TableOptions     string
-	Directives       []DirectiveInfo
+	DirectivesTag   string
+	FoundDirectives bool
+	TableOptions    string
+	Directives      []DirectiveInfo
 }
 
 // DirectiveInfo represents individual directive information
@@ -97,4 +97,20 @@ type DirectiveInfo struct {
 	Name        string
 	Arguments   string
 	Description string
+}
+
+// CatalogueEntry represents a single entry in the catalogue table
+type CatalogueEntry struct {
+	Name        string
+	Description string
+}
+
+// CatalogueData represents the data for catalogue template rendering
+type CatalogueData struct {
+	SubTitle      string
+	RevDate       string
+	CommandLine   string
+	Queries       []CatalogueEntry
+	Mutations     []CatalogueEntry
+	Subscriptions []CatalogueEntry
 }

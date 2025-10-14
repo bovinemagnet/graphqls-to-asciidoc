@@ -50,14 +50,14 @@ func (dp *DescriptionParser) ParseDescription(description string) *ParsedDescrip
 func (dp *DescriptionParser) isStructuredDescription(description string) bool {
 	// Check for common structured patterns
 	patterns := []string{
-		`(?m)^##\s+\w+`,           // Markdown headers
-		`@param\s+\w+`,            // JSDoc parameters
-		`@returns?\s+`,            // JSDoc returns
-		`@throws?\s+`,             // JSDoc throws
-		`@example\s*`,             // JSDoc examples
-		`(?m)^###?\s+Overview`,    // Overview section
-		`(?m)^###?\s+Parameters`,  // Parameters section
-		`(?m)^###?\s+Examples?`,   // Examples section
+		`(?m)^##\s+\w+`,          // Markdown headers
+		`@param\s+\w+`,           // JSDoc parameters
+		`@returns?\s+`,           // JSDoc returns
+		`@throws?\s+`,            // JSDoc throws
+		`@example\s*`,            // JSDoc examples
+		`(?m)^###?\s+Overview`,   // Overview section
+		`(?m)^###?\s+Parameters`, // Parameters section
+		`(?m)^###?\s+Examples?`,  // Examples section
 	}
 
 	for _, pattern := range patterns {
@@ -494,9 +494,9 @@ func (dp *DescriptionParser) ExtractDefault(description string) (defaultValue st
 	// Pattern to match default value annotations - more specific patterns
 	// Handle various formats: (default: X), default: X, (default X)
 	patterns := []string{
-		`\(default:\s*([^)]+)\)`,        // (default: value)
-		`\(default\s+([^)]+)\)`,          // (default value)
-		`\bdefault:\s*(\S+)`,             // default: value
+		`\(default:\s*([^)]+)\)`, // (default: value)
+		`\(default\s+([^)]+)\)`,  // (default value)
+		`\bdefault:\s*(\S+)`,     // default: value
 	}
 
 	for _, pattern := range patterns {
@@ -517,4 +517,60 @@ func (dp *DescriptionParser) ExtractDefault(description string) (defaultValue st
 	}
 
 	return "", description
+}
+
+// ExtractFirstSentence extracts the first sentence from a description up to the first full stop.
+// It cleans the description first by removing special markers and extra whitespace.
+func ExtractFirstSentence(description string) string {
+	if description == "" {
+		return ""
+	}
+
+	// Remove common markers like INTERNAL, JDR internal, etc.
+	cleaned := regexp.MustCompile(`(?i)^\s*(\*\*INTERNAL\*\*|INTERNAL|JDR\s+internal)\s*:?\s*`).ReplaceAllString(description, "")
+
+	// Remove asciidoc anchor markers like [#anchor-name] or [anchor-name]
+	cleaned = regexp.MustCompile(`(?m)^\s*\[[#]?[^\]]+\]\s*\n?`).ReplaceAllString(cleaned, "")
+
+	// Remove leading/trailing whitespace
+	cleaned = strings.TrimSpace(cleaned)
+
+	// Get only the first line/paragraph (split by double newlines or single newlines)
+	// This prevents getting multi-paragraph content
+	lines := strings.Split(cleaned, "\n")
+	firstNonEmptyLine := ""
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			firstNonEmptyLine = trimmed
+			break
+		}
+	}
+
+	if firstNonEmptyLine == "" {
+		return ""
+	}
+
+	// Find the first full stop followed by a space, newline, or end of string
+	// This pattern looks for a period followed by whitespace or end of text
+	// and captures everything before it
+	pattern := regexp.MustCompile(`^([^.]+\.)\s`)
+	if match := pattern.FindStringSubmatch(firstNonEmptyLine); len(match) > 1 {
+		return strings.TrimSpace(match[1])
+	}
+
+	// If no period with space after it, check for period at end of string
+	if strings.Contains(firstNonEmptyLine, ".") {
+		parts := strings.SplitN(firstNonEmptyLine, ".", 2)
+		if len(parts) > 0 && strings.TrimSpace(parts[0]) != "" {
+			return strings.TrimSpace(parts[0]) + "."
+		}
+	}
+
+	// If no period found at all, return the whole cleaned description
+	// but limit it to a reasonable length (first 100 chars)
+	if len(firstNonEmptyLine) > 100 {
+		return firstNonEmptyLine[:100] + "..."
+	}
+	return firstNonEmptyLine
 }
