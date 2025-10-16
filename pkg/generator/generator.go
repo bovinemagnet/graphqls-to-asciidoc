@@ -173,7 +173,8 @@ func (g *Generator) generateQueries(definitionsMap map[string]*ast.Definition) i
 		fmt.Fprintln(g.writer, parser.ProcessDescription(g.schema.Query.Description))
 	}
 
-	count := 0
+	// Collect and filter queries
+	var queryFields []*ast.FieldDefinition
 	for _, f := range g.schema.Query.Fields {
 		// Skip internal queries unless IncludeInternal is set
 		if !g.config.IncludeInternal && isInternal(f.Name, f.Description) {
@@ -195,10 +196,25 @@ func (g *Generator) generateQueries(definitionsMap map[string]*ast.Definition) i
 			continue
 		}
 
-		g.generateQueryField(f, definitionsMap)
-		count++
+		// Skip zero version queries unless IncludeZeroVersion is set
+		if !g.config.IncludeZeroVersion && isZeroVersion(f.Description) {
+			continue
+		}
+
+		queryFields = append(queryFields, f)
 	}
 
+	// Sort queries alphabetically by name
+	sort.Slice(queryFields, func(i, j int) bool {
+		return queryFields[i].Name < queryFields[j].Name
+	})
+
+	// Generate documentation for each query
+	for _, f := range queryFields {
+		g.generateQueryField(f, definitionsMap)
+	}
+
+	count := len(queryFields)
 	g.metrics.LogProgress("Queries", fmt.Sprintf("Generated %d queries", count))
 	return count
 }
@@ -395,6 +411,11 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 			continue
 		}
 
+		// Skip zero version mutations unless IncludeZeroVersion is set
+		if !g.config.IncludeZeroVersion && isZeroVersion(f.Description) {
+			continue
+		}
+
 		processedDesc, changelog := changelog.ProcessWithChangelog(f.Description, parser.ProcessDescription)
 
 		// Helper to extract all list items and non-list lines
@@ -470,6 +491,11 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 		}
 		mutationInfos = append(mutationInfos, mutationInfo)
 	}
+
+	// Sort mutations alphabetically by name
+	sort.Slice(mutationInfos, func(i, j int) bool {
+		return mutationInfos[i].Name < mutationInfos[j].Name
+	})
 
 	mutationObjectDescription := ""
 	if g.schema.Mutation.Description != "" {
@@ -580,7 +606,8 @@ func (g *Generator) generateSubscriptions(definitionsMap map[string]*ast.Definit
 		return 0
 	}
 
-	var subscriptionInfos []SubscriptionInfo
+	// Collect and filter subscriptions
+	var subscriptionFields []*ast.FieldDefinition
 	for _, f := range g.schema.Subscription.Fields {
 		// Skip internal subscriptions unless IncludeInternal is set
 		if !g.config.IncludeInternal && isInternal(f.Name, f.Description) {
@@ -602,6 +629,22 @@ func (g *Generator) generateSubscriptions(definitionsMap map[string]*ast.Definit
 			continue
 		}
 
+		// Skip zero version subscriptions unless IncludeZeroVersion is set
+		if !g.config.IncludeZeroVersion && isZeroVersion(f.Description) {
+			continue
+		}
+
+		subscriptionFields = append(subscriptionFields, f)
+	}
+
+	// Sort subscriptions alphabetically by name
+	sort.Slice(subscriptionFields, func(i, j int) bool {
+		return subscriptionFields[i].Name < subscriptionFields[j].Name
+	})
+
+	// Generate subscription info for each subscription
+	var subscriptionInfos []SubscriptionInfo
+	for _, f := range subscriptionFields {
 		processedDesc, _ := changelog.ProcessWithChangelog(f.Description, parser.ProcessDescription)
 		details := g.getSubscriptionDetails(f, definitionsMap)
 
@@ -1260,6 +1303,37 @@ func isLegacy(description string) bool {
 	return false
 }
 
+// isZeroVersion checks if a field has version 0.0.0 or 0.0.0.0
+// A field is considered zero version if:
+// - Its description contains "@version: 0.0.0" or "@version: 0.0.0.0"
+// - Also matches variations like "add.version: 0.0.0", "update.version: 0.0.0", etc.
+func isZeroVersion(description string) bool {
+	// Check for @version: 0.0.0 or @version: 0.0.0.0
+	if strings.Contains(description, "@version: 0.0.0") || strings.Contains(description, "@version: 0.0.0.0") {
+		return true
+	}
+
+	// Check for add.version, update.version, etc.
+	versionPatterns := []string{
+		"add.version: 0.0.0",
+		"update.version: 0.0.0",
+		"delete.version: 0.0.0",
+		"save.version: 0.0.0",
+		"add.version: 0.0.0.0",
+		"update.version: 0.0.0.0",
+		"delete.version: 0.0.0.0",
+		"save.version: 0.0.0.0",
+	}
+
+	for _, pattern := range versionPatterns {
+		if strings.Contains(description, pattern) {
+			return true
+		}
+	}
+
+	return false
+}
+
 // generateCatalogue generates a catalogue table of queries, mutations, and subscriptions
 func (g *Generator) generateCatalogue() error {
 	var queries []CatalogueEntry
@@ -1289,10 +1363,24 @@ func (g *Generator) generateCatalogue() error {
 				continue
 			}
 
-			description := parser.ExtractFirstSentence(field.Description)
+			// Skip zero version queries unless IncludeZeroVersion is set
+			if !g.config.IncludeZeroVersion && isZeroVersion(field.Description) {
+				continue
+			}
+
+			var description, changelogText string
+			if g.config.IncludeChangelog {
+				processedDesc, changelogResult := changelog.ProcessWithChangelog(field.Description, parser.ProcessDescription)
+				description = parser.ExtractFirstSentence(processedDesc)
+				changelogText = changelogResult
+			} else {
+				description = parser.ExtractFirstSentence(field.Description)
+			}
+
 			queries = append(queries, CatalogueEntry{
 				Name:        field.Name,
 				Description: description,
+				Changelog:   changelogText,
 			})
 		}
 	}
@@ -1320,10 +1408,24 @@ func (g *Generator) generateCatalogue() error {
 				continue
 			}
 
-			description := parser.ExtractFirstSentence(field.Description)
+			// Skip zero version mutations unless IncludeZeroVersion is set
+			if !g.config.IncludeZeroVersion && isZeroVersion(field.Description) {
+				continue
+			}
+
+			var description, changelogText string
+			if g.config.IncludeChangelog {
+				processedDesc, changelogResult := changelog.ProcessWithChangelog(field.Description, parser.ProcessDescription)
+				description = parser.ExtractFirstSentence(processedDesc)
+				changelogText = changelogResult
+			} else {
+				description = parser.ExtractFirstSentence(field.Description)
+			}
+
 			mutations = append(mutations, CatalogueEntry{
 				Name:        field.Name,
 				Description: description,
+				Changelog:   changelogText,
 			})
 		}
 	}
@@ -1351,10 +1453,24 @@ func (g *Generator) generateCatalogue() error {
 				continue
 			}
 
-			description := parser.ExtractFirstSentence(field.Description)
+			// Skip zero version subscriptions unless IncludeZeroVersion is set
+			if !g.config.IncludeZeroVersion && isZeroVersion(field.Description) {
+				continue
+			}
+
+			var description, changelogText string
+			if g.config.IncludeChangelog {
+				processedDesc, changelogResult := changelog.ProcessWithChangelog(field.Description, parser.ProcessDescription)
+				description = parser.ExtractFirstSentence(processedDesc)
+				changelogText = changelogResult
+			} else {
+				description = parser.ExtractFirstSentence(field.Description)
+			}
+
 			subscriptions = append(subscriptions, CatalogueEntry{
 				Name:        field.Name,
 				Description: description,
+				Changelog:   changelogText,
 			})
 		}
 	}
@@ -1369,6 +1485,9 @@ func (g *Generator) generateCatalogue() error {
 		return mutations[i].Name < mutations[j].Name
 	})
 
+	// Group mutations by type
+	mutationGroups := groupMutationsByType(mutations)
+
 	// Sort subscriptions alphabetically by name
 	sort.Slice(subscriptions, func(i, j int) bool {
 		return subscriptions[i].Name < subscriptions[j].Name
@@ -1376,12 +1495,13 @@ func (g *Generator) generateCatalogue() error {
 
 	// Render the catalogue template
 	data := CatalogueData{
-		SubTitle:      g.config.SubTitle,
-		RevDate:       time.Now().Format("Mon, 02 Jan 2006 15:04:05 MST"),
-		CommandLine:   strings.Join(os.Args, " "),
-		Queries:       queries,
-		Mutations:     mutations,
-		Subscriptions: subscriptions,
+		SubTitle:       g.config.SubTitle,
+		RevDate:        time.Now().Format("Mon, 02 Jan 2006 15:04:05 MST"),
+		CommandLine:    strings.Join(os.Args, " "),
+		Queries:        queries,
+		Mutations:      mutations,
+		MutationGroups: mutationGroups,
+		Subscriptions:  subscriptions,
 	}
 
 	tmpl, err := template.New("catalogue").Parse(templates.CatalogueTemplate)
@@ -1399,4 +1519,51 @@ func (g *Generator) generateCatalogue() error {
 	}
 
 	return nil
+}
+
+// groupMutationsByType groups mutations by their naming prefix (add, update, delete, save, general)
+func groupMutationsByType(mutations []CatalogueEntry) []MutationGroup {
+	// Define the order of groups
+	groupOrder := []string{"Adds", "Updates", "Deletes", "Saves", "General"}
+
+	// Map to hold mutations by group
+	groupMap := make(map[string][]CatalogueEntry)
+
+	for _, mutation := range mutations {
+		groupName := getMutationGroupName(mutation.Name)
+		groupMap[groupName] = append(groupMap[groupName], mutation)
+	}
+
+	// Build the result in the defined order, only including groups that have mutations
+	var result []MutationGroup
+	for _, groupName := range groupOrder {
+		if mutations, exists := groupMap[groupName]; exists && len(mutations) > 0 {
+			result = append(result, MutationGroup{
+				GroupName: groupName,
+				Mutations: mutations,
+			})
+		}
+	}
+
+	return result
+}
+
+// getMutationGroupName determines the group name based on mutation name prefix
+func getMutationGroupName(mutationName string) string {
+	lowerName := strings.ToLower(mutationName)
+
+	if strings.HasPrefix(lowerName, "add") {
+		return "Adds"
+	}
+	if strings.HasPrefix(lowerName, "update") {
+		return "Updates"
+	}
+	if strings.HasPrefix(lowerName, "delete") {
+		return "Deletes"
+	}
+	if strings.HasPrefix(lowerName, "save") {
+		return "Saves"
+	}
+
+	return "General"
 }

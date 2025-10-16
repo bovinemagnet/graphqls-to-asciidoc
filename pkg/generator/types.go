@@ -103,14 +103,22 @@ type DirectiveInfo struct {
 type CatalogueEntry struct {
 	Name        string
 	Description string
+	Changelog   string
+}
+
+// MutationGroup represents a group of mutations with a common prefix
+type MutationGroup struct {
+	GroupName string
+	Mutations []CatalogueEntry
 }
 
 // CatalogueData represents the data for catalogue template rendering
 type CatalogueData struct {
-	SubTitle      string
-	RevDate       string
-	CommandLine   string
-	Queries       []CatalogueEntry
-	Mutations     []CatalogueEntry
-	Subscriptions []CatalogueEntry
+	SubTitle       string
+	RevDate        string
+	CommandLine    string
+	Queries        []CatalogueEntry
+	Mutations      []CatalogueEntry // Keep for backward compatibility
+	MutationGroups []MutationGroup  // Grouped mutations
+	Subscriptions  []CatalogueEntry
 }

@@ -23,6 +23,7 @@ type Config struct {
 	IncludeDeprecated    bool
 	IncludePreview       bool
 	IncludeLegacy        bool
+	IncludeZeroVersion   bool
 	IncludeMutations     bool
 	IncludeQueries       bool
 	IncludeSubscriptions bool
@@ -36,6 +37,7 @@ type Config struct {
 	Verbose              bool
 	Catalogue            bool
 	SubTitle             string
+	IncludeChangelog     bool
 }
 
 // NewConfig creates a new Config with default values
@@ -71,6 +73,8 @@ func ParseFlags() *Config {
 	flag.BoolVar(&config.IncludeDeprecated, "inc-deprecated", false, "Include deprecated queries/mutations (those with @deprecated directive or marked deprecated)")
 	flag.BoolVar(&config.IncludePreview, "inc-preview", false, "Include preview queries/mutations (those marked as PREVIEW or preview)")
 	flag.BoolVar(&config.IncludeLegacy, "inc-legacy", false, "Include legacy queries/mutations (those marked as LEGACY or legacy)")
+	flag.BoolVar(&config.IncludeZeroVersion, "inc-zero", false, "Include items with version 0.0.0 or 0.0.0.0 (by default, items marked with @version: 0.0.0 or @version: 0.0.0.0 are excluded)")
+	flag.BoolVar(&config.IncludeChangelog, "inc-changelog", false, "Include changelog information in catalogue descriptions (version annotations)")
 	flag.BoolVar(&config.ShowVersion, "version", false, "Show program version and build information")
 	flag.BoolVar(&config.ShowVersion, "v", false, "Show program version and build information (shorthand)")
 	flag.BoolVar(&config.ShowHelp, "help", false, "Show detailed help information")
@@ -178,6 +182,10 @@ OPTIONS:
                             PREVIEW or preview are excluded)
         --inc-legacy        Include legacy queries/mutations (by default, items marked as
                             LEGACY or legacy are excluded)
+        --inc-zero          Include items with version 0.0.0 or 0.0.0.0 (by default, items
+                            marked with @version: 0.0.0 or @version: 0.0.0.0 are excluded)
+        --inc-changelog     Include changelog information in catalogue descriptions
+                            (extracts version annotations like add.version: 1.0.0)
         --verbose           Enable verbose logging with processing metrics
         --catalogue         Generate a catalogue table with query/mutation names and descriptions
         --sub-title TEXT    Optional subtitle for catalogue (e.g., 'Activities')

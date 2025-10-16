@@ -290,12 +290,14 @@ The following table provides a quick reference to all available queries in the G
 |===
 | Name | Description
 {{- range .Queries }}
-| {{.Name}} | {{.Description}}
+| {{.Name}} | {{.Description}}{{if .Changelog}}
+
+{{.Changelog}}{{end}}
 {{- end }}
 |===
 {{ end }}
 
-{{ if .Mutations }}
+{{ if .MutationGroups }}
 == Mutations
 
 
@@ -308,8 +310,13 @@ The following table provides a quick reference to all available mutations in the
 [options="header",cols="2m,5a"]
 |===
 | Name | Description
+{{- range .MutationGroups }}
+2+^h| {{.GroupName}}
 {{- range .Mutations }}
-| {{.Name}} | {{.Description}}
+| {{.Name}} | {{.Description}}{{if .Changelog}}
+
+{{.Changelog}}{{end}}
+{{- end }}
 {{- end }}
 |===
 {{ end }}
@@ -327,7 +334,9 @@ The following table provides a quick reference to all available subscriptions in
 |===
 | Name | Description
 {{- range .Subscriptions }}
-| {{.Name}} | {{.Description}}
+| {{.Name}} | {{.Description}}{{if .Changelog}}
+
+{{.Changelog}}{{end}}
 {{- end }}
 |===
 {{- else }}
