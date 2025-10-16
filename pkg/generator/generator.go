@@ -52,6 +52,14 @@ func (g *Generator) Generate() error {
 	headerTimer.AddCount(1)
 	headerTimer.Finish()
 
+	// Write catalogue section (summary tables)
+	catalogueTimer := g.metrics.StartSection("Catalogue")
+	if err := g.writeCatalogueSection(); err != nil {
+		return fmt.Errorf("error generating catalogue section: %w", err)
+	}
+	catalogueTimer.AddCount(1)
+	catalogueTimer.Finish()
+
 	// Create definitions map for type processing
 	g.metrics.LogProgress("Setup", "Creating definitions map")
 	definitionsMap := make(map[string]*ast.Definition)
@@ -1334,8 +1342,8 @@ func isZeroVersion(description string) bool {
 	return false
 }
 
-// generateCatalogue generates a catalogue table of queries, mutations, and subscriptions
-func (g *Generator) generateCatalogue() error {
+// collectCatalogueData collects and organizes catalogue data for queries, mutations, and subscriptions
+func (g *Generator) collectCatalogueData() CatalogueData {
 	var queries []CatalogueEntry
 	var mutations []CatalogueEntry
 	var subscriptions []CatalogueEntry
@@ -1493,8 +1501,8 @@ func (g *Generator) generateCatalogue() error {
 		return subscriptions[i].Name < subscriptions[j].Name
 	})
 
-	// Render the catalogue template
-	data := CatalogueData{
+	// Return the catalogue data
+	return CatalogueData{
 		SubTitle:       g.config.SubTitle,
 		RevDate:        time.Now().Format("Mon, 02 Jan 2006 15:04:05 MST"),
 		CommandLine:    strings.Join(os.Args, " "),
@@ -1503,6 +1511,146 @@ func (g *Generator) generateCatalogue() error {
 		MutationGroups: mutationGroups,
 		Subscriptions:  subscriptions,
 	}
+}
+
+// writeCatalogueSection writes the catalogue tables section to the output
+// This is used in standard documentation mode to include catalogue at the top
+func (g *Generator) writeCatalogueSection() error {
+	// Skip catalogue section if all components are disabled
+	if !g.config.IncludeQueries && !g.config.IncludeMutations && !g.config.IncludeSubscriptions {
+		return nil
+	}
+
+	data := g.collectCatalogueData()
+
+	// Build template based on what's enabled
+	var templateParts []string
+
+	// Add queries section if enabled and schema defines queries
+	if g.config.IncludeQueries && g.schema.Query != nil {
+		querySection := `== Queries
+
+*Queries* are how clients *read or fetch data* in GraphQL.
+They describe _what_ data the client wants, not _how_ to get it.
+
+The following table provides a quick reference to all available queries in the GraphQL API.
+
+{{- if .Queries }}
+
+[options="header",cols="2m,5a"]
+|===
+| Name | Description
+{{- range .Queries }}
+| {{.Name}} | {{.Description}}{{if .Changelog}}
+{{.Changelog}}{{end}}
+{{- end }}
+|===
+{{- else }}
+
+[NOTE]
+====
+No queries exist in this schema.
+====
+{{- end }}
+
+`
+		templateParts = append(templateParts, querySection)
+	}
+
+	// Add mutations section if enabled and schema defines mutations
+	if g.config.IncludeMutations && g.schema.Mutation != nil {
+		mutationSection := `
+== Mutations
+
+
+*Mutations* are how clients *write or modify data* for example, creating, updating, or deleting records.
+
+A mutation looks similar to a query, but it describes an action that changes data.
+
+The following table provides a quick reference to all available mutations in the GraphQL API.
+
+{{- if .MutationGroups }}
+
+[options="header",cols="2m,5a"]
+|===
+| Name | Description
+{{- range .MutationGroups }}
+2+^h| {{.GroupName}}
+{{- range .Mutations }}
+| {{.Name}} | {{.Description}}{{if .Changelog}}
+{{.Changelog}}{{end}}
+{{- end }}
+{{- end }}
+|===
+{{- else if .Mutations }}
+
+[options="header",cols="2m,5a"]
+|===
+| Name | Description
+{{- range .Mutations }}
+| {{.Name}} | {{.Description}}{{if .Changelog}}
+{{.Changelog}}{{end}}
+{{- end }}
+|===
+{{- else }}
+
+[NOTE]
+====
+No mutations exist in this schema.
+====
+{{- end }}
+
+`
+		templateParts = append(templateParts, mutationSection)
+	}
+
+	// Add subscriptions section if enabled and schema defines subscriptions
+	if g.config.IncludeSubscriptions && g.schema.Subscription != nil {
+		subscriptionSection := `== Subscriptions
+
+{{- if .Subscriptions }}
+
+The following table provides a quick reference to all available subscriptions in the GraphQL API.
+
+[options="header",cols="2m,5a"]
+|===
+| Name | Description
+{{- range .Subscriptions }}
+| {{.Name}} | {{.Description}}{{if .Changelog}}
+{{.Changelog}}{{end}}
+{{- end }}
+|===
+{{- else }}
+
+[NOTE]
+====
+No subscriptions exist in this schema.
+====
+{{- end }}
+
+`
+		templateParts = append(templateParts, subscriptionSection)
+	}
+
+	// Combine all enabled sections
+	catalogueBody := strings.Join(templateParts, "")
+
+	tmpl, err := template.New("catalogue-body").Parse(catalogueBody)
+	if err != nil {
+		return fmt.Errorf("error parsing catalogue body template: %v", err)
+	}
+
+	err = tmpl.Execute(g.writer, data)
+	if err != nil {
+		return fmt.Errorf("error executing catalogue body template: %v", err)
+	}
+
+	return nil
+}
+
+// generateCatalogue generates the complete catalogue document (catalogue mode)
+func (g *Generator) generateCatalogue() error {
+	data := g.collectCatalogueData()
 
 	tmpl, err := template.New("catalogue").Parse(templates.CatalogueTemplate)
 	if err != nil {
@@ -1515,7 +1663,8 @@ func (g *Generator) generateCatalogue() error {
 	}
 
 	if g.config.Verbose {
-		fmt.Fprintf(os.Stderr, "Generated catalogue with %d queries, %d mutations, and %d subscriptions\n", len(queries), len(mutations), len(subscriptions))
+		fmt.Fprintf(os.Stderr, "Generated catalogue with %d queries, %d mutations, and %d subscriptions\n",
+			len(data.Queries), len(data.Mutations), len(data.Subscriptions))
 	}
 
 	return nil
