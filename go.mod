@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/jedib0t/go-pretty/v6 v6.7.5
-	github.com/vektah/gqlparser/v2 v2.5.30
+	github.com/vektah/gqlparser/v2 v2.5.31
 )
 
 require (
