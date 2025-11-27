@@ -40,6 +40,7 @@ func main() {
 	// Validate configuration
 	if err := cfg.Validate(); err != nil {
 		config.PrintError(err.Error())
+		os.Exit(1)
 	}
 
 	// Read schema content (single file or multiple files)

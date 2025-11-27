@@ -9,6 +9,54 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
+// Pre-compiled regex patterns for performance optimization
+var (
+	// List item patterns
+	reAsteriskList = regexp.MustCompile(`(^|\s)\*\s`)
+	reHyphenList   = regexp.MustCompile(`(^|\s)-\s`)
+
+	// Deprecated directive pattern
+	reDeprecated = regexp.MustCompile(`@deprecated(?:\([^)]*\))?`)
+
+	// Markdown code block pattern
+	reMarkdownCodeBlock = regexp.MustCompile("(?s)```(\\w*)\n(.*?)\n```")
+
+	// Anchor and reference patterns
+	reParenNumber     = regexp.MustCompile(`\((\d+)\)`)
+	reCommentNumber   = regexp.MustCompile(`(?m)//\s*(\d+)\s*$`)
+	reHashNumber      = regexp.MustCompile(`(?m)#\s*(\d+)\s*$`)
+	reBlockComment    = regexp.MustCompile(`/\*\s*(\d+)\s*\*/`)
+	reAnchorBracket   = regexp.MustCompile(`\[#([a-zA-Z0-9_-]+)\]`)
+	reAnchorLine      = regexp.MustCompile(`(?m)^\[([a-zA-Z0-9_-]+)\]\s*$`)
+	reRefPattern      = regexp.MustCompile(`\{ref:([a-zA-Z0-9_-]+)\}`)
+	reLinkPattern     = regexp.MustCompile(`\{link:([a-zA-Z0-9_-]+)\|([^}]+)\}`)
+
+	// Table separator pattern
+	reTableSeparator = regexp.MustCompile(`^\s*\|[\s\-|:]+\|\s*$`)
+
+	// Admonition patterns (pre-compiled for each type)
+	reAdmonitionBold  = make(map[string]*regexp.Regexp)
+	reAdmonitionPlain = make(map[string]*regexp.Regexp)
+
+	// Description and code block patterns
+	reDescriptionBlock   = regexp.MustCompile(`(?s)"""(.*?)"""`)
+	reAsciiDocCodeBlock  = regexp.MustCompile(`(?s)\[source[^\]]*\][^\n]*\n\s*----[^\n]*\n.*?\n\s*----`)
+	reMarkdownCodeInline = regexp.MustCompile("(?s)```[^`]*```")
+
+	// Arguments patterns
+	reArgumentsColon = regexp.MustCompile(`(?m)^\.Arguments:\s*$`)
+	reArgumentsBold  = regexp.MustCompile(`(?m)^\*\*Arguments:\*\*\s*$`)
+)
+
+func init() {
+	// Pre-compile admonition patterns for each type
+	admonitionTypes := []string{"NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"}
+	for _, admonType := range admonitionTypes {
+		reAdmonitionBold[admonType] = regexp.MustCompile(fmt.Sprintf(`\*\*%s\*\*:\s*(.+)`, admonType))
+		reAdmonitionPlain[admonType] = regexp.MustCompile(fmt.Sprintf(`(?m)^%s:\s*(.+)$`, admonType))
+	}
+}
+
 // ProcessDescription processes GraphQL description text for AsciiDoc output
 // This is the main entry point that supports both structured and unstructured descriptions
 func ProcessDescription(description string) string {
@@ -52,14 +100,12 @@ func processUnstructuredDescription(description string) string {
 	processed = ConvertArgumentsPatterns(processed)
 
 	// Replace * and - with newline followed by the character, but only when they start list items
-	// Use regex to replace asterisks only when they start list items
-	reAsterisk := regexp.MustCompile(`(^|\s)\*\s`)
-	processed = reAsterisk.ReplaceAllString(processed, "${1}* ")
+	// Use pre-compiled regex to replace asterisks only when they start list items
+	processed = reAsteriskList.ReplaceAllString(processed, "${1}* ")
 
-	// Use regex to replace hyphens only when they start list items
+	// Use pre-compiled regex to replace hyphens only when they start list items
 	// Match: start of line OR whitespace, followed by hyphen, followed by space
-	reHyphen := regexp.MustCompile(`(^|\s)-\s`)
-	processed = reHyphen.ReplaceAllString(processed, "${1}* ")
+	processed = reHyphenList.ReplaceAllString(processed, "${1}* ")
 
 	// Remove newline at start if present
 	return strings.TrimPrefix(processed, "\n")
@@ -379,10 +425,7 @@ func ConvertMarkdownHeadersToAsciiDoc(description string) string {
 
 // FormatDeprecatedDirectives wraps @deprecated directives in backticks if not already enclosed
 func FormatDeprecatedDirectives(description string) string {
-	// Regex to match @deprecated directives with optional arguments
-	re := regexp.MustCompile(`@deprecated(?:\([^)]*\))?`)
-
-	return re.ReplaceAllStringFunc(description, func(match string) string {
+	return reDeprecated.ReplaceAllStringFunc(description, func(match string) string {
 		// Check if the match is already surrounded by backticks by examining the context
 		matchIndex := strings.Index(description, match)
 		if matchIndex > 0 && description[matchIndex-1] == '`' {
@@ -400,13 +443,9 @@ func FormatDeprecatedDirectives(description string) string {
 
 // ConvertMarkdownCodeBlocks converts markdown code blocks (```lang) to AsciiDoc format ([source,lang] ----)
 func ConvertMarkdownCodeBlocks(description string) string {
-	// Regex to match markdown code blocks: ```language\ncontent\n```
-	// Supports optional language specification
-	re := regexp.MustCompile("(?s)```(\\w*)\n(.*?)\n```")
-
-	return re.ReplaceAllStringFunc(description, func(match string) string {
+	return reMarkdownCodeBlock.ReplaceAllStringFunc(description, func(match string) string {
 		// Extract language and content from the match
-		submatches := re.FindStringSubmatch(match)
+		submatches := reMarkdownCodeBlock.FindStringSubmatch(match)
 		if len(submatches) < 3 {
 			return match // Return original if parsing fails
 		}
@@ -435,20 +474,16 @@ func ConvertMarkdownCodeBlocks(description string) string {
 // ProcessCallouts converts various callout patterns to AsciiDoc callout syntax
 func ProcessCallouts(content string) string {
 	// Pattern 1: (1), (2), etc. -> <1>, <2>, etc.
-	pattern1 := regexp.MustCompile(`\((\d+)\)`)
-	content = pattern1.ReplaceAllString(content, "<$1>")
+	content = reParenNumber.ReplaceAllString(content, "<$1>")
 
 	// Pattern 2: // 1, // 2, etc. -> <1>, <2>, etc. (comment-style callouts)
-	pattern2 := regexp.MustCompile(`(?m)//\s*(\d+)\s*$`)
-	content = pattern2.ReplaceAllString(content, "<$1>")
+	content = reCommentNumber.ReplaceAllString(content, "<$1>")
 
 	// Pattern 3: # 1, # 2, etc. -> <1>, <2>, etc. (hash comment-style callouts)
-	pattern3 := regexp.MustCompile(`(?m)#\s*(\d+)\s*$`)
-	content = pattern3.ReplaceAllString(content, "<$1>")
+	content = reHashNumber.ReplaceAllString(content, "<$1>")
 
 	// Pattern 4: /* 1 */, /* 2 */, etc. -> <1>, <2>, etc. (block comment-style callouts)
-	pattern4 := regexp.MustCompile(`/\*\s*(\d+)\s*\*/`)
-	content = pattern4.ReplaceAllString(content, "<$1>")
+	content = reBlockComment.ReplaceAllString(content, "<$1>")
 
 	return content
 }
@@ -456,8 +491,7 @@ func ProcessCallouts(content string) string {
 // ProcessAnchorsAndLabels converts anchor and label patterns to AsciiDoc format
 func ProcessAnchorsAndLabels(content string) string {
 	// Pattern 1: [#id] format -> [[id]]
-	pattern1 := regexp.MustCompile(`\[#([a-zA-Z0-9_-]+)\]`)
-	content = pattern1.ReplaceAllString(content, "[[$1]]")
+	content = reAnchorBracket.ReplaceAllString(content, "[[$1]]")
 
 	// Pattern 2: [[anchor]] format is already AsciiDoc, so preserve it
 	// No processing needed for this pattern
@@ -468,10 +502,9 @@ func ProcessAnchorsAndLabels(content string) string {
 	// Pattern 4: [label] format -> [[label]] (simple label to anchor conversion)
 	// Only convert if it's not already a cross-reference or other AsciiDoc construct
 	// Exclude admonition blocks (NOTE, TIP, IMPORTANT, WARNING, CAUTION)
-	pattern4 := regexp.MustCompile(`(?m)^\[([a-zA-Z0-9_-]+)\]\s*$`)
-	content = pattern4.ReplaceAllStringFunc(content, func(match string) string {
+	content = reAnchorLine.ReplaceAllStringFunc(content, func(match string) string {
 		// Extract the label content
-		submatches := pattern4.FindStringSubmatch(match)
+		submatches := reAnchorLine.FindStringSubmatch(match)
 		if len(submatches) > 1 {
 			label := submatches[1]
 			// Check if this is an admonition block
@@ -489,12 +522,10 @@ func ProcessAnchorsAndLabels(content string) string {
 	})
 
 	// Pattern 5: Convert reference patterns like {ref:anchor} to <<anchor>>
-	pattern5 := regexp.MustCompile(`\{ref:([a-zA-Z0-9_-]+)\}`)
-	content = pattern5.ReplaceAllString(content, "<<$1>>")
+	content = reRefPattern.ReplaceAllString(content, "<<$1>>")
 
 	// Pattern 6: Convert reference patterns like {link:anchor|text} to <<anchor,text>>
-	pattern6 := regexp.MustCompile(`\{link:([a-zA-Z0-9_-]+)\|([^}]+)\}`)
-	content = pattern6.ReplaceAllString(content, "<<$1,$2>>")
+	content = reLinkPattern.ReplaceAllString(content, "<<$1,$2>>")
 
 	return content
 }
@@ -537,7 +568,7 @@ func ConvertMarkdownTables(content string) string {
 		// Check if this line looks like a markdown table row
 		if strings.Contains(trimmed, "|") && !strings.HasPrefix(trimmed, "[") {
 			// Check if this is a separator line (|---|---|)
-			if regexp.MustCompile(`^\s*\|[\s\-|:]+\|\s*$`).MatchString(trimmed) {
+			if reTableSeparator.MatchString(trimmed) {
 				// Skip separator lines in markdown tables
 				continue
 			}
@@ -616,9 +647,9 @@ func ConvertAdmonitionBlocks(description string) string {
 
 	for _, admonType := range admonitionTypes {
 		// Pattern 1: **ADMONITION**: content (single line)
-		pattern1 := regexp.MustCompile(fmt.Sprintf(`\*\*%s\*\*:\s*(.+)`, admonType))
-		description = pattern1.ReplaceAllStringFunc(description, func(match string) string {
-			submatches := pattern1.FindStringSubmatch(match)
+		patternBold := reAdmonitionBold[admonType]
+		description = patternBold.ReplaceAllStringFunc(description, func(match string) string {
+			submatches := patternBold.FindStringSubmatch(match)
 			if len(submatches) < 2 {
 				return match
 			}
@@ -627,9 +658,9 @@ func ConvertAdmonitionBlocks(description string) string {
 		})
 
 		// Pattern 2: ADMONITION: content (without asterisks, single line)
-		pattern2 := regexp.MustCompile(fmt.Sprintf(`(?m)^%s:\s*(.+)$`, admonType))
-		description = pattern2.ReplaceAllStringFunc(description, func(match string) string {
-			submatches := pattern2.FindStringSubmatch(match)
+		patternPlain := reAdmonitionPlain[admonType]
+		description = patternPlain.ReplaceAllStringFunc(description, func(match string) string {
+			submatches := patternPlain.FindStringSubmatch(match)
 			if len(submatches) < 2 {
 				return match
 			}
@@ -826,24 +857,14 @@ func CleanDescription(text string, skipCharacter string) string {
 // to prevent the parser from treating example code as actual schema definitions.
 // It replaces code blocks with a placeholder to maintain structure.
 func StripCodeBlocksFromDescriptions(schemaContent string) string {
-	// Match triple-quoted strings (GraphQL descriptions)
-	descriptionPattern := regexp.MustCompile(`(?s)"""(.*?)"""`)
-	
-	return descriptionPattern.ReplaceAllStringFunc(schemaContent, func(match string) string {
+	return reDescriptionBlock.ReplaceAllStringFunc(schemaContent, func(match string) string {
 		// Extract the content between triple quotes
 		content := match[3 : len(match)-3]
-		
-		// Pattern to match AsciiDoc code blocks: [source,*] followed by ---- block
-		// More flexible pattern to handle various whitespace
-		asciidocPattern := regexp.MustCompile(`(?s)\[source[^\]]*\][^\n]*\n\s*----[^\n]*\n.*?\n\s*----`)
-		
-		// Pattern to match markdown code blocks: ```lang\n...\n```
-		markdownPattern := regexp.MustCompile("(?s)```[^`]*```")
-		
+
 		// Replace code blocks with placeholder text that won't be parsed as GraphQL
-		cleaned := asciidocPattern.ReplaceAllString(content, "[CODE_BLOCK_REMOVED]")
-		cleaned = markdownPattern.ReplaceAllString(cleaned, "[CODE_BLOCK_REMOVED]")
-		
+		cleaned := reAsciiDocCodeBlock.ReplaceAllString(content, "[CODE_BLOCK_REMOVED]")
+		cleaned = reMarkdownCodeInline.ReplaceAllString(cleaned, "[CODE_BLOCK_REMOVED]")
+
 		// Return the description with code blocks replaced
 		return `"""` + cleaned + `"""`
 	})
@@ -892,12 +913,10 @@ func ConvertDescriptionToRefNumbers(text string, skipNonDash bool) string {
 // ConvertArgumentsPatterns converts .Arguments: and **Arguments:** patterns to AsciiDoc format
 func ConvertArgumentsPatterns(description string) string {
 	// Convert .Arguments: to .Arguments
-	re := regexp.MustCompile(`(?m)^\.Arguments:\s*$`)
-	description = re.ReplaceAllString(description, ".Arguments")
+	description = reArgumentsColon.ReplaceAllString(description, ".Arguments")
 
 	// Convert **Arguments:** to .Arguments
-	re = regexp.MustCompile(`(?m)^\*\*Arguments:\*\*\s*$`)
-	description = re.ReplaceAllString(description, ".Arguments")
+	description = reArgumentsBold.ReplaceAllString(description, ".Arguments")
 
 	return description
 }

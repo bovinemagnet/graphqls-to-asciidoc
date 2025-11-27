@@ -111,9 +111,19 @@ The tool supports extensive customization through flags:
 - `-pattern`: Pattern to match multiple GraphQL schema files (e.g., `schemas/**/*.graphqls`)
 - `-version`: Show program version and build information
 - `-catalogue`: Generate quick reference catalogue with queries, mutations, and subscriptions tables only
-- `-exclude-internal`: Exclude queries/mutations marked as INTERNAL
+- `-sub-title`: Optional subtitle for catalogue (e.g., 'Activities')
+- `-exclude-internal`: Exclude queries/mutations marked as INTERNAL (deprecated, use `--inc-internal` instead)
 - `-mutations`, `-queries`, `-subscriptions`: Include/exclude specific sections (default: most are true)
 - `-directives`, `-types`, `-enums`, `-inputs`, `-scalars`: Include/exclude type definitions
+
+### Filtering Flags
+The following flags control which items are included in the output:
+- `--inc-internal`: Include internal queries/mutations (those starting with 'internal' or marked INTERNAL)
+- `--inc-deprecated`: Include deprecated queries/mutations (those with @deprecated directive)
+- `--inc-preview`: Include preview queries/mutations (those marked as PREVIEW)
+- `--inc-legacy`: Include legacy queries/mutations (those marked as LEGACY)
+- `--inc-zero`: Include items with version 0.0.0 or 0.0.0.0
+- `--inc-changelog`: Include changelog information in catalogue descriptions
 
 **Note:** `-schema` and `-pattern` flags are mutually exclusive. Use `-schema` for single file mode or `-pattern` for multiple file mode.
 
@@ -135,6 +145,7 @@ The tool supports extensive customization through flags:
 - `New()`: Generator initialization with configuration and schema
 - `Generate()`: Main generation orchestration (supports both full documentation and catalogue mode)
 - `generateCatalogue()`: Catalogue mode generation with queries, mutations, and subscriptions tables
+- `shouldIncludeField()`: Centralized field filtering based on internal/deprecated/preview/legacy/zero-version status
 - `ProcessTypeName()`: GraphQL type to AsciiDoc cross-reference conversion
 - `ProcessDescription()`: Advanced description processing (changelog, markdown, cross-refs)
 

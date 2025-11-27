@@ -165,9 +165,20 @@ graphqls-to-asciidoc -p "/absolute/path/**/*.graphql"
 #### Control Options
 | Flag | Short | Description | Default |
 |------|-------|-------------|---------|
-| `--catalogue` | `-c` | Generate quick reference catalogue (queries, mutations, subscriptions tables only) | false |
-| `--exclude-internal` | `-x` | Exclude queries/mutations marked as INTERNAL | false |
+| `--catalogue` | - | Generate quick reference catalogue (queries, mutations, subscriptions tables only) | false |
+| `--sub-title` | - | Optional subtitle for catalogue (e.g., 'Activities') | - |
+| `--exclude-internal` | `-x` | Exclude queries/mutations marked as INTERNAL (deprecated, use `--inc-internal` instead) | false |
 | `--verbose` | - | Enable verbose logging with processing metrics | false |
+
+#### Filtering Options
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--inc-internal` | Include internal queries/mutations (those starting with 'internal' or marked INTERNAL) | false |
+| `--inc-deprecated` | Include deprecated queries/mutations (those with @deprecated directive or marked deprecated) | false |
+| `--inc-preview` | Include preview queries/mutations (those marked as PREVIEW) | false |
+| `--inc-legacy` | Include legacy queries/mutations (those marked as LEGACY) | false |
+| `--inc-zero` | Include items with version 0.0.0 or 0.0.0.0 | false |
+| `--inc-changelog` | Include changelog information in catalogue descriptions | false |
 
 #### Section Control
 | Flag | Short | Description | Default |

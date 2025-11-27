@@ -184,31 +184,9 @@ func (g *Generator) generateQueries(definitionsMap map[string]*ast.Definition) i
 	// Collect and filter queries
 	var queryFields []*ast.FieldDefinition
 	for _, f := range g.schema.Query.Fields {
-		// Skip internal queries unless IncludeInternal is set
-		if !g.config.IncludeInternal && isInternal(f.Name, f.Description) {
+		if !g.shouldIncludeField(f.Name, f.Description, f.Directives) {
 			continue
 		}
-
-		// Skip deprecated queries unless IncludeDeprecated is set
-		if !g.config.IncludeDeprecated && isDeprecated(f.Description, f.Directives) {
-			continue
-		}
-
-		// Skip preview queries unless IncludePreview is set
-		if !g.config.IncludePreview && isPreview(f.Description) {
-			continue
-		}
-
-		// Skip legacy queries unless IncludeLegacy is set
-		if !g.config.IncludeLegacy && isLegacy(f.Description) {
-			continue
-		}
-
-		// Skip zero version queries unless IncludeZeroVersion is set
-		if !g.config.IncludeZeroVersion && isZeroVersion(f.Description) {
-			continue
-		}
-
 		queryFields = append(queryFields, f)
 	}
 
@@ -399,28 +377,7 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 
 	var mutationInfos []MutationInfo
 	for _, f := range g.schema.Mutation.Fields {
-		// Skip internal mutations unless IncludeInternal is set
-		if !g.config.IncludeInternal && isInternal(f.Name, f.Description) {
-			continue
-		}
-
-		// Skip deprecated mutations unless IncludeDeprecated is set
-		if !g.config.IncludeDeprecated && isDeprecated(f.Description, f.Directives) {
-			continue
-		}
-
-		// Skip preview mutations unless IncludePreview is set
-		if !g.config.IncludePreview && isPreview(f.Description) {
-			continue
-		}
-
-		// Skip legacy mutations unless IncludeLegacy is set
-		if !g.config.IncludeLegacy && isLegacy(f.Description) {
-			continue
-		}
-
-		// Skip zero version mutations unless IncludeZeroVersion is set
-		if !g.config.IncludeZeroVersion && isZeroVersion(f.Description) {
+		if !g.shouldIncludeField(f.Name, f.Description, f.Directives) {
 			continue
 		}
 
@@ -617,31 +574,9 @@ func (g *Generator) generateSubscriptions(definitionsMap map[string]*ast.Definit
 	// Collect and filter subscriptions
 	var subscriptionFields []*ast.FieldDefinition
 	for _, f := range g.schema.Subscription.Fields {
-		// Skip internal subscriptions unless IncludeInternal is set
-		if !g.config.IncludeInternal && isInternal(f.Name, f.Description) {
+		if !g.shouldIncludeField(f.Name, f.Description, f.Directives) {
 			continue
 		}
-
-		// Skip deprecated subscriptions unless IncludeDeprecated is set
-		if !g.config.IncludeDeprecated && isDeprecated(f.Description, f.Directives) {
-			continue
-		}
-
-		// Skip preview subscriptions unless IncludePreview is set
-		if !g.config.IncludePreview && isPreview(f.Description) {
-			continue
-		}
-
-		// Skip legacy subscriptions unless IncludeLegacy is set
-		if !g.config.IncludeLegacy && isLegacy(f.Description) {
-			continue
-		}
-
-		// Skip zero version subscriptions unless IncludeZeroVersion is set
-		if !g.config.IncludeZeroVersion && isZeroVersion(f.Description) {
-			continue
-		}
-
 		subscriptionFields = append(subscriptionFields, f)
 	}
 
@@ -1254,7 +1189,7 @@ func isBuiltInScalar(typeName string) bool {
 // - Its description contains "INTERNAL" (case-insensitive)
 func isInternal(name string, description string) bool {
 	// Check if name starts with "internal"
-	if len(name) >= 8 && strings.ToLower(name[:8]) == "internal" {
+	if strings.HasPrefix(strings.ToLower(name), "internal") {
 		return true
 	}
 
@@ -1327,10 +1262,16 @@ func isZeroVersion(description string) bool {
 		"update.version: 0.0.0",
 		"delete.version: 0.0.0",
 		"save.version: 0.0.0",
+		"remove.version: 0.0.0",
+		"create.version: 0.0.0",
+		"deprecated.version: 0.0.0",
 		"add.version: 0.0.0.0",
 		"update.version: 0.0.0.0",
 		"delete.version: 0.0.0.0",
 		"save.version: 0.0.0.0",
+		"remove.version: 0.0.0.0",
+		"create.version: 0.0.0.0",
+		"deprecated.version: 0.0.0.0",
 	}
 
 	for _, pattern := range versionPatterns {
@@ -1342,6 +1283,27 @@ func isZeroVersion(description string) bool {
 	return false
 }
 
+// shouldIncludeField checks if a field should be included based on the configuration settings.
+// This consolidates the filtering logic for queries, mutations, and subscriptions.
+func (g *Generator) shouldIncludeField(name, description string, directives ast.DirectiveList) bool {
+	if !g.config.IncludeInternal && isInternal(name, description) {
+		return false
+	}
+	if !g.config.IncludeDeprecated && isDeprecated(description, directives) {
+		return false
+	}
+	if !g.config.IncludePreview && isPreview(description) {
+		return false
+	}
+	if !g.config.IncludeLegacy && isLegacy(description) {
+		return false
+	}
+	if !g.config.IncludeZeroVersion && isZeroVersion(description) {
+		return false
+	}
+	return true
+}
+
 // collectCatalogueData collects and organizes catalogue data for queries, mutations, and subscriptions
 func (g *Generator) collectCatalogueData() CatalogueData {
 	var queries []CatalogueEntry
@@ -1351,28 +1313,7 @@ func (g *Generator) collectCatalogueData() CatalogueData {
 	// Collect queries
 	if g.schema.Query != nil {
 		for _, field := range g.schema.Query.Fields {
-			// Skip internal queries unless IncludeInternal is set
-			if !g.config.IncludeInternal && isInternal(field.Name, field.Description) {
-				continue
-			}
-
-			// Skip deprecated queries unless IncludeDeprecated is set
-			if !g.config.IncludeDeprecated && isDeprecated(field.Description, field.Directives) {
-				continue
-			}
-
-			// Skip preview queries unless IncludePreview is set
-			if !g.config.IncludePreview && isPreview(field.Description) {
-				continue
-			}
-
-			// Skip legacy queries unless IncludeLegacy is set
-			if !g.config.IncludeLegacy && isLegacy(field.Description) {
-				continue
-			}
-
-			// Skip zero version queries unless IncludeZeroVersion is set
-			if !g.config.IncludeZeroVersion && isZeroVersion(field.Description) {
+			if !g.shouldIncludeField(field.Name, field.Description, field.Directives) {
 				continue
 			}
 
@@ -1396,28 +1337,7 @@ func (g *Generator) collectCatalogueData() CatalogueData {
 	// Collect mutations
 	if g.schema.Mutation != nil {
 		for _, field := range g.schema.Mutation.Fields {
-			// Skip internal mutations unless IncludeInternal is set
-			if !g.config.IncludeInternal && isInternal(field.Name, field.Description) {
-				continue
-			}
-
-			// Skip deprecated mutations unless IncludeDeprecated is set
-			if !g.config.IncludeDeprecated && isDeprecated(field.Description, field.Directives) {
-				continue
-			}
-
-			// Skip preview mutations unless IncludePreview is set
-			if !g.config.IncludePreview && isPreview(field.Description) {
-				continue
-			}
-
-			// Skip legacy mutations unless IncludeLegacy is set
-			if !g.config.IncludeLegacy && isLegacy(field.Description) {
-				continue
-			}
-
-			// Skip zero version mutations unless IncludeZeroVersion is set
-			if !g.config.IncludeZeroVersion && isZeroVersion(field.Description) {
+			if !g.shouldIncludeField(field.Name, field.Description, field.Directives) {
 				continue
 			}
 
@@ -1441,28 +1361,7 @@ func (g *Generator) collectCatalogueData() CatalogueData {
 	// Collect subscriptions
 	if g.schema.Subscription != nil {
 		for _, field := range g.schema.Subscription.Fields {
-			// Skip internal subscriptions unless IncludeInternal is set
-			if !g.config.IncludeInternal && isInternal(field.Name, field.Description) {
-				continue
-			}
-
-			// Skip deprecated subscriptions unless IncludeDeprecated is set
-			if !g.config.IncludeDeprecated && isDeprecated(field.Description, field.Directives) {
-				continue
-			}
-
-			// Skip preview subscriptions unless IncludePreview is set
-			if !g.config.IncludePreview && isPreview(field.Description) {
-				continue
-			}
-
-			// Skip legacy subscriptions unless IncludeLegacy is set
-			if !g.config.IncludeLegacy && isLegacy(field.Description) {
-				continue
-			}
-
-			// Skip zero version subscriptions unless IncludeZeroVersion is set
-			if !g.config.IncludeZeroVersion && isZeroVersion(field.Description) {
+			if !g.shouldIncludeField(field.Name, field.Description, field.Directives) {
 				continue
 			}
 
