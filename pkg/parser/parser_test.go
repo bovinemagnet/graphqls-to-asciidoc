@@ -190,7 +190,7 @@ query {
 ` + "```" + ``,
 			expected: `Example query:
 
-[source,graphql]
+[source,kotlin]
 ----
 query {
   user {
@@ -240,7 +240,7 @@ console.log("hello");
 
 Second block:
 
-[source,graphql]
+[source,kotlin]
 ----
 query { user }
 ----`,
@@ -300,7 +300,7 @@ query { field }
 
 Example:
 
-[source,graphql]
+[source,kotlin]
 ----
 query { field }
 ----
@@ -599,7 +599,7 @@ func TestConvertMarkdownCodeBlocksWithCallouts(t *testing.T) {
 		{
 			name:     "code block without callouts",
 			input:    "Example:\n\n```graphql\nquery {\n  user {\n    name\n  }\n}\n```",
-			expected: "Example:\n\n[source,graphql]\n----\nquery {\n  user {\n    name\n  }\n}\n----",
+			expected: "Example:\n\n[source,kotlin]\n----\nquery {\n  user {\n    name\n  }\n}\n----",
 		},
 	}
 
