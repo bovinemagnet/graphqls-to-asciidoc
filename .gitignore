@@ -37,6 +37,9 @@ test/final_test.adoc
 internal.graphqls
 internal.adoc
 
-## Igmore .vscode
+## Ignore .vscode
 .vscode/
 .idea/
+
+# Worktrees
+.worktrees/
