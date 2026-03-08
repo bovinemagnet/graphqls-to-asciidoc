@@ -9,6 +9,7 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/config"
+	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/parser"
 )
 
 func TestNew(t *testing.T) {
@@ -454,9 +455,9 @@ func TestIsBuiltInType(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.typeName, func(t *testing.T) {
-			result := isBuiltInType(tc.typeName)
+			result := parser.IsBuiltInGraphQLType(tc.typeName)
 			if result != tc.expected {
-				t.Errorf("isBuiltInType(%q) = %v; expected %v", tc.typeName, result, tc.expected)
+				t.Errorf("IsBuiltInGraphQLType(%q) = %v; expected %v", tc.typeName, result, tc.expected)
 			}
 		})
 	}

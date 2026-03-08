@@ -109,17 +109,14 @@ func isBuiltInType(typeName string) bool {
 	return exists && allowed
 }
 
-// CombineSchemaContent is a simpler version that just concatenates content without conflict checking
-// This can be used when conflict checking is not needed or performed elsewhere
-func CombineSchemaContent(contents []string) string {
-	var combined strings.Builder
-	
-	for i, content := range contents {
-		if i > 0 {
-			combined.WriteString("\n\n")
-		}
-		combined.WriteString(strings.TrimSpace(content))
+// IsBuiltInGraphQLType checks if a type name is a built-in GraphQL type
+// (scalars + root operation types). Used by generator to filter out built-in types.
+func IsBuiltInGraphQLType(typeName string) bool {
+	switch typeName {
+	case "String", "Int", "Float", "Boolean", "ID",
+		"Query", "Mutation", "Subscription":
+		return true
+	default:
+		return false
 	}
-	
-	return combined.String()
 }

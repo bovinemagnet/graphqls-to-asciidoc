@@ -164,30 +164,30 @@ func TestIsBuiltInType(t *testing.T) {
 	}
 }
 
-func TestCombineSchemaContent(t *testing.T) {
-	contents := []string{
-		"type User { id: ID! }",
-		"type Post { title: String }",
-		"enum Status { ACTIVE INACTIVE }",
+func TestIsBuiltInGraphQLType(t *testing.T) {
+	tests := []struct {
+		name     string
+		typeName string
+		expected bool
+	}{
+		{"String is built-in", "String", true},
+		{"Int is built-in", "Int", true},
+		{"Float is built-in", "Float", true},
+		{"Boolean is built-in", "Boolean", true},
+		{"ID is built-in", "ID", true},
+		{"Query is built-in", "Query", true},
+		{"Mutation is built-in", "Mutation", true},
+		{"Subscription is built-in", "Subscription", true},
+		{"Custom type is not built-in", "User", false},
+		{"Empty string is not built-in", "", false},
 	}
-	
-	result := CombineSchemaContent(contents)
-	
-	expectedParts := []string{
-		"type User { id: ID! }",
-		"type Post { title: String }",
-		"enum Status { ACTIVE INACTIVE }",
-	}
-	
-	for _, part := range expectedParts {
-		if !strings.Contains(result, part) {
-			t.Errorf("CombineSchemaContent() missing expected part: %s", part)
-		}
-	}
-	
-	// Check that parts are separated
-	parts := strings.Split(result, "\n\n")
-	if len(parts) != 3 {
-		t.Errorf("CombineSchemaContent() expected 3 parts separated by double newlines, got %d", len(parts))
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IsBuiltInGraphQLType(tt.typeName)
+			if result != tt.expected {
+				t.Errorf("IsBuiltInGraphQLType(%q) = %v, want %v", tt.typeName, result, tt.expected)
+			}
+		})
 	}
 }

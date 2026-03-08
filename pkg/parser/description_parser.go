@@ -109,8 +109,11 @@ func (dp *DescriptionParser) parseSections(description string, structure *Descri
 	overviewContent := []string{}
 
 	for i, line := range lines {
-		// Check if this is a section header (## or ###)
-		if matched, _ := regexp.MatchString(`^###?\s+.+`, line); matched {
+		// Detect header levels: ## starts a new section, ### within an existing section is content
+		isH2 := strings.HasPrefix(line, "## ") && !strings.HasPrefix(line, "### ")
+		isH3 := strings.HasPrefix(line, "### ")
+
+		if isH2 || (isH3 && !inSection) {
 			// Save previous section if any
 			if currentSection != "" {
 				sectionContent := strings.TrimSpace(strings.Join(currentContent, "\n"))
@@ -126,7 +129,7 @@ func (dp *DescriptionParser) parseSections(description string, structure *Descri
 				}
 			}
 
-			// Start new section - handle both ## and ### headers
+			// Start new section
 			sectionName := strings.TrimSpace(line)
 			sectionName = strings.TrimPrefix(sectionName, "###")
 			sectionName = strings.TrimPrefix(sectionName, "##")
@@ -134,6 +137,9 @@ func (dp *DescriptionParser) parseSections(description string, structure *Descri
 			currentSection = sectionName
 			currentContent = []string{}
 			inSection = true
+		} else if isH3 && inSection {
+			// ### within an existing ## section — treat as content
+			currentContent = append(currentContent, line)
 		} else if inSection {
 			// Add line to current section
 			currentContent = append(currentContent, line)

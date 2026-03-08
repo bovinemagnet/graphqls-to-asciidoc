@@ -32,6 +32,13 @@ test.graphqls
 test.md
 test/*test*.adoc
 test/final_test.adoc
+test/sorted_output.adoc
+test/zero_version_default.adoc
+test/zero_version_with_flag.adoc
+
+# Generated output files
+new.adoc
+coverage.html
 
 ## Ignore internal files
 internal.graphqls
