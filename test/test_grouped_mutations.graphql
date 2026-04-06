@@ -1,0 +1,66 @@
+"""
+Test schema for mutation grouping feature
+"""
+
+type Query {
+  testQuery: String
+}
+
+type Mutation {
+  # Add mutations
+  addUser(name: String!): User
+  addProduct(name: String!, price: Float!): Product
+
+  # Update mutations
+  updateUser(id: ID!, name: String!): User
+  updateProduct(id: ID!, price: Float!): Product
+
+  # Delete mutations
+  deleteUser(id: ID!): Boolean
+  deleteProduct(id: ID!): Boolean
+
+  # Save mutations
+  saveSettings(data: String!): Settings
+  saveDraft(content: String!): Draft
+
+  # General mutations (don't fit other categories)
+  createOrder(items: [String!]!): Order
+  processPayment(amount: Float!): Payment
+  publishPost(id: ID!): Post
+}
+
+type User {
+  id: ID!
+  name: String!
+}
+
+type Product {
+  id: ID!
+  name: String!
+  price: Float!
+}
+
+type Settings {
+  id: ID!
+  data: String!
+}
+
+type Draft {
+  id: ID!
+  content: String!
+}
+
+type Order {
+  id: ID!
+  items: [String!]!
+}
+
+type Payment {
+  id: ID!
+  amount: Float!
+}
+
+type Post {
+  id: ID!
+  published: Boolean!
+}
