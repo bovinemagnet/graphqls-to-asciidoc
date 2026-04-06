@@ -1,0 +1,486 @@
+# tag::graphql_query[]
+"""
+The **Platform API** provides a set of powerful queries designed to return specific types of data, each represented by a clearly defined type. These types include detailed information about the structure and nature of the data being returned, making it easy to understand what each query provides.
+
+Please note that some queries are designated as internal and are available only to administrators. These internal queries are not accessible to end users or external integrations.
+"""
+type Query {
+    # tag::graphql_query_forceGarbageCollection[]
+	"""
+	**INTERNAL**: Force garbage collection and return memory status before and after.
+
+	**PERMISSION**: ADMIN-ONLY
+
+	add.version 25.2.0
+
+	⚠️ WARNING: This should be used sparingly and only for diagnostic purposes.
+	Forcing GC can impact application performance.
+
+	- _RETURNS_: String containing memory status before and after GC
+	"""
+	internalForceGarbageCollection: String!
+	# end::graphql_query_forceGarbageCollection[]
+
+	# tag::graphql_query_getProjectDeltaChangesViaChangeLog[]
+	"""
+	**INTERNAL**:
+
+	**PERMISSION**: ADMIN-ONLY
+
+	add.version 25.2.0
+
+	Fetch a paginated list of project delta change records from the optimised `change_log` table within a specified date window.
+	This query provides enhanced performance compared to `getProjectDeltaChanges` by using the dedicated change log table instead of the message queue.
+
+	- `between`: The time window to filter the results by. _Required_
+	- `pageNumber`: The page number to fetch, defaults to 0
+	- `pageSize`: The number of items per page, defaults to 10
+	- _RETURNS_: A list of ProjectDeltaChange objects containing detailed delta information
+
+	.Parameters:
+	* `between: DateFilter!`
+	** Defines the inclusive time window for which to return project change records.
+	** `DateFilter` contains two fields: `fromDateTime` (ISO 8601 timestamp) and `toDateTime` (ISO 8601 timestamp).
+
+	.Example:
+	[source,graphql]
+	----
+	query {
+		getProjectDeltaChangesViaChangeLog(
+			between: {
+				fromDateTime: "2025-01-01T00:00:00",
+				toDateTime: "2025-01-01T23:59:59"
+			},
+			pageNumber: 0,
+			pageSize: 50
+		) {
+			projectCode
+			projectPhase
+			effectiveDate
+			scheduledDates {
+				oldValue
+				newValue
+				hasChanged
+			}
+			assignedTeam {
+				oldValue { code name }
+				newValue { code name }
+				hasChanged
+			}
+		}
+	}
+	----
+
+	.Returns:
+	* `[ProjectDeltaChange]`
+	** A list of project change records with detailed delta information including old/new values for:
+	*** Scheduled dates and times
+	*** Team and resource assignments
+	*** Priority changes
+	*** Record status modifications
+	"""
+	getProjectDeltaChangesViaChangeLog(
+		between: DateFilter
+		pageNumber: Int! = 0
+		pageSize: Int! = 10
+	): [ProjectDeltaChange]
+	# end::graphql_query_getProjectDeltaChangesViaChangeLog[]
+
+	# tag::graphql_query_getRegionalDeltaChangesViaChangeLog[]
+	"""
+	**INTERNAL**:
+
+	**PERMISSION**: ADMIN-ONLY
+
+	add.version 25.2.0
+
+	Fetch a paginated list of regional delta change records from the optimised `change_log` table within a specified date window,
+	with optional region and publication status filtering. This query provides enhanced performance by using the dedicated
+	change log table and JSON-based region filtering instead of complex table joins.
+
+	- `between`: The time window to filter the results by. _Required_
+	- `regionCode`: The region code to filter by, defaults to "EMEA"
+	- `publishedInternal`: Filter by internal publication status, defaults to true
+	- `publishedExternal`: Filter by external publication status, defaults to true
+	- `pageNumber`: The page number to fetch, defaults to 0
+	- `pageSize`: The number of items per page, defaults to 10
+	- _RETURNS_: A list of RegionalDeltaChange objects
+
+	.Parameters:
+	* `between: DateFilter!`
+	** Defines the inclusive time window for which to return regional change records.
+	** `DateFilter` contains two fields: `fromDateTime` (ISO 8601 timestamp) and `toDateTime` (ISO 8601 timestamp).
+
+	* `regionCode: String = "EMEA"`
+	** Optional region code filter. Uses JSON data field `project_region` for filtering.
+	** Defaults to "EMEA" if not specified.
+
+	* `publishedInternal: Boolean = true`
+	** Filter by internal publication status from `project_base.published_int`.
+	** Defaults to `true` (only published internally).
+
+	* `publishedExternal: Boolean = true`
+	** Filter by external publication status from `project_base.published_ext`.
+	** Defaults to `true` (only externally published).
+
+	.Example:
+	[source,graphql]
+	----
+	query {
+		getRegionalDeltaChangesViaChangeLog(
+			between: {
+				fromDateTime: "2025-01-01T00:00:00",
+				toDateTime: "2025-01-01T23:59:59"
+			},
+			regionCode: "APAC",
+			publishedInternal: true,
+			publishedExternal: false,
+			pageNumber: 0,
+			pageSize: 50
+		) {
+			projectCode
+			projectPhase
+			projectRegion
+			effectiveDate
+		}
+	}
+	----
+	"""
+	getRegionalDeltaChangesViaChangeLog(
+		between: DateFilter
+		regionCode: String = "EMEA"
+		publishedInternal: Boolean = true
+		publishedExternal: Boolean = true
+		pageNumber: Int! = 0
+		pageSize: Int! = 10
+	): [RegionalDeltaChange]
+	# end::graphql_query_getRegionalDeltaChangesViaChangeLog[]
+
+	# tag::graphql_query_getRegionalDeltaChanges[]
+	"""
+	Fetch a paginated list of change records that occurred within the specified date window (`between`) Default to today..
+
+	add.version 25.2.4
+
+	- `between`: The time window to filter the results by. _Required_
+	- `criteria`: Criteria filter for project codes, phases, categories, regions, years, and modes. _Optional_
+	- `published`: Publication status filter for internal and external publication. _Optional_
+	- `pageNumber`: The page number to fetch, defaults to 0
+	- `pageSize`: The number of items per page, defaults to 100
+	- _RETURNS_: A list of RegionalDeltaChange objects matching the filter criteria
+
+	[NOTE]
+	====
+	The following is applied to this query:
+	- If `CriteriaFilter` is not provided, `projectRegion` defaults to `EMEA`.
+	- If `PublishedFilter` is not provided, both `publishedInternal` and `publishedExternal` default to `true`.
+	====
+
+
+	.Parameters:
+	* `between: DateFilter!`
+	** Defines the inclusive time window for which to return regional change records.
+
+	* `criteria: CriteriaFilter` (optional)
+	** Comprehensive criteria filter with the following fields:
+	*** `projectCode: String` - Filter by project codes
+	*** `projectPhase: String` - Filter by project phases
+	*** `projectCategory: String` - Filter by project categories
+	*** `projectRegion: String` - Filter by region codes
+	*** `projectYear: Int` - Filter by project years
+	*** `deliveryMode: String` - Filter by delivery modes
+
+	* `published: PublishedFilter` (optional)
+	** Publication status filter with the following fields:
+	*** `publishedInternal: Boolean = true` - Internal publication status
+	*** `publishedExternal: Boolean = true` - External publication status
+
+	.Example: With defaults applied.
+	[source,graphql]
+	----
+	query {
+	getRegionalDeltaChanges(
+			between: {
+				fromDateTime: "2025-01-01T00:00:00",
+				toDateTime: "2025-01-01T23:59:59"
+			},
+			criteria: {
+	      projectRegion: "EMEA"
+			},
+			published: {
+				publishedInternal: true,
+				publishedExternal: true
+			},
+			pageNumber: 0,
+			pageSize: 100
+		) {
+			projectCode
+			projectPhase
+			projectRegion
+			projectYear
+			effectiveDate
+		}
+	}
+	----
+	"""
+	getRegionalDeltaChanges(
+		between: DateFilter!
+		criteria: CriteriaFilterSingle
+		published: PublishedFilter
+		pageNumber: Int! = 0
+		pageSize: Int! = 10
+	): [RegionalDeltaChange]
+	# end::graphql_query_getRegionalDeltaChanges[]
+
+	# tag::graphql_query_filterProjectDeltaChangesViaChangeLog[]
+	"""
+	**INTERNAL**:
+
+	**PERMISSION**: ADMIN-ONLY
+
+	add.version 25.2.0
+
+	Advanced filtering of project delta changes using criteria and publication filters stored in JSON data fields.
+	This is the most flexible and powerful project delta query, providing the same filtering capabilities as the regional version
+	but returning detailed `ProjectDeltaChange` data structures with comprehensive old/new value tracking.
+
+	- `between`: The time window to filter the results by. _Required_
+	- `criteria`: Criteria filter for project codes, phases, categories, regions, years, and modes. _Optional_
+	- `published`: Publication status filter for internal and external publication. _Optional_
+	- `pageNumber`: The page number to fetch, defaults to 0
+	- `pageSize`: The number of items per page, defaults to 10
+	- _RETURNS_: A list of ProjectDeltaChange objects with detailed delta information
+
+	.Parameters:
+	* `between: DateFilter!`
+	** Defines the inclusive time window for which to return project change records.
+
+	* `criteria: CriteriaFilter` (optional)
+	** Comprehensive criteria filter with the following fields:
+	*** `projectCode: [String]` - Filter by project codes
+	*** `projectPhase: [String]` - Filter by project phases
+	*** `projectCategory: [String]` - Filter by project categories
+	*** `projectRegion: [String]` - Filter by region codes
+	*** `projectYear: [Int]` - Filter by project years
+	*** `deliveryMode: [String]` - Filter by delivery modes
+
+	* `published: PublishedFilter` (optional)
+	** Publication status filter with the following fields:
+	*** `publishedInternal: Boolean = true` - Internal publication status
+	*** `publishedExternal: Boolean = true` - External publication status
+
+	.Delta Information Available:
+	ProjectDeltaChange objects provide rich delta tracking including:
+	* `scheduledDates` - Changes to scheduled dates with detailed change lists
+	* `startTime` / `endTime` - Changes to project timing
+	* `dayOfWeek` - Changes to scheduled days
+	* `assignedResource` - Resource assignment changes with full details
+	* `assignedTeam` - Team assignment changes with full member details
+	* `recordStatus` - Project status changes (ACTIVE, CANCELLED, etc.)
+
+	.Example:
+	[source,graphql]
+	----
+	query {
+		filterProjectDeltaChangesViaChangeLog(
+			between: {
+				fromDateTime: "2025-01-01T00:00:00",
+				toDateTime: "2025-01-01T23:59:59"
+			},
+			criteria: {
+				projectCode: ["PRJ-101", "PRJ-202"],
+				projectPhase: ["ALPHA", "BETA"],
+				projectRegion: ["APAC"]
+			},
+			published: {
+				publishedInternal: true,
+				publishedExternal: false
+			},
+			pageNumber: 0,
+			pageSize: 100
+		) {
+			projectCode
+			projectPhase
+			projectRegion
+			effectiveDate
+			scheduledDates {
+				oldValue
+				newValue
+				hasChanged
+				changes
+			}
+			assignedResource {
+				oldValue { code name displayName }
+				newValue { code name displayName }
+				hasChanged
+			}
+			assignedTeam {
+				oldValue { code name displayName }
+				newValue { code name displayName }
+				hasChanged
+			}
+			recordStatus {
+				oldValue
+				newValue
+				hasChanged
+			}
+		}
+	}
+	----
+	"""
+	filterProjectDeltaChangesViaChangeLog(
+		between: DateFilter!
+		criteria: CriteriaFilter
+		published: PublishedFilter
+		pageNumber: Int! = 0
+		pageSize: Int! = 10
+	): [ProjectDeltaChange]
+	# end::graphql_query_filterProjectDeltaChangesViaChangeLog[]
+
+	# tag::graphql_query_getIntegrationStatus[]
+	"""
+	**INTERNAL**:
+
+	**PERMISSION**: ADMIN-ONLY
+
+	Retrieves integration status for the specified external reference IDs and marks pending messages as processed.
+	This query provides status information for integration processes and automatically dequeues any pending messages.
+
+	add.version: 25.2.4.1
+
+	- `extRefIds`: List of external reference IDs to query status for. _Required_
+	- _RETURNS_: A list of IntegrationOutcome objects representing the status of each integration
+
+	.Parameters:
+	* `extRefIds: [String!]!`
+	** List of external reference identifiers to retrieve status for.
+	** These correspond to the extRefId values used when creating integration messages.
+	** Must not be null or empty.
+
+	.Returns:
+	* `[IntegrationOutcome]`
+	** A list of integration outcomes with the following information:
+	*** `extRefId` - External reference identifier
+	*** `integrationProcessId` - Unique process identifier
+	*** `status` - Current status (PENDING, PROCESSING, COMPLETED, FAILED)
+	*** `info` - Count of informational messages
+	*** `warnings` - Count of warning messages
+	*** `errors` - Count of error messages
+	*** `startTime` - When the integration process started
+	*** `endTime` - When the integration process completed
+
+	.Side Effects:
+	This query automatically marks any pending integration messages as processed by:
+	* Setting `processedAt` to the current timestamp
+	* Setting `processedStatus` to '0' (processed)
+
+	.Example:
+	[source,graphql]
+	----
+	query {
+		getIntegrationStatus(extRefIds: ["batch-123", "batch-456"]) {
+			extRefId
+			integrationProcessId
+			status
+			info
+			warnings
+			errors
+			startTime
+			endTime
+		}
+	}
+	----
+	"""
+	getIntegrationStatus(extRefIds: [String!]!): [IntegrationOutcome]
+	# end::graphql_query_getIntegrationStatus[]
+
+	# tag::graphql_query_getDeltaChanges[]
+	"""
+	**INTERNAL**:
+
+	**PERMISSION**: ADMIN-ONLY
+
+	add.version 25.2.0
+
+	Fetch a paginated list of change records for a particular entity category (`ChangeType`) that occurred within the specified date window (`between`).
+	Optionally filter those records by the type of operation (`ChangeOperation`: `ADD`, `UPDATE`, or `DELETE`).
+
+	- `between` : the list of full project codes to fetch. _Required_
+	- `changeType` : change type. _Required_
+	- `operation` : the operation type. _Optional_
+	- `pageNumber` :  the page number to fetch, defaults to zero
+	- `pageSize` :  the number of items per page, defaults to 10
+	- _RETURNS_ :  a list of DeltaChange objects corresponding to the provided filters
+
+	.Use cases:
+	* **Incremental synchronisation:** clients can pull only the changes for a given entity type since their last checkpoint.
+	* **Selective replays**: if a client only cares about deletions or updates for a specific entity, then pass the `operation` filter.
+
+	.Parameters:
+	* `between: DateFilter!`
+	** Defines the inclusive time window for which to return change records.
+	** `DateFilter` contains two fields: `startDateTime` (ISO 8601 timestamp) and `endDateTime` (ISO 8601 timestamp). +
+	+
+	.Example:
+	[source,kotlin]
+	----
+	input DateFilter {
+	 startDateTime: LocalDateTime!    // e.g. "2025-05-01T00:00:00"
+	 endDateTime:   LocalDateTime!    // e.g. "2025-06-01T23:59:59"
+	}
+	----
+	+
+	* `changeType: ChangeType!`
+	**  Specifies the logical category of entity whose changes you want to retrieve (e.g. `DEPARTMENT`, `PROJECT`, `TASK_GROUP`, `TASK`).
+	** This ensures the server only returns change events for that particular object group.
+
+	* `operation: ChangeOperation` (optional)
+	** When provided, further restricts the result set to changes of that kind:
+	*** `ADD`   → Newly created entities
+	*** `UPDATE` → Existing entities that were modified
+	*** `DELETE` → Entities that were removed
+	** If omitted, returns all operations (ADD, UPDATE, DELETE) for the specified `changeType`.
+
+	* `pageNumber: Int! = 0`
+	** Zero-based index of the page to fetch. Default is `0` (first page).
+	** Used in combination with `pageSize` to paginate large result sets.
+
+	* `pageSize: Int! = 10`
+	** Maximum number of `DeltaChange` records to return per page. Default is `10`.
+	** Adjust this upward if clients need to pull more records in a single call; keep it modest to avoid large payloads.
+
+	.Returns:
+	* `[DeltaChange]`
+	** A list of change records matching the filters. Each `DeltaChange` typically contains:
+	** TODO add the return fields.
+
+	.Example Queries:
+	1. Fetch all DEPARTMENT changes (any operation) between May 1 and May 31, 2025, first page of 20 items: +
+	[source,kotlin]
+	----
+	query {
+	 getDeltaChanges(
+	  between: {
+	   fromDateTime: "2025-05-01T00:00:00Z",
+	   toDateTime:   "2025-05-31T23:59:59Z"
+	  },
+	  changeType: DEPARTMENT,
+	  pageNumber: 0,
+	  pageSize: 20
+	  ) {
+	   oldValue
+	   newValue
+	  }
+	}
+	----
+	"""
+	getDeltaChanges(
+		between: DateFilter!
+		changeType: ChangeType!
+		operation: ChangeOperation
+		pageNumber: Int! = 0
+		pageSize: Int! = 10
+	): [DeltaChange]
+	# end::graphql_query_getDeltaChanges[]
+
+}
