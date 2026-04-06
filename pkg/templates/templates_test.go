@@ -10,7 +10,7 @@ import (
 func TestTemplatesSyntax(t *testing.T) {
 	// Create a common function map with all needed functions
 	funcMap := template.FuncMap{
-		"processDescription":              func(s string) string { return s },
+		"processDescription":             func(s string) string { return s },
 		"printAsciiDocTagsTmpl":          func(s string) string { return s },
 		"convertDescriptionToRefNumbers": func(s string, b bool) string { return s },
 	}
@@ -346,14 +346,14 @@ func TestTemplateFunctionRequirements(t *testing.T) {
 // TestTemplateConstants tests that all template constants are non-empty and properly formatted
 func TestTemplateConstants(t *testing.T) {
 	templates := map[string]string{
-		"FieldTemplate":           FieldTemplate,
-		"ScalarTemplate":          ScalarTemplate,
-		"SubscriptionTemplate":    SubscriptionTemplate,
-		"MutationTemplate":        MutationTemplate,
-		"TypeSectionTemplate":     TypeSectionTemplate,
-		"EnumSectionTemplate":     EnumSectionTemplate,
+		"FieldTemplate":            FieldTemplate,
+		"ScalarTemplate":           ScalarTemplate,
+		"SubscriptionTemplate":     SubscriptionTemplate,
+		"MutationTemplate":         MutationTemplate,
+		"TypeSectionTemplate":      TypeSectionTemplate,
+		"EnumSectionTemplate":      EnumSectionTemplate,
 		"DirectiveSectionTemplate": DirectiveSectionTemplate,
-		"InputSectionTemplate":    InputSectionTemplate,
+		"InputSectionTemplate":     InputSectionTemplate,
 	}
 
 	for name, tmpl := range templates {

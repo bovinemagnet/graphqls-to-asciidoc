@@ -10,14 +10,19 @@ import (
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/templates"
 )
 
+const (
+	testVersion   = "test-version"
+	testBuildTime = "2025-01-01_12:00:00"
+)
+
 func TestVersionOutput(t *testing.T) {
 	// Save original values
 	originalVersion := Version
 	originalBuildTime := BuildTime
 
 	// Set test values
-	Version = "test-version"
-	BuildTime = "2025-01-01_12:00:00"
+	Version = testVersion
+	BuildTime = testBuildTime
 
 	// Restore original values after test
 	defer func() {
@@ -35,10 +40,10 @@ func TestVersionOutput(t *testing.T) {
 
 	// Note: We can't easily test the actual -version flag without refactoring main(),
 	// but we can verify the variables are accessible
-	if Version != "test-version" {
+	if Version != testVersion {
 		t.Errorf("Version variable not set correctly, got %q", Version)
 	}
-	if BuildTime != "2025-01-01_12:00:00" {
+	if BuildTime != testBuildTime {
 		t.Errorf("BuildTime variable not set correctly, got %q", BuildTime)
 	}
 

@@ -6,6 +6,15 @@ import (
 	"strings"
 )
 
+const (
+	sectionOverview   = "overview"
+	sectionReturn     = "return"
+	sectionReturns    = "returns"
+	langGraphQL       = "graphql"
+	complexitySimple  = "simple"
+	metadataValueTrue = "true"
+)
+
 // DescriptionParser handles parsing of structured and unstructured descriptions
 type DescriptionParser struct {
 	enableStructured bool
@@ -118,9 +127,9 @@ func (dp *DescriptionParser) parseSections(description string, structure *Descri
 			if currentSection != "" {
 				sectionContent := strings.TrimSpace(strings.Join(currentContent, "\n"))
 				switch strings.ToLower(currentSection) {
-				case "overview":
+				case sectionOverview:
 					structure.Overview = sectionContent
-				case "returns", "return":
+				case sectionReturns, sectionReturn:
 					structure.Returns = sectionContent
 				default:
 					// Store all sections including Parameters, Errors, Examples etc
@@ -153,9 +162,9 @@ func (dp *DescriptionParser) parseSections(description string, structure *Descri
 			// Save the last section
 			sectionContent := strings.TrimSpace(strings.Join(currentContent, "\n"))
 			switch strings.ToLower(currentSection) {
-			case "overview":
+			case sectionOverview:
 				structure.Overview = sectionContent
-			case "returns", "return":
+			case sectionReturns, sectionReturn:
 				structure.Returns = sectionContent
 			default:
 				structure.Sections[currentSection] = sectionContent
@@ -313,21 +322,23 @@ func (dp *DescriptionParser) parseExamples(description string, structure *Descri
 	matches := codeBlockPattern.FindAllStringSubmatch(description, -1)
 
 	for _, match := range matches {
-		if len(match) >= 4 {
-			example := Example{
-				Title:    strings.TrimSpace(match[1]),
-				Language: match[2],
-				Code:     match[3],
-			}
-			if example.Language == "" {
-				example.Language = "graphql"
-			}
-			// Clean up title - remove leading ###
-			example.Title = strings.TrimPrefix(example.Title, "###")
-			example.Title = strings.TrimPrefix(example.Title, "##")
-			example.Title = strings.TrimSpace(example.Title)
-			structure.Examples = append(structure.Examples, example)
+		if len(match) < 4 {
+			continue
 		}
+
+		example := Example{
+			Title:    strings.TrimSpace(match[1]),
+			Language: match[2],
+			Code:     match[3],
+		}
+		if example.Language == "" {
+			example.Language = langGraphQL
+		}
+		// Clean up title - remove leading ###
+		example.Title = strings.TrimPrefix(example.Title, "###")
+		example.Title = strings.TrimPrefix(example.Title, "##")
+		example.Title = strings.TrimSpace(example.Title)
+		structure.Examples = append(structure.Examples, example)
 	}
 
 	// Also try to match code blocks without Example in title but in Examples section
@@ -350,7 +361,7 @@ func (dp *DescriptionParser) parseExamples(description string, structure *Descri
 				if !alreadyAdded {
 					lang := match[1]
 					if lang == "" {
-						lang = "graphql"
+						lang = langGraphQL
 					}
 					structure.Examples = append(structure.Examples, Example{
 						Title:    fmt.Sprintf("Example %d", i+1),
@@ -371,7 +382,7 @@ func (dp *DescriptionParser) parseExamples(description string, structure *Descri
 			structure.Examples = append(structure.Examples, Example{
 				Title:    "Example",
 				Code:     strings.TrimSpace(match[1]),
-				Language: "graphql",
+				Language: langGraphQL,
 			})
 		}
 	}
@@ -391,17 +402,17 @@ func (dp *DescriptionParser) parseMetadata(description string, structure *Descri
 
 	// Parse @beta
 	if regexp.MustCompile(`@beta\b`).MatchString(description) {
-		structure.Metadata["beta"] = "true"
+		structure.Metadata["beta"] = metadataValueTrue
 	}
 
 	// Parse @experimental
 	if regexp.MustCompile(`@experimental\b`).MatchString(description) {
-		structure.Metadata["experimental"] = "true"
+		structure.Metadata["experimental"] = metadataValueTrue
 	}
 
 	// Parse @internal
 	if regexp.MustCompile(`@internal\b`).MatchString(description) {
-		structure.Metadata["internal"] = "true"
+		structure.Metadata["internal"] = metadataValueTrue
 	}
 }
 
@@ -475,7 +486,7 @@ func (dp *DescriptionParser) calculateMetrics(structure *DescriptionStructure, r
 
 	// Determine complexity
 	if metrics.WordCount < 50 {
-		metrics.Complexity = "simple"
+		metrics.Complexity = complexitySimple
 	} else if metrics.WordCount < 200 {
 		metrics.Complexity = "moderate"
 	} else {

@@ -107,8 +107,8 @@ func ConvertMarkdownCodeBlocks(description string) string {
 			language = "text"
 		}
 
-		// Use kotlin syntax highlighting for GraphQL as it provides better colors in AsciiDoc
-		if language == "graphql" || language == "gql" {
+		// Use kotlin syntax highlighting for GraphQL as it provides better colours in AsciiDoc
+		if language == langGraphQL || language == "gql" {
 			language = "kotlin"
 		}
 

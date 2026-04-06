@@ -14,6 +14,8 @@ import (
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/templates"
 )
 
+const errFieldsTable = "[ERROR generating fields table]"
+
 func (g *Generator) generateTypes(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) int {
 	g.metrics.LogProgress("Types", "Starting types generation")
 
@@ -29,7 +31,7 @@ func (g *Generator) generateTypes(sortedDefs []*ast.Definition, definitionsMap m
 		fieldsTableString, err := g.getTypeFieldsTableString(t, definitionsMap)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error generating fields table for type %s: %v\n", t.Name, err)
-			fieldsTableString = "[ERROR generating fields table]"
+			fieldsTableString = errFieldsTable
 		}
 
 		// Process type description and extract changelog
@@ -67,7 +69,7 @@ func (g *Generator) generateTypes(sortedDefs []*ast.Definition, definitionsMap m
 	return count
 }
 
-func (g *Generator) generateEnums(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) int {
+func (g *Generator) generateEnums(sortedDefs []*ast.Definition) int {
 	g.metrics.LogProgress("Enums", "Starting enums generation")
 
 	var enumInfos []EnumInfo
@@ -80,11 +82,7 @@ func (g *Generator) generateEnums(sortedDefs []*ast.Definition, definitionsMap m
 		}
 
 		// Generate values table
-		valuesTableString, err := g.getEnumValuesTableString(def)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error generating values table for enum %s: %v\n", def.Name, err)
-			valuesTableString = "[ERROR generating values table]"
-		}
+		valuesTableString := g.getEnumValuesTableString(def)
 
 		// Process enum description and extract changelog
 		processedDesc, _ := changelog.ProcessWithChangelog(def.Description, parser.ProcessDescription)
@@ -142,7 +140,7 @@ func (g *Generator) generateInputs(sortedDefs []*ast.Definition, definitionsMap 
 		fieldsTableString, err := g.getInputFieldsTableString(def, definitionsMap)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error generating fields table for input %s: %v\n", def.Name, err)
-			fieldsTableString = "[ERROR generating fields table]"
+			fieldsTableString = errFieldsTable
 		}
 
 		processedDesc, changelogText := changelog.ProcessWithChangelog(def.Description, parser.ProcessDescription)
@@ -211,7 +209,7 @@ func (g *Generator) getInputFieldsTableString(def *ast.Definition, definitionsMa
 	return builder.String(), nil
 }
 
-func (g *Generator) generateDirectives(sortedDefs []*ast.Definition) int {
+func (g *Generator) generateDirectives() int {
 	g.metrics.LogProgress("Directives", "Starting directives generation")
 
 	if len(g.schema.Directives) == 0 {
@@ -428,7 +426,7 @@ func (g *Generator) getTypeFieldsTableString(t *ast.Definition, definitionsMap m
 	return builder.String(), nil
 }
 
-func (g *Generator) getEnumValuesTableString(e *ast.Definition) (string, error) {
+func (g *Generator) getEnumValuesTableString(e *ast.Definition) string {
 	var builder strings.Builder
 
 	builder.WriteString(".enum: " + e.Name + "\n")
@@ -442,5 +440,5 @@ func (g *Generator) getEnumValuesTableString(e *ast.Definition) (string, error) 
 	}
 
 	builder.WriteString("|===\n")
-	return builder.String(), nil
+	return builder.String()
 }

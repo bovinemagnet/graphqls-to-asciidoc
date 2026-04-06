@@ -184,7 +184,7 @@ func (m *Metrics) LogMetricsTable() {
 	fmt.Fprintf(os.Stderr, "\n")
 }
 
-// formatEnabled returns a colored status string
+// formatEnabled returns a coloured status string
 func formatEnabled(enabled bool) string {
 	if enabled {
 		return "✓ enabled"

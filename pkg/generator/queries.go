@@ -82,10 +82,7 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 	// Generate arguments
 	for i, arg := range field.Arguments {
 		argType := parser.ProcessTypeNameForSignature(arg.Type.String(), definitionsMap)
-		fmt.Fprintf(g.writer, "  %s: %s", arg.Name, argType)
-		if arg.DefaultValue != nil {
-			fmt.Fprintf(g.writer, " = %s", arg.DefaultValue.String())
-		}
+		fmt.Fprintf(g.writer, "  %s: %s%s", arg.Name, argType, formatDefaultValue(arg.DefaultValue))
 		if i < len(field.Arguments)-1 {
 			fmt.Fprint(g.writer, " ,")
 		}
@@ -129,11 +126,7 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 		fmt.Fprintf(g.writer, "// tag::arguments-%s[]\n", field.Name)
 		fmt.Fprintln(g.writer, ".Arguments")
 		for _, arg := range field.Arguments {
-			if arg.DefaultValue != nil {
-				fmt.Fprintf(g.writer, "* `%s : %s = %s`\n", arg.Name, arg.Type.String(), arg.DefaultValue.String())
-			} else {
-				fmt.Fprintf(g.writer, "* `%s : %s`\n", arg.Name, arg.Type.String())
-			}
+			fmt.Fprint(g.writer, formatArgumentListItem(arg.Name, arg.Type.String(), arg.DefaultValue))
 		}
 		fmt.Fprintf(g.writer, "// end::arguments-%s[]\n", field.Name)
 		fmt.Fprintln(g.writer)

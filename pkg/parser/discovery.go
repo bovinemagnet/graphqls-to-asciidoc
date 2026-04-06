@@ -11,7 +11,7 @@ import (
 // FindSchemaFiles finds all GraphQL schema files matching the given pattern
 func FindSchemaFiles(pattern string) ([]string, error) {
 	var files []string
-	
+
 	// Handle different patterns
 	if strings.Contains(pattern, "**") {
 		// Use filepath.WalkDir for recursive patterns
@@ -21,24 +21,24 @@ func FindSchemaFiles(pattern string) ([]string, error) {
 			if err != nil {
 				return err
 			}
-			
+
 			if d.IsDir() {
 				return nil
 			}
-			
+
 			// Check if file matches the pattern
 			matched, err := matchesPattern(path, pattern)
 			if err != nil {
 				return err
 			}
-			
+
 			if matched {
 				files = append(files, path)
 			}
-			
+
 			return nil
 		})
-		
+
 		if err != nil {
 			return nil, fmt.Errorf("error walking directory tree: %v", err)
 		}
@@ -51,7 +51,7 @@ func FindSchemaFiles(pattern string) ([]string, error) {
 				if err != nil {
 					continue // Skip invalid patterns
 				}
-				
+
 				files = append(files, filterFiles(matches)...)
 			}
 		} else {
@@ -60,19 +60,19 @@ func FindSchemaFiles(pattern string) ([]string, error) {
 			if err != nil {
 				return nil, fmt.Errorf("invalid pattern '%s': %v", pattern, err)
 			}
-			
+
 			files = append(files, filterFiles(matches)...)
 		}
 	}
-	
+
 	// Validate that we found at least one file
 	if len(files) == 0 {
 		return nil, fmt.Errorf("no GraphQL schema files found matching pattern '%s'", pattern)
 	}
-	
+
 	// Sort files for deterministic processing order
 	sort.Strings(files)
-	
+
 	return files, nil
 }
 
@@ -83,21 +83,21 @@ func matchesPattern(path, pattern string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	
+
 	// If pattern doesn't contain **, treat it as a simple glob
 	if !strings.Contains(pattern, "**") {
 		return filepath.Match(pattern, absPath)
 	}
-	
+
 	// Handle ** patterns
 	// Extract the filename pattern (part after the last /)
 	patternParts := strings.Split(pattern, "/")
 	if len(patternParts) == 0 {
 		return false, nil
 	}
-	
+
 	filenamePattern := patternParts[len(patternParts)-1]
-	
+
 	// Check if filename matches the pattern
 	var filenameMatched bool
 	if strings.Contains(filenamePattern, "{") && strings.Contains(filenamePattern, "}") {
@@ -119,27 +119,27 @@ func matchesPattern(path, pattern string) (bool, error) {
 			return false, err
 		}
 	}
-	
+
 	if !filenameMatched {
 		return false, nil
 	}
-	
+
 	// Check directory structure
 	doubleStar := strings.Index(pattern, "**")
 	if doubleStar == -1 {
 		return filenameMatched, nil
 	}
-	
+
 	// Get the prefix before **
 	prefix := pattern[:doubleStar]
 	prefix = strings.TrimSuffix(prefix, "/")
 	prefix = strings.TrimSuffix(prefix, "\\")
-	
+
 	// If there's no prefix, any path matches
 	if prefix == "" {
 		return filenameMatched, nil
 	}
-	
+
 	// Convert prefix to absolute path for comparison
 	var absPrefix string
 	if filepath.IsAbs(prefix) {
@@ -150,7 +150,7 @@ func matchesPattern(path, pattern string) (bool, error) {
 			return false, err
 		}
 	}
-	
+
 	// Check if the path is under the prefix directory
 	pathDir := filepath.Dir(absPath)
 	return strings.HasPrefix(pathDir, absPrefix), nil
@@ -163,20 +163,20 @@ func ValidateSchemaFiles(files []string) error {
 		".graphqls": true,
 		".gql":      true,
 	}
-	
+
 	for _, file := range files {
 		// Check if file is readable
 		if _, err := os.Stat(file); os.IsNotExist(err) {
 			return fmt.Errorf("schema file '%s' does not exist", file)
 		}
-		
+
 		// Check file extension
 		ext := strings.ToLower(filepath.Ext(file))
 		if !validExtensions[ext] {
 			return fmt.Errorf("file '%s' does not have a valid GraphQL extension (.graphql, .graphqls, .gql)", file)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -184,20 +184,20 @@ func ValidateSchemaFiles(files []string) error {
 func expandBraces(pattern string) []string {
 	start := strings.Index(pattern, "{")
 	end := strings.Index(pattern, "}")
-	
+
 	if start == -1 || end == -1 || start >= end {
 		return []string{pattern}
 	}
-	
+
 	prefix := pattern[:start]
 	suffix := pattern[end+1:]
 	options := strings.Split(pattern[start+1:end], ",")
-	
+
 	var expanded []string
 	for _, option := range options {
 		expanded = append(expanded, prefix+strings.TrimSpace(option)+suffix)
 	}
-	
+
 	return expanded
 }
 
@@ -209,19 +209,19 @@ func extractRootDir(pattern string) string {
 		// No **, use the directory part of the pattern
 		return filepath.Dir(pattern)
 	}
-	
+
 	// Get everything before **
 	beforeDoubleStar := pattern[:doubleStar]
-	
+
 	// Remove trailing slash if present
 	beforeDoubleStar = strings.TrimSuffix(beforeDoubleStar, "/")
 	beforeDoubleStar = strings.TrimSuffix(beforeDoubleStar, "\\")
-	
+
 	// If empty or just a slash, use current directory
 	if beforeDoubleStar == "" || beforeDoubleStar == "/" {
 		return "."
 	}
-	
+
 	return beforeDoubleStar
 }
 
@@ -233,7 +233,7 @@ func filterFiles(matches []string) []string {
 		if err != nil {
 			continue // Skip files that can't be accessed
 		}
-		
+
 		if !info.IsDir() {
 			files = append(files, match)
 		}

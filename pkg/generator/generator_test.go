@@ -12,6 +12,8 @@ import (
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/parser"
 )
 
+const testSchemaFile = "test.graphql"
+
 func TestNew(t *testing.T) {
 	cfg := &config.Config{SchemaFile: "test.graphql"}
 	schema := &ast.Schema{Types: make(map[string]*ast.Definition)}
@@ -278,13 +280,13 @@ func TestGenerateConfigFlags(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := config.NewConfig()
-			cfg.SchemaFile = "test.graphql"
+			cfg.SchemaFile = testSchemaFile
 			tc.configModifier(cfg)
 
 			var buf bytes.Buffer
 			gen := New(cfg, schema, &buf)
 
-			gen.Generate()
+			_ = gen.Generate()
 			output := buf.String()
 
 			for _, expected := range tc.shouldContain {
@@ -304,7 +306,7 @@ func TestGenerateConfigFlags(t *testing.T) {
 
 func TestGenerateQueryFieldWithArguments(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.SchemaFile = "test.graphql"
+	cfg.SchemaFile = testSchemaFile
 
 	// Create query with arguments
 	queryDef := &ast.Definition{
@@ -353,7 +355,7 @@ func TestGenerateQueryFieldWithArguments(t *testing.T) {
 	var buf bytes.Buffer
 	gen := New(cfg, schema, &buf)
 
-	gen.Generate()
+	_ = gen.Generate()
 	output := buf.String()
 
 	expectedContent := []string{
@@ -376,7 +378,7 @@ func TestGenerateQueryFieldWithArguments(t *testing.T) {
 
 func TestGenerateTypes(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.SchemaFile = "test.graphql"
+	cfg.SchemaFile = testSchemaFile
 
 	// Create schema with custom types
 	userDef := &ast.Definition{
@@ -406,7 +408,7 @@ func TestGenerateTypes(t *testing.T) {
 	var buf bytes.Buffer
 	gen := New(cfg, schema, &buf)
 
-	gen.Generate()
+	_ = gen.Generate()
 	output := buf.String()
 
 	expectedContent := []string{
@@ -513,7 +515,7 @@ func TestGetTypeFieldsTableString(t *testing.T) {
 
 func TestExcludeInternal(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.SchemaFile = "test.graphql"
+	cfg.SchemaFile = testSchemaFile
 	cfg.ExcludeInternal = true
 
 	queryDef := &ast.Definition{
@@ -543,7 +545,7 @@ func TestExcludeInternal(t *testing.T) {
 	var buf bytes.Buffer
 	gen := New(cfg, schema, &buf)
 
-	gen.Generate()
+	_ = gen.Generate()
 	output := buf.String()
 
 	// Should contain public query
@@ -612,7 +614,7 @@ func createTestSchema() *ast.Schema {
 
 func TestGenerateDirectives(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.SchemaFile = "test.graphql"
+	cfg.SchemaFile = testSchemaFile
 
 	// Create a directive definition for testing
 	sizeDirective := &ast.DirectiveDefinition{
@@ -719,7 +721,7 @@ func TestIsBuiltInScalar(t *testing.T) {
 
 func TestGenerateSubscriptions(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.SchemaFile = "test.graphql"
+	cfg.SchemaFile = testSchemaFile
 
 	// Create a schema with subscriptions
 	subscriptionDef := &ast.Definition{
@@ -867,7 +869,7 @@ func TestGetSubscriptionDetails(t *testing.T) {
 
 func TestGenerateMutations(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.SchemaFile = "test.graphql"
+	cfg.SchemaFile = testSchemaFile
 
 	// Create a schema with mutations
 	mutationDef := &ast.Definition{
@@ -1201,10 +1203,7 @@ func TestGetEnumValuesTableString(t *testing.T) {
 		},
 	}
 
-	result, err := gen.getEnumValuesTableString(enumDef)
-	if err != nil {
-		t.Fatalf("getEnumValuesTableString() returned error: %v", err)
-	}
+	result := gen.getEnumValuesTableString(enumDef)
 
 	// Debug: print actual result
 	fmt.Printf("ACTUAL ENUM VALUES TABLE:\n%s\n", result)
@@ -1256,7 +1255,7 @@ func TestGenerateEnums(t *testing.T) {
 		sortedDefs = append(sortedDefs, def)
 	}
 
-	count := gen.generateEnums(sortedDefs, gen.schema.Types)
+	count := gen.generateEnums(sortedDefs)
 	if count != 1 {
 		t.Errorf("Expected 1 enum, got %d", count)
 	}
@@ -1482,7 +1481,7 @@ func TestGenerateEnumsWithNoValues(t *testing.T) {
 	for _, def := range gen.schema.Types {
 		sortedDefs = append(sortedDefs, def)
 	}
-	count := gen.generateEnums(sortedDefs, gen.schema.Types)
+	count := gen.generateEnums(sortedDefs)
 	if count != 1 {
 		t.Errorf("Expected 1 enum, got %d", count)
 	}
@@ -1582,7 +1581,7 @@ func TestFieldWithOnlyChangelog(t *testing.T) {
 
 func TestQueryFieldWithDefaultValues(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.SchemaFile = "test.graphql"
+	cfg.SchemaFile = testSchemaFile
 
 	queryDef := &ast.Definition{
 		Kind: ast.Object,
@@ -1625,7 +1624,7 @@ func TestQueryFieldWithDefaultValues(t *testing.T) {
 
 	var buf bytes.Buffer
 	gen := New(cfg, schema, &buf)
-	gen.Generate()
+	_ = gen.Generate()
 	output := buf.String()
 
 	// Default values should appear in the method signature
@@ -1651,7 +1650,7 @@ func TestQueryFieldWithDefaultValues(t *testing.T) {
 
 func TestMutationWithDefaultValues(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.SchemaFile = "test.graphql"
+	cfg.SchemaFile = testSchemaFile
 
 	mutationDef := &ast.Definition{
 		Kind: ast.Object,
@@ -1804,4 +1803,3 @@ func TestInputFieldsTableWithDefaultValues(t *testing.T) {
 		t.Errorf("Table should show _none_ for name without default. Output:\n%s", table)
 	}
 }
-

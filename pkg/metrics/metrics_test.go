@@ -9,6 +9,11 @@ import (
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/config"
 )
 
+const (
+	expectedEnabled  = "✓ enabled"
+	expectedDisabled = "✗ disabled"
+)
+
 func TestNew(t *testing.T) {
 	cfg := &config.Config{Verbose: true}
 	m := New(cfg)
@@ -108,10 +113,10 @@ func TestFormatDuration(t *testing.T) {
 }
 
 func TestFormatEnabled(t *testing.T) {
-	if formatEnabled(true) != "✓ enabled" {
+	if formatEnabled(true) != expectedEnabled {
 		t.Error("formatEnabled(true) should return '✓ enabled'")
 	}
-	if formatEnabled(false) != "✗ disabled" {
+	if formatEnabled(false) != expectedDisabled {
 		t.Error("formatEnabled(false) should return '✗ disabled'")
 	}
 }

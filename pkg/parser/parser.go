@@ -15,7 +15,7 @@ var (
 // ProcessDescription processes GraphQL description text for AsciiDoc output
 // This is the main entry point that supports both structured and unstructured descriptions
 func ProcessDescription(description string) string {
-	// First normalize indentation - GraphQL descriptions often have leading whitespace
+	// First normalise indentation - GraphQL descriptions often have leading whitespace
 	description = NormalizeIndentation(description)
 
 	// Try to parse as structured description first
@@ -103,8 +103,7 @@ func processStructuredDescription(structured *DescriptionStructure) string {
 			continue
 		}
 		// Use === for subsection headings in AsciiDoc
-		parts = append(parts, fmt.Sprintf("=== %s", sectionName))
-		parts = append(parts, processUnstructuredDescription(sectionContent))
+		parts = append(parts, fmt.Sprintf("=== %s", sectionName), processUnstructuredDescription(sectionContent))
 	}
 
 	// Add changelog if present
@@ -203,7 +202,7 @@ func formatExamplesSection(examples []Example) string {
 		// Format code block
 		lang := example.Language
 		if lang == "" {
-			lang = "graphql"
+			lang = langGraphQL
 		}
 		lines = append(lines, fmt.Sprintf("[source,%s]", lang), "----", ProcessCallouts(example.Code), "----")
 	}

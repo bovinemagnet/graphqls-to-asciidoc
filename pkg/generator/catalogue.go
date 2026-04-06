@@ -47,13 +47,9 @@ func (g *Generator) collectCatalogueEntries(def *ast.Definition) []CatalogueEntr
 
 // collectCatalogueData collects and organises catalogue data for queries, mutations, and subscriptions
 func (g *Generator) collectCatalogueData() CatalogueData {
-	var queries []CatalogueEntry
-	var mutations []CatalogueEntry
-	var subscriptions []CatalogueEntry
-
-	queries = g.collectCatalogueEntries(g.schema.Query)
-	mutations = g.collectCatalogueEntries(g.schema.Mutation)
-	subscriptions = g.collectCatalogueEntries(g.schema.Subscription)
+	queries := g.collectCatalogueEntries(g.schema.Query)
+	mutations := g.collectCatalogueEntries(g.schema.Mutation)
+	subscriptions := g.collectCatalogueEntries(g.schema.Subscription)
 
 	// Sort queries alphabetically by name
 	sort.Slice(queries, func(i, j int) bool {
