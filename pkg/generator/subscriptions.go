@@ -111,6 +111,9 @@ func (g *Generator) getSubscriptionDetails(f *ast.FieldDefinition, definitionsMa
 	for i, arg := range f.Arguments {
 		argType := parser.ProcessTypeNameForSignature(arg.Type.String(), definitionsMap)
 		fmt.Fprintf(&b, "  %s: %s", arg.Name, argType)
+		if arg.DefaultValue != nil {
+			fmt.Fprintf(&b, " = %s", arg.DefaultValue.String())
+		}
 		if i < len(f.Arguments)-1 {
 			fmt.Fprint(&b, " ,")
 		}
@@ -139,7 +142,11 @@ func (g *Generator) getSubscriptionDetails(f *ast.FieldDefinition, definitionsMa
 		fmt.Fprintf(&b, "// tag::subscription-arguments-%s[]\n", f.Name)
 		fmt.Fprintln(&b, ".Arguments")
 		for _, arg := range f.Arguments {
-			fmt.Fprintf(&b, "* `%s : %s`\n", arg.Name, arg.Type.String())
+			if arg.DefaultValue != nil {
+				fmt.Fprintf(&b, "* `%s : %s = %s`\n", arg.Name, arg.Type.String(), arg.DefaultValue.String())
+			} else {
+				fmt.Fprintf(&b, "* `%s : %s`\n", arg.Name, arg.Type.String())
+			}
 		}
 		fmt.Fprintf(&b, "// end::subscription-arguments-%s[]\n", f.Name)
 		fmt.Fprintln(&b)

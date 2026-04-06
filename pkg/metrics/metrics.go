@@ -206,7 +206,7 @@ func formatDuration(d time.Duration) string {
 }
 
 // LogProgress logs processing progress for a section
-func (m *Metrics) LogProgress(section string, message string) {
+func (m *Metrics) LogProgress(section, message string) {
 	if !m.enabled {
 		return
 	}

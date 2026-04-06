@@ -133,6 +133,9 @@ func main() {
 	// Generate AsciiDoc documentation
 	gen := generator.New(cfg, schema, outputWriter)
 	if err := gen.Generate(); err != nil {
+		if shouldClose {
+			outputWriter.Close()
+		}
 		log.Fatalf("Failed to generate documentation: %v", err)
 	}
 }

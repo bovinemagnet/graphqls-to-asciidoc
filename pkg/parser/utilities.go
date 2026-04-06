@@ -30,7 +30,7 @@ func NormalizeIndentation(description string) string {
 	// Find the minimum indentation (excluding empty lines)
 	minIndent := -1
 	for _, line := range lines {
-		if len(strings.TrimSpace(line)) == 0 {
+		if strings.TrimSpace(line) == "" {
 			continue // Skip empty lines
 		}
 
@@ -57,7 +57,7 @@ func NormalizeIndentation(description string) string {
 	// Remove the common indentation from all lines
 	var result []string
 	for _, line := range lines {
-		if len(strings.TrimSpace(line)) == 0 {
+		if strings.TrimSpace(line) == "" {
 			result = append(result, "") // Preserve empty lines
 		} else if len(line) > minIndent {
 			result = append(result, line[minIndent:])
@@ -93,7 +93,7 @@ func CamelToSnake(s string) string {
 }
 
 // CleanDescription removes lines starting with skipCharacter, except for AsciiDoc code block delimiters
-func CleanDescription(text string, skipCharacter string) string {
+func CleanDescription(text, skipCharacter string) string {
 	lines := strings.Split(text, "\n")
 	var result []string
 

@@ -83,8 +83,7 @@ func processStructuredDescription(structured *DescriptionStructure) string {
 
 	// Add returns section if present
 	if structured.Returns != "" {
-		parts = append(parts, ".Returns")
-		parts = append(parts, processUnstructuredDescription(structured.Returns))
+		parts = append(parts, ".Returns", processUnstructuredDescription(structured.Returns))
 	}
 
 	// Add errors section if present
@@ -130,7 +129,8 @@ func formatParametersSection(params []ParameterDoc) string {
 	var lines []string
 	lines = append(lines, ".Parameters")
 
-	for i, param := range params {
+	for i := range params {
+		param := &params[i]
 		// Format main parameter
 		paramLine := fmt.Sprintf("<%d> `%s`", i+1, param.Name)
 		if param.Type != "" {
@@ -145,7 +145,8 @@ func formatParametersSection(params []ParameterDoc) string {
 		lines = append(lines, paramLine)
 
 		// Format sub-parameters if present
-		for _, subParam := range param.SubParams {
+		for j := range param.SubParams {
+			subParam := &param.SubParams[j]
 			subLine := fmt.Sprintf("  * `%s`", subParam.Name)
 			if subParam.Description != "" {
 				subLine += fmt.Sprintf(" - %s", subParam.Description)
@@ -204,10 +205,7 @@ func formatExamplesSection(examples []Example) string {
 		if lang == "" {
 			lang = "graphql"
 		}
-		lines = append(lines, fmt.Sprintf("[source,%s]", lang))
-		lines = append(lines, "----")
-		lines = append(lines, ProcessCallouts(example.Code))
-		lines = append(lines, "----")
+		lines = append(lines, fmt.Sprintf("[source,%s]", lang), "----", ProcessCallouts(example.Code), "----")
 	}
 
 	return strings.Join(lines, "\n\n")

@@ -21,29 +21,31 @@ func (g *Generator) generateTypes(sortedDefs []*ast.Definition, definitionsMap m
 	count := 0
 
 	for _, t := range sortedDefs {
-		if t.Kind == ast.Object && !parser.IsBuiltInGraphQLType(t.Name) {
-			// Generate fields table
-			fieldsTableString, err := g.getTypeFieldsTableString(t, definitionsMap)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error generating fields table for type %s: %v\n", t.Name, err)
-				fieldsTableString = "[ERROR generating fields table]"
-			}
-
-			// Process type description and extract changelog
-			processedDesc, changelog := changelog.ProcessWithChangelog(t.Description, parser.ProcessDescription)
-
-			typeInfo := TypeInfo{
-				Name:        t.Name,
-				Kind:        string(t.Kind),
-				AnchorName:  "type_" + parser.CamelToSnake(t.Name),
-				Description: processedDesc,
-				FieldsTable: fieldsTableString,
-				IsInterface: t.Kind == ast.Interface,
-				Changelog:   changelog,
-			}
-			typeInfos = append(typeInfos, typeInfo)
-			count++
+		if t.Kind != ast.Object || parser.IsBuiltInGraphQLType(t.Name) {
+			continue
 		}
+
+		// Generate fields table
+		fieldsTableString, err := g.getTypeFieldsTableString(t, definitionsMap)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error generating fields table for type %s: %v\n", t.Name, err)
+			fieldsTableString = "[ERROR generating fields table]"
+		}
+
+		// Process type description and extract changelog
+		processedDesc, changelogText := changelog.ProcessWithChangelog(t.Description, parser.ProcessDescription)
+
+		typeInfo := TypeInfo{
+			Name:        t.Name,
+			Kind:        string(t.Kind),
+			AnchorName:  "type_" + parser.CamelToSnake(t.Name),
+			Description: processedDesc,
+			FieldsTable: fieldsTableString,
+			IsInterface: t.Kind == ast.Interface,
+			Changelog:   changelogText,
+		}
+		typeInfos = append(typeInfos, typeInfo)
+		count++
 	}
 
 	if len(typeInfos) > 0 {
@@ -73,26 +75,28 @@ func (g *Generator) generateEnums(sortedDefs []*ast.Definition, definitionsMap m
 
 	// Filter for enum definitions
 	for _, def := range sortedDefs {
-		if def.Kind == ast.Enum {
-			// Generate values table
-			valuesTableString, err := g.getEnumValuesTableString(def)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error generating values table for enum %s: %v\n", def.Name, err)
-				valuesTableString = "[ERROR generating values table]"
-			}
-
-			// Process enum description and extract changelog
-			processedDesc, _ := changelog.ProcessWithChangelog(def.Description, parser.ProcessDescription)
-
-			enumInfo := EnumInfo{
-				Name:        def.Name,
-				AnchorName:  "enum_" + parser.CamelToSnake(def.Name),
-				Description: processedDesc,
-				ValuesTable: valuesTableString,
-			}
-			enumInfos = append(enumInfos, enumInfo)
-			count++
+		if def.Kind != ast.Enum {
+			continue
 		}
+
+		// Generate values table
+		valuesTableString, err := g.getEnumValuesTableString(def)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error generating values table for enum %s: %v\n", def.Name, err)
+			valuesTableString = "[ERROR generating values table]"
+		}
+
+		// Process enum description and extract changelog
+		processedDesc, _ := changelog.ProcessWithChangelog(def.Description, parser.ProcessDescription)
+
+		enumInfo := EnumInfo{
+			Name:        def.Name,
+			AnchorName:  "enum_" + parser.CamelToSnake(def.Name),
+			Description: processedDesc,
+			ValuesTable: valuesTableString,
+		}
+		enumInfos = append(enumInfos, enumInfo)
+		count++
 	}
 
 	if len(enumInfos) > 0 {
@@ -131,25 +135,27 @@ func (g *Generator) generateInputs(sortedDefs []*ast.Definition, definitionsMap 
 
 	// Filter for input object definitions
 	for _, def := range sortedDefs {
-		if def.Kind == ast.InputObject {
-			fieldsTableString, err := g.getInputFieldsTableString(def, definitionsMap)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error generating fields table for input %s: %v\n", def.Name, err)
-				fieldsTableString = "[ERROR generating fields table]"
-			}
-
-			processedDesc, changelog := changelog.ProcessWithChangelog(def.Description, parser.ProcessDescription)
-
-			inputInfo := InputInfo{
-				Name:        def.Name,
-				AnchorName:  "input_" + parser.CamelToSnake(def.Name),
-				Description: processedDesc,
-				FieldsTable: fieldsTableString,
-				Changelog:   changelog,
-			}
-			inputInfos = append(inputInfos, inputInfo)
-			count++
+		if def.Kind != ast.InputObject {
+			continue
 		}
+
+		fieldsTableString, err := g.getInputFieldsTableString(def, definitionsMap)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error generating fields table for input %s: %v\n", def.Name, err)
+			fieldsTableString = "[ERROR generating fields table]"
+		}
+
+		processedDesc, changelogText := changelog.ProcessWithChangelog(def.Description, parser.ProcessDescription)
+
+		inputInfo := InputInfo{
+			Name:        def.Name,
+			AnchorName:  "input_" + parser.CamelToSnake(def.Name),
+			Description: processedDesc,
+			FieldsTable: fieldsTableString,
+			Changelog:   changelogText,
+		}
+		inputInfos = append(inputInfos, inputInfo)
+		count++
 	}
 
 	if len(inputInfos) > 0 {
@@ -183,18 +189,22 @@ func (g *Generator) getInputFieldsTableString(def *ast.Definition, definitionsMa
 	var builder strings.Builder
 
 	builder.WriteString(".input: " + def.Name + "\n")
-	builder.WriteString("[options=\"header\",cols=\"2a,2m,5a\"]\n")
+	builder.WriteString("[options=\"header\",cols=\"2a,2m,2m,5a\"]\n")
 	builder.WriteString("|===\n")
-	builder.WriteString("| Field | Type | Description \n")
+	builder.WriteString("| Field | Type | Default | Description \n")
 
 	for _, field := range def.Fields {
 		typeName := parser.ProcessTypeName(field.Type.String(), definitionsMap)
-		processedDesc, changelog := changelog.ProcessWithChangelog(field.Description, parser.ProcessDescription)
+		processedDesc, changelogText := changelog.ProcessWithChangelog(field.Description, parser.ProcessDescription)
 		desc := processedDesc
-		if changelog != "" {
-			desc += "\n" + changelog
+		if changelogText != "" {
+			desc += "\n" + changelogText
 		}
-		fmt.Fprintf(&builder, "| `%s` | %s | %s\n", field.Name, typeName, desc)
+		if field.DefaultValue != nil {
+			fmt.Fprintf(&builder, "| `%s` | %s | `%s` | %s\n", field.Name, typeName, field.DefaultValue.String(), desc)
+		} else {
+			fmt.Fprintf(&builder, "| `%s` | %s | _none_ | %s\n", field.Name, typeName, desc)
+		}
 	}
 
 	builder.WriteString("|===\n")
@@ -391,14 +401,14 @@ func (g *Generator) getTypeFieldsTableString(t *ast.Definition, definitionsMap m
 
 	for _, f := range t.Fields {
 		typeName := parser.ProcessTypeName(f.Type.String(), definitionsMap)
-		processedDesc, changelog := changelog.ProcessWithChangelog(f.Description, parser.ProcessDescription)
+		processedDesc, changelogText := changelog.ProcessWithChangelog(f.Description, parser.ProcessDescription)
 
 		data := FieldData{
 			Type:            typeName,
 			Name:            f.Name,
 			Description:     processedDesc,
 			RequiredOrArray: strings.Contains(typeName, "!") || strings.Contains(typeName, "["),
-			Changelog:       changelog,
+			Changelog:       changelogText,
 		}
 
 		tmpl, err := template.New("field").Funcs(template.FuncMap{

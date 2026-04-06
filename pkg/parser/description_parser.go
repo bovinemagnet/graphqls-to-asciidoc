@@ -428,8 +428,8 @@ func (dp *DescriptionParser) calculateMetrics(structure *DescriptionStructure, r
 
 		// Calculate word count
 		allText := structure.Overview + structure.Returns
-		for _, param := range structure.Parameters {
-			allText += " " + param.Description
+		for i := range structure.Parameters {
+			allText += " " + structure.Parameters[i].Description
 		}
 		for _, err := range structure.Errors {
 			allText += " " + err.Description
@@ -486,7 +486,7 @@ func (dp *DescriptionParser) calculateMetrics(structure *DescriptionStructure, r
 }
 
 // ExtractParameterType attempts to extract type information from parameter description
-func (dp *DescriptionParser) ExtractParameterType(description string) (paramType string, cleanDesc string) {
+func (dp *DescriptionParser) ExtractParameterType(description string) (paramType, cleanDesc string) {
 	// Pattern to match type annotations like (String), [String], {String}, <String>
 	typePattern := regexp.MustCompile(`^\s*[\(\[\{<]([^\)\]\}>]+)[\)\]\}>]\s*(.*)`)
 	if match := typePattern.FindStringSubmatch(description); len(match) > 2 {
@@ -496,7 +496,7 @@ func (dp *DescriptionParser) ExtractParameterType(description string) (paramType
 }
 
 // ExtractDefault extracts default value from parameter description
-func (dp *DescriptionParser) ExtractDefault(description string) (defaultValue string, cleanDesc string) {
+func (dp *DescriptionParser) ExtractDefault(description string) (defaultValue, cleanDesc string) {
 	// Pattern to match default value annotations - more specific patterns
 	// Handle various formats: (default: X), default: X, (default X)
 	patterns := []string{
@@ -536,7 +536,7 @@ func ExtractFirstSentence(description string) string {
 	cleaned := regexp.MustCompile(`(?i)^\s*(\*\*INTERNAL\*\*|INTERNAL|JDR\s+internal)\s*:?\s*`).ReplaceAllString(description, "")
 
 	// Remove asciidoc anchor markers like [#anchor-name] or [anchor-name]
-	cleaned = regexp.MustCompile(`(?m)^\s*\[[#]?[^\]]+\]\s*\n?`).ReplaceAllString(cleaned, "")
+	cleaned = regexp.MustCompile(`(?m)^\s*\[#?[^\]]+\]\s*\n?`).ReplaceAllString(cleaned, "")
 
 	// Remove leading/trailing whitespace
 	cleaned = strings.TrimSpace(cleaned)

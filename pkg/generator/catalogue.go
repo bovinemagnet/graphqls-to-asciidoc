@@ -8,10 +8,42 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/vektah/gqlparser/v2/ast"
+
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/changelog"
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/parser"
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/templates"
 )
+
+// collectCatalogueEntries collects catalogue entries from a schema definition's fields
+func (g *Generator) collectCatalogueEntries(def *ast.Definition) []CatalogueEntry {
+	if def == nil {
+		return nil
+	}
+
+	var entries []CatalogueEntry
+	for _, field := range def.Fields {
+		if !g.shouldIncludeField(field.Name, field.Description, field.Directives) {
+			continue
+		}
+
+		var description, changelogText string
+		if g.config.IncludeChangelog {
+			processedDesc, clText := changelog.ProcessWithChangelog(field.Description, parser.ProcessDescription)
+			description = parser.ExtractFirstSentence(processedDesc)
+			changelogText = clText
+		} else {
+			description = parser.ExtractFirstSentence(field.Description)
+		}
+
+		entries = append(entries, CatalogueEntry{
+			Name:        field.Name,
+			Description: description,
+			Changelog:   changelogText,
+		})
+	}
+	return entries
+}
 
 // collectCatalogueData collects and organises catalogue data for queries, mutations, and subscriptions
 func (g *Generator) collectCatalogueData() CatalogueData {
@@ -19,77 +51,9 @@ func (g *Generator) collectCatalogueData() CatalogueData {
 	var mutations []CatalogueEntry
 	var subscriptions []CatalogueEntry
 
-	// Collect queries
-	if g.schema.Query != nil {
-		for _, field := range g.schema.Query.Fields {
-			if !g.shouldIncludeField(field.Name, field.Description, field.Directives) {
-				continue
-			}
-
-			var description, changelogText string
-			if g.config.IncludeChangelog {
-				processedDesc, changelogResult := changelog.ProcessWithChangelog(field.Description, parser.ProcessDescription)
-				description = parser.ExtractFirstSentence(processedDesc)
-				changelogText = changelogResult
-			} else {
-				description = parser.ExtractFirstSentence(field.Description)
-			}
-
-			queries = append(queries, CatalogueEntry{
-				Name:        field.Name,
-				Description: description,
-				Changelog:   changelogText,
-			})
-		}
-	}
-
-	// Collect mutations
-	if g.schema.Mutation != nil {
-		for _, field := range g.schema.Mutation.Fields {
-			if !g.shouldIncludeField(field.Name, field.Description, field.Directives) {
-				continue
-			}
-
-			var description, changelogText string
-			if g.config.IncludeChangelog {
-				processedDesc, changelogResult := changelog.ProcessWithChangelog(field.Description, parser.ProcessDescription)
-				description = parser.ExtractFirstSentence(processedDesc)
-				changelogText = changelogResult
-			} else {
-				description = parser.ExtractFirstSentence(field.Description)
-			}
-
-			mutations = append(mutations, CatalogueEntry{
-				Name:        field.Name,
-				Description: description,
-				Changelog:   changelogText,
-			})
-		}
-	}
-
-	// Collect subscriptions
-	if g.schema.Subscription != nil {
-		for _, field := range g.schema.Subscription.Fields {
-			if !g.shouldIncludeField(field.Name, field.Description, field.Directives) {
-				continue
-			}
-
-			var description, changelogText string
-			if g.config.IncludeChangelog {
-				processedDesc, changelogResult := changelog.ProcessWithChangelog(field.Description, parser.ProcessDescription)
-				description = parser.ExtractFirstSentence(processedDesc)
-				changelogText = changelogResult
-			} else {
-				description = parser.ExtractFirstSentence(field.Description)
-			}
-
-			subscriptions = append(subscriptions, CatalogueEntry{
-				Name:        field.Name,
-				Description: description,
-				Changelog:   changelogText,
-			})
-		}
-	}
+	queries = g.collectCatalogueEntries(g.schema.Query)
+	mutations = g.collectCatalogueEntries(g.schema.Mutation)
+	subscriptions = g.collectCatalogueEntries(g.schema.Subscription)
 
 	// Sort queries alphabetically by name
 	sort.Slice(queries, func(i, j int) bool {
