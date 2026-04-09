@@ -141,7 +141,7 @@ func (g *Generator) getArgumentsBlock(f *ast.FieldDefinition, definitionsMap map
 	var b strings.Builder
 	for _, arg := range f.Arguments {
 		typeName := parser.ProcessTypeName(arg.Type.String(), definitionsMap)
-		fmt.Fprint(&b, formatArgumentListItem(arg.Name, typeName, arg.DefaultValue))
+		fmt.Fprint(&b, formatArgumentListItem(arg.Name, typeName, arg.DefaultValue, arg.Directives))
 	}
 	return b.String()
 }

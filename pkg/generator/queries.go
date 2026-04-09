@@ -127,7 +127,7 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 		fmt.Fprintf(g.writer, "// tag::arguments-%s[]\n", field.Name)
 		fmt.Fprintln(g.writer, ".Arguments")
 		for _, arg := range field.Arguments {
-			fmt.Fprint(g.writer, formatArgumentListItem(arg.Name, arg.Type.String(), arg.DefaultValue))
+			fmt.Fprint(g.writer, formatArgumentListItem(arg.Name, arg.Type.String(), arg.DefaultValue, arg.Directives))
 		}
 		fmt.Fprintf(g.writer, "// end::arguments-%s[]\n", field.Name)
 		fmt.Fprintln(g.writer)

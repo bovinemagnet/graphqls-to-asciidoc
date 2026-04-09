@@ -42,12 +42,33 @@ func formatDefaultValue(defaultValue *ast.Value) string {
 	return " = " + defaultValue.String()
 }
 
-// formatArgumentListItem returns a formatted argument bullet point with optional default value.
-func formatArgumentListItem(name, typeName string, defaultValue *ast.Value) string {
+// formatArgumentListItem returns a formatted argument bullet point with optional default value and directives.
+func formatArgumentListItem(name, typeName string, defaultValue *ast.Value, directives ast.DirectiveList) string {
+	base := name + " : " + typeName
 	if defaultValue != nil {
-		return fmt.Sprintf("* `%s : %s = %s`\n", name, typeName, defaultValue.String())
+		base += " = " + defaultValue.String()
 	}
-	return fmt.Sprintf("* `%s : %s`\n", name, typeName)
+	if len(directives) > 0 {
+		base += " " + formatDirectiveList(directives)
+	}
+	return fmt.Sprintf("* `%s`\n", base)
+}
+
+// formatDirectiveList formats a list of directives as a string, e.g. "@maxElements(max: 50) @length(max: 100)".
+func formatDirectiveList(directives ast.DirectiveList) string {
+	var parts []string
+	for _, d := range directives {
+		if len(d.Arguments) == 0 {
+			parts = append(parts, "@"+d.Name)
+		} else {
+			var args []string
+			for _, a := range d.Arguments {
+				args = append(args, a.Name+": "+a.Value.String())
+			}
+			parts = append(parts, fmt.Sprintf("@%s(%s)", d.Name, strings.Join(args, ", ")))
+		}
+	}
+	return strings.Join(parts, " ")
 }
 
 // extractLists separates list items (lines starting with "- " or "* ") from non-list lines.
