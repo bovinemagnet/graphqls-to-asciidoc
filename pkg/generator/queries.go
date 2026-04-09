@@ -60,7 +60,7 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 	fmt.Fprintln(g.writer)
 
 	// Process description and extract changelog
-	processedDesc, changelog := changelog.ProcessWithChangelog(field.Description, parser.ProcessDescription)
+	processedDesc, changelogText := changelog.ProcessWithChangelog(field.Description, parser.ProcessDescription)
 
 	mainDesc, numberedRefs := splitOnArgumentsMarker(processedDesc)
 
@@ -82,7 +82,7 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 	// Generate arguments
 	for i, arg := range field.Arguments {
 		argType := parser.ProcessTypeNameForSignature(arg.Type.String(), definitionsMap)
-		fmt.Fprintf(g.writer, "  %s: %s", arg.Name, argType)
+		fmt.Fprintf(g.writer, "  %s: %s%s", arg.Name, argType, formatDefaultValue(arg.DefaultValue))
 		if i < len(field.Arguments)-1 {
 			fmt.Fprint(g.writer, " ,")
 		}
@@ -114,9 +114,9 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 	fmt.Fprintln(g.writer)
 
 	// Add changelog section right after return
-	if changelog != "" {
+	if changelogText != "" {
 		fmt.Fprintf(g.writer, "// tag::query-changelog-%s[]\n", field.Name)
-		fmt.Fprint(g.writer, changelog)
+		fmt.Fprint(g.writer, changelogText)
 		fmt.Fprintln(g.writer)
 		fmt.Fprintf(g.writer, "// end::query-changelog-%s[]\n", field.Name)
 		fmt.Fprintln(g.writer)
@@ -126,7 +126,7 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 		fmt.Fprintf(g.writer, "// tag::arguments-%s[]\n", field.Name)
 		fmt.Fprintln(g.writer, ".Arguments")
 		for _, arg := range field.Arguments {
-			fmt.Fprintf(g.writer, "* `%s : %s`\n", arg.Name, arg.Type.String())
+			fmt.Fprint(g.writer, formatArgumentListItem(arg.Name, arg.Type.String(), arg.DefaultValue))
 		}
 		fmt.Fprintf(g.writer, "// end::arguments-%s[]\n", field.Name)
 		fmt.Fprintln(g.writer)

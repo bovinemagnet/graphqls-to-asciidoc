@@ -31,6 +31,11 @@ linters:
     - unused
     - whitespace
   settings:
+    errcheck:
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
     dupl:
       threshold: 100
     goconst:
@@ -54,7 +59,7 @@ linters:
     lll:
       line-length: 120
     misspell:
-      locale: US
+      locale: UK
   exclusions:
     generated: lax
     rules:

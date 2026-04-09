@@ -512,8 +512,8 @@ func TestConvertAdmonitionBlocks(t *testing.T) {
 		},
 		{
 			name:     "tip admonition",
-			input:    "TIP: You can optimize this by caching",
-			expected: "[TIP]\n====\nYou can optimize this by caching\n====",
+			input:    "TIP: You can optimise this by caching",
+			expected: "[TIP]\n====\nYou can optimise this by caching\n====",
 		},
 	}
 

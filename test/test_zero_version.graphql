@@ -1,0 +1,90 @@
+"""
+Test schema for --inc-zero flag functionality
+"""
+
+type Query {
+  """
+  This query should be excluded by default
+  @version: 0.0.0
+  """
+  testZeroQuery: String
+
+  """
+  This query has version 0.0.0.0 and should be excluded
+  add.version: 0.0.0.0
+  """
+  anotherZeroQuery: Int
+
+  """
+  This query has a normal version and should always be included
+  @version: 1.2.3
+  """
+  normalQuery: String
+
+  """
+  This query has no version and should always be included
+  """
+  noVersionQuery: Boolean
+}
+
+type Mutation {
+  """
+  Add mutation with zero version - excluded by default
+  add.version: 0.0.0
+  """
+  addUser(name: String!): User
+
+  """
+  Update mutation with zero version - excluded by default
+  update.version: 0.0.0.0
+  """
+  updateProduct(id: ID!, price: Float!): Product
+
+  """
+  Delete mutation with zero version - excluded by default
+  @version: 0.0.0
+  """
+  deleteItem(id: ID!): Boolean
+
+  """
+  Save mutation with zero version - excluded by default
+  save.version: 0.0.0
+  """
+  saveSettings(data: String!): Settings
+
+  """
+  General mutation with normal version - always included
+  @version: 2.1.0
+  """
+  createOrder(items: [String!]!): Order
+
+  """
+  Another general mutation with no version - always included
+  """
+  processPayment(amount: Float!): Payment
+}
+
+type User {
+  id: ID!
+  name: String!
+}
+
+type Product {
+  id: ID!
+  price: Float!
+}
+
+type Settings {
+  id: ID!
+  data: String!
+}
+
+type Order {
+  id: ID!
+  items: [String!]!
+}
+
+type Payment {
+  id: ID!
+  amount: Float!
+}

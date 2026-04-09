@@ -271,7 +271,7 @@ const CatalogueTemplate = `{{- if .SubTitle -}}
 
 include::_attributes.adoc[]
 
-GraphQL is a modern API query language and runtime that provides a more flexible and efficient way for clients (like web or mobile apps) 
+GraphQL is a modern API query language and runtime that provides a more flexible and efficient way for clients (like web or mobile apps)
 to request data from servers compared to traditional REST APIs.
 
 Instead of having multiple endpoints returning fixed data (like in REST).
@@ -281,7 +281,7 @@ GraphQL exposes a *single endpoint* where clients can *ask for exactly the data 
 {{ if .Queries }}
 == Queries
 
-*Queries* are how clients *read or fetch data* in GraphQL.  
+*Queries* are how clients *read or fetch data* in GraphQL.
 They describe _what_ data the client wants, not _how_ to get it.
 
 The following table provides a quick reference to all available queries in the GraphQL API.
@@ -325,7 +325,7 @@ The following table provides a quick reference to all available mutations in the
 
 {{- if .Subscriptions }}
 
-*Subscriptions* are used to *receive real-time updates* from the server.  
+*Subscriptions* are used to *receive real-time updates* from the server.
 They let the client “subscribe” to data changes and get notified instantly when something new happens, without needing to poll for updates.
 
 The following table provides a quick reference to all available subscriptions in the GraphQL API.

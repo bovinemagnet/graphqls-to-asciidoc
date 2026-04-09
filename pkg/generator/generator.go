@@ -34,6 +34,22 @@ func New(cfg *config.Config, schema *ast.Schema, writer io.Writer) *Generator {
 	}
 }
 
+// formatDefaultValue returns " = <value>" if a default is set, otherwise empty string.
+func formatDefaultValue(defaultValue *ast.Value) string {
+	if defaultValue == nil {
+		return ""
+	}
+	return " = " + defaultValue.String()
+}
+
+// formatArgumentListItem returns a formatted argument bullet point with optional default value.
+func formatArgumentListItem(name, typeName string, defaultValue *ast.Value) string {
+	if defaultValue != nil {
+		return fmt.Sprintf("* `%s : %s = %s`\n", name, typeName, defaultValue.String())
+	}
+	return fmt.Sprintf("* `%s : %s`\n", name, typeName)
+}
+
 // extractLists separates list items (lines starting with "- " or "* ") from non-list lines.
 func extractLists(text string) (nonList, list string) {
 	lines := strings.Split(text, "\n")
@@ -183,7 +199,7 @@ func (g *Generator) Generate() error {
 
 	if g.config.IncludeEnums {
 		timer := g.metrics.StartSection("Enums")
-		count := g.generateEnums(sortedDefs, definitionsMap)
+		count := g.generateEnums(sortedDefs)
 		timer.AddCount(count)
 		timer.Finish()
 	}
@@ -197,7 +213,7 @@ func (g *Generator) Generate() error {
 
 	if g.config.IncludeDirectives {
 		timer := g.metrics.StartSection("Directives")
-		count := g.generateDirectives(sortedDefs)
+		count := g.generateDirectives()
 		timer.AddCount(count)
 		timer.Finish()
 	}

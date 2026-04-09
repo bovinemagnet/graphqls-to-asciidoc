@@ -9,7 +9,7 @@ import (
 
 func TestCombineSchemaFiles(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	// Create test schema files
 	file1Content := `type User {
   id: ID!
@@ -24,10 +24,10 @@ func TestCombineSchemaFiles(t *testing.T) {
 
 	file1 := filepath.Join(tempDir, "user.graphql")
 	file2 := filepath.Join(tempDir, "post.graphql")
-	
-	os.WriteFile(file1, []byte(file1Content), 0644)
-	os.WriteFile(file2, []byte(file2Content), 0644)
-	
+
+	_ = os.WriteFile(file1, []byte(file1Content), 0644)
+	_ = os.WriteFile(file2, []byte(file2Content), 0644)
+
 	tests := []struct {
 		name     string
 		files    []string
@@ -57,23 +57,23 @@ func TestCombineSchemaFiles(t *testing.T) {
 			wantErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := CombineSchemaFiles(tt.files)
-			
+
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("CombineSchemaFiles() expected error but got none")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("CombineSchemaFiles() unexpected error: %v", err)
 				return
 			}
-			
+
 			for _, expected := range tt.contains {
 				if !strings.Contains(result, expected) {
 					t.Errorf("CombineSchemaFiles() result missing expected content: %s", expected)
@@ -86,7 +86,7 @@ func TestCombineSchemaFiles(t *testing.T) {
 
 func TestCombineSchemaFilesConflicts(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	// Create conflicting schema files
 	file1Content := `type User {
   id: ID!
@@ -100,15 +100,15 @@ func TestCombineSchemaFilesConflicts(t *testing.T) {
 
 	file1 := filepath.Join(tempDir, "user1.graphql")
 	file2 := filepath.Join(tempDir, "user2.graphql")
-	
-	os.WriteFile(file1, []byte(file1Content), 0644)
-	os.WriteFile(file2, []byte(file2Content), 0644)
-	
+
+	_ = os.WriteFile(file1, []byte(file1Content), 0644)
+	_ = os.WriteFile(file2, []byte(file2Content), 0644)
+
 	_, err := CombineSchemaFiles([]string{file1, file2})
 	if err == nil {
 		t.Errorf("CombineSchemaFiles() expected conflict error but got none")
 	}
-	
+
 	if !strings.Contains(err.Error(), "duplicate definition") {
 		t.Errorf("CombineSchemaFiles() error should mention duplicate definition, got: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestCheckForConflicts(t *testing.T) {
 		wantErr  bool
 	}{
 		{"new type definition", "type User { id: ID! }", "user.graphql", nil, false},
-		{"duplicate type definition", "type User { email: String }", "user2.graphql", 
+		{"duplicate type definition", "type User { email: String }", "user2.graphql",
 			func(dt map[string]string) { dt["User"] = "user.graphql" }, true},
 		{"input type", "input UserInput { name: String }", "input.graphql", nil, false},
 		{"enum type", "enum Status { ACTIVE INACTIVE }", "enum.graphql", nil, false},
@@ -131,16 +131,16 @@ func TestCheckForConflicts(t *testing.T) {
 		{"directive definition", "directive @auth on FIELD_DEFINITION", "directive.graphql", nil, false},
 		{"built-in type (allowed)", "scalar String", "builtin.graphql", nil, false},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			definedTypes := make(map[string]string)
 			if tc.setup != nil {
 				tc.setup(definedTypes)
 			}
-			
+
 			err := checkForConflicts(tc.content, tc.filename, definedTypes)
-			
+
 			if (err != nil) != tc.wantErr {
 				t.Errorf("checkForConflicts() error = %v, wantErr %v", err, tc.wantErr)
 			}
@@ -154,7 +154,7 @@ func TestIsBuiltInType(t *testing.T) {
 		"Query": false, "Mutation": false, "Subscription": false, // Allow redefinition
 		"User": false, "DateTime": false, // Custom types
 	}
-	
+
 	for typeName, expected := range testCases {
 		t.Run(typeName, func(t *testing.T) {
 			if result := isBuiltInType(typeName); result != expected {

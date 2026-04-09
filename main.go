@@ -126,13 +126,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to setup output: %v", err)
 	}
-	if shouldClose {
-		defer outputWriter.Close()
-	}
-
 	// Generate AsciiDoc documentation
 	gen := generator.New(cfg, schema, outputWriter)
-	if err := gen.Generate(); err != nil {
+	err = gen.Generate()
+
+	if shouldClose {
+		if closeErr := outputWriter.Close(); closeErr != nil {
+			log.Fatalf("Failed to close output file: %v", closeErr)
+		}
+	}
+
+	if err != nil {
 		log.Fatalf("Failed to generate documentation: %v", err)
 	}
 }

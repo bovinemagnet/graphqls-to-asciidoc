@@ -107,8 +107,8 @@ func ConvertMarkdownCodeBlocks(description string) string {
 			language = "text"
 		}
 
-		// Use kotlin syntax highlighting for GraphQL as it provides better colors in AsciiDoc
-		if language == "graphql" || language == "gql" {
+		// Use kotlin syntax highlighting for GraphQL as it provides better colours in AsciiDoc
+		if language == langGraphQL || language == "gql" {
 			language = "kotlin"
 		}
 
@@ -155,8 +155,7 @@ func ConvertMarkdownTables(content string) string {
 			// This looks like a table row
 			if !inTable {
 				// Start new table
-				result = append(result, "[options=\"header\"]")
-				result = append(result, "|===")
+				result = append(result, "[options=\"header\"]", "|===")
 				inTable = true
 			}
 
@@ -268,8 +267,7 @@ func ConvertAdmonitionBlocks(description string) string {
 
 		if admonType != "" {
 			// Found an admonition marker, collect content until next empty line or end
-			result = append(result, fmt.Sprintf("[%s]", admonType))
-			result = append(result, "====")
+			result = append(result, fmt.Sprintf("[%s]", admonType), "====")
 			i++ // Move to next line
 
 			// Collect content lines

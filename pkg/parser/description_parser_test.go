@@ -5,6 +5,8 @@ import (
 	"testing"
 )
 
+const testVersion = "1.0.0"
+
 func TestIsStructuredDescription(t *testing.T) {
 	parser := NewDescriptionParser()
 
@@ -206,7 +208,7 @@ func TestParseChangelog(t *testing.T) {
 	}
 
 	// Check specific entries
-	if structure.Changelog[0].Type != "add" || structure.Changelog[0].Version != "1.0.0" {
+	if structure.Changelog[0].Type != "add" || structure.Changelog[0].Version != testVersion {
 		t.Error("First changelog entry not parsed correctly")
 	}
 
@@ -276,7 +278,7 @@ func TestParseMetadata(t *testing.T) {
 			name:        "@since annotation",
 			description: "Get user\n@since 1.0.0",
 			validate: func(m map[string]string) bool {
-				return m["since"] == "1.0.0"
+				return m["since"] == testVersion
 			},
 		},
 		{
@@ -290,28 +292,28 @@ func TestParseMetadata(t *testing.T) {
 			name:        "@beta flag",
 			description: "Beta feature\n@beta",
 			validate: func(m map[string]string) bool {
-				return m["beta"] == "true"
+				return m["beta"] == metadataValueTrue
 			},
 		},
 		{
 			name:        "@experimental flag",
 			description: "Experimental API\n@experimental",
 			validate: func(m map[string]string) bool {
-				return m["experimental"] == "true"
+				return m["experimental"] == metadataValueTrue
 			},
 		},
 		{
 			name:        "@internal flag",
 			description: "Internal use only\n@internal",
 			validate: func(m map[string]string) bool {
-				return m["internal"] == "true"
+				return m["internal"] == metadataValueTrue
 			},
 		},
 		{
 			name:        "Multiple metadata",
 			description: "Query\n@since 1.0.0\n@beta\n@internal",
 			validate: func(m map[string]string) bool {
-				return m["since"] == "1.0.0" && m["beta"] == "true" && m["internal"] == "true"
+				return m["since"] == testVersion && m["beta"] == metadataValueTrue && m["internal"] == metadataValueTrue
 			},
 		},
 	}
@@ -345,7 +347,7 @@ func TestCalculateMetrics(t *testing.T) {
 				Returns:    "User object",
 				Errors:     []ErrorDoc{{Code: "NOT_FOUND", Description: "Not found"}},
 				Examples:   []Example{{Title: "Example", Code: "query{}"}},
-				Changelog:  []ChangelogEntry{{Type: "add", Version: "1.0.0"}},
+				Changelog:  []ChangelogEntry{{Type: "add", Version: testVersion}},
 			},
 			validate: func(m *DescriptionMetrics) bool {
 				return m.HasOverview && m.HasParameters && m.HasReturns &&
@@ -360,7 +362,7 @@ func TestCalculateMetrics(t *testing.T) {
 			},
 			validate: func(m *DescriptionMetrics) bool {
 				return m.HasOverview && !m.HasParameters && !m.HasReturns &&
-					m.Complexity == "simple" && m.Completeness < 0.5
+					m.Complexity == complexitySimple && m.Completeness < 0.5
 			},
 		},
 		{
@@ -386,34 +388,34 @@ func TestExtractParameterType(t *testing.T) {
 	parser := NewDescriptionParser()
 
 	tests := []struct {
-		description    string
-		expectedType   string
-		expectedDesc   string
+		description  string
+		expectedType string
+		expectedDesc string
 	}{
 		{
-			description:    "(String) The user name",
-			expectedType:   "String",
-			expectedDesc:   "The user name",
+			description:  "(String) The user name",
+			expectedType: "String",
+			expectedDesc: "The user name",
 		},
 		{
-			description:    "[Int] Array of numbers",
-			expectedType:   "Int",
-			expectedDesc:   "Array of numbers",
+			description:  "[Int] Array of numbers",
+			expectedType: "Int",
+			expectedDesc: "Array of numbers",
 		},
 		{
-			description:    "{UserInput} User input object",
-			expectedType:   "UserInput",
-			expectedDesc:   "User input object",
+			description:  "{UserInput} User input object",
+			expectedType: "UserInput",
+			expectedDesc: "User input object",
 		},
 		{
-			description:    "<ID> User identifier",
-			expectedType:   "ID",
-			expectedDesc:   "User identifier",
+			description:  "<ID> User identifier",
+			expectedType: "ID",
+			expectedDesc: "User identifier",
 		},
 		{
-			description:    "Plain description without type",
-			expectedType:   "",
-			expectedDesc:   "Plain description without type",
+			description:  "Plain description without type",
+			expectedType: "",
+			expectedDesc: "Plain description without type",
 		},
 	}
 
@@ -450,7 +452,7 @@ func TestExtractDefault(t *testing.T) {
 		},
 		{
 			description:     "Include metadata (default true)",
-			expectedDefault: "true",
+			expectedDefault: metadataValueTrue,
 			expectedDesc:    "Include metadata",
 		},
 		{

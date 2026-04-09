@@ -54,7 +54,7 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 			continue
 		}
 
-		processedDesc, changelog := changelog.ProcessWithChangelog(f.Description, parser.ProcessDescription)
+		processedDesc, changelogText := changelog.ProcessWithChangelog(f.Description, parser.ProcessDescription)
 
 		numberedRefs := ""
 		if len(f.Arguments) > 0 && f.Description != "" {
@@ -76,7 +76,7 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 			HasArguments:         len(f.Arguments) > 0,
 			HasDirectives:        len(f.Directives) > 0,
 			IsInternal:           isInternal(f.Name, f.Description),
-			Changelog:            changelog,
+			Changelog:            changelogText,
 			NumberedRefs:         numberedRefs,
 		}
 		mutationInfos = append(mutationInfos, mutationInfo)
@@ -122,7 +122,7 @@ func (g *Generator) getMethodSignatureBlock(f *ast.FieldDefinition, definitionsM
 	fmt.Fprintf(&b, "%s(\n", f.Name)
 	for i, arg := range f.Arguments {
 		typeName := parser.ProcessTypeNameForSignature(arg.Type.String(), definitionsMap)
-		fmt.Fprintf(&b, "  %s: %s", arg.Name, typeName)
+		fmt.Fprintf(&b, "  %s: %s%s", arg.Name, typeName, formatDefaultValue(arg.DefaultValue))
 		if i < len(f.Arguments)-1 {
 			fmt.Fprint(&b, " ,")
 		}
@@ -141,7 +141,7 @@ func (g *Generator) getArgumentsBlock(f *ast.FieldDefinition, definitionsMap map
 	var b strings.Builder
 	for _, arg := range f.Arguments {
 		typeName := parser.ProcessTypeName(arg.Type.String(), definitionsMap)
-		fmt.Fprintf(&b, "* `%s : %s`\n", arg.Name, typeName)
+		fmt.Fprint(&b, formatArgumentListItem(arg.Name, typeName, arg.DefaultValue))
 	}
 	return b.String()
 }

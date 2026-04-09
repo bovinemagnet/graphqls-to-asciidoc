@@ -22,7 +22,7 @@ func isBuiltInScalar(typeName string) bool {
 // A field is considered internal if:
 //   - Its name starts with "internal" (case-insensitive)
 //   - Its description contains "INTERNAL" (case-insensitive)
-func isInternal(name string, description string) bool {
+func isInternal(name, description string) bool {
 	if strings.HasPrefix(strings.ToLower(name), "internal") {
 		return true
 	}
@@ -38,7 +38,7 @@ func isInternal(name string, description string) bool {
 //   - Its description contains "@deprecated" or "deprecated" (case-insensitive)
 func isDeprecated(description string, directives ast.DirectiveList) bool {
 	for _, d := range directives {
-		if strings.ToLower(d.Name) == "deprecated" {
+		if strings.EqualFold(d.Name, "deprecated") {
 			return true
 		}
 	}

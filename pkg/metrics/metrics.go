@@ -184,7 +184,7 @@ func (m *Metrics) LogMetricsTable() {
 	fmt.Fprintf(os.Stderr, "\n")
 }
 
-// formatEnabled returns a colored status string
+// formatEnabled returns a coloured status string
 func formatEnabled(enabled bool) string {
 	if enabled {
 		return "✓ enabled"
@@ -206,7 +206,7 @@ func formatDuration(d time.Duration) string {
 }
 
 // LogProgress logs processing progress for a section
-func (m *Metrics) LogProgress(section string, message string) {
+func (m *Metrics) LogProgress(section, message string) {
 	if !m.enabled {
 		return
 	}

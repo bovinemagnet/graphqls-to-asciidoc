@@ -12,6 +12,8 @@ import (
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/parser"
 )
 
+const testSchemaFile = "test.graphql"
+
 func TestNew(t *testing.T) {
 	cfg := &config.Config{SchemaFile: "test.graphql"}
 	schema := &ast.Schema{Types: make(map[string]*ast.Definition)}
@@ -278,13 +280,13 @@ func TestGenerateConfigFlags(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := config.NewConfig()
-			cfg.SchemaFile = "test.graphql"
+			cfg.SchemaFile = testSchemaFile
 			tc.configModifier(cfg)
 
 			var buf bytes.Buffer
 			gen := New(cfg, schema, &buf)
 
-			gen.Generate()
+			_ = gen.Generate()
 			output := buf.String()
 
 			for _, expected := range tc.shouldContain {
@@ -304,7 +306,7 @@ func TestGenerateConfigFlags(t *testing.T) {
 
 func TestGenerateQueryFieldWithArguments(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.SchemaFile = "test.graphql"
+	cfg.SchemaFile = testSchemaFile
 
 	// Create query with arguments
 	queryDef := &ast.Definition{
@@ -353,7 +355,7 @@ func TestGenerateQueryFieldWithArguments(t *testing.T) {
 	var buf bytes.Buffer
 	gen := New(cfg, schema, &buf)
 
-	gen.Generate()
+	_ = gen.Generate()
 	output := buf.String()
 
 	expectedContent := []string{
@@ -376,7 +378,7 @@ func TestGenerateQueryFieldWithArguments(t *testing.T) {
 
 func TestGenerateTypes(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.SchemaFile = "test.graphql"
+	cfg.SchemaFile = testSchemaFile
 
 	// Create schema with custom types
 	userDef := &ast.Definition{
@@ -406,7 +408,7 @@ func TestGenerateTypes(t *testing.T) {
 	var buf bytes.Buffer
 	gen := New(cfg, schema, &buf)
 
-	gen.Generate()
+	_ = gen.Generate()
 	output := buf.String()
 
 	expectedContent := []string{
@@ -513,7 +515,7 @@ func TestGetTypeFieldsTableString(t *testing.T) {
 
 func TestExcludeInternal(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.SchemaFile = "test.graphql"
+	cfg.SchemaFile = testSchemaFile
 	cfg.ExcludeInternal = true
 
 	queryDef := &ast.Definition{
@@ -543,7 +545,7 @@ func TestExcludeInternal(t *testing.T) {
 	var buf bytes.Buffer
 	gen := New(cfg, schema, &buf)
 
-	gen.Generate()
+	_ = gen.Generate()
 	output := buf.String()
 
 	// Should contain public query
@@ -612,7 +614,7 @@ func createTestSchema() *ast.Schema {
 
 func TestGenerateDirectives(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.SchemaFile = "test.graphql"
+	cfg.SchemaFile = testSchemaFile
 
 	// Create a directive definition for testing
 	sizeDirective := &ast.DirectiveDefinition{
@@ -719,7 +721,7 @@ func TestIsBuiltInScalar(t *testing.T) {
 
 func TestGenerateSubscriptions(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.SchemaFile = "test.graphql"
+	cfg.SchemaFile = testSchemaFile
 
 	// Create a schema with subscriptions
 	subscriptionDef := &ast.Definition{
@@ -867,7 +869,7 @@ func TestGetSubscriptionDetails(t *testing.T) {
 
 func TestGenerateMutations(t *testing.T) {
 	cfg := config.NewConfig()
-	cfg.SchemaFile = "test.graphql"
+	cfg.SchemaFile = testSchemaFile
 
 	// Create a schema with mutations
 	mutationDef := &ast.Definition{
@@ -1165,11 +1167,11 @@ func TestGetInputFieldsTableString(t *testing.T) {
 
 	expectedContent := []string{
 		".input: UserInput",
-		"[options=\"header\",cols=\"2a,2m,5a\"]",
+		"[options=\"header\",cols=\"2a,2m,2m,5a\"]",
 		"|===",
-		"| Field | Type | Description",
-		"| `name` | `String!` | User's name",
-		"| `email` | `String` | User's email",
+		"| Field | Type | Default | Description",
+		"| `name` | `String!` | _none_ | User's name",
+		"| `email` | `String` | _none_ | User's email",
 		"|===",
 	}
 
@@ -1201,10 +1203,7 @@ func TestGetEnumValuesTableString(t *testing.T) {
 		},
 	}
 
-	result, err := gen.getEnumValuesTableString(enumDef)
-	if err != nil {
-		t.Fatalf("getEnumValuesTableString() returned error: %v", err)
-	}
+	result := gen.getEnumValuesTableString(enumDef)
 
 	// Debug: print actual result
 	fmt.Printf("ACTUAL ENUM VALUES TABLE:\n%s\n", result)
@@ -1256,7 +1255,7 @@ func TestGenerateEnums(t *testing.T) {
 		sortedDefs = append(sortedDefs, def)
 	}
 
-	count := gen.generateEnums(sortedDefs, gen.schema.Types)
+	count := gen.generateEnums(sortedDefs)
 	if count != 1 {
 		t.Errorf("Expected 1 enum, got %d", count)
 	}
@@ -1333,8 +1332,8 @@ func TestGenerateInputs(t *testing.T) {
 		"// end::input-description-UserInput[]",
 		"// tag::input-def-UserInput[]",
 		".input: UserInput",
-		"| `name` | `String!` | User's name",
-		"| `email` | `String` | User's email",
+		"| `name` | `String!` | _none_ | User's name",
+		"| `email` | `String` | _none_ | User's email",
 		"// end::input-def-UserInput[]",
 		"// end::input-UserInput[]",
 	}
@@ -1482,7 +1481,7 @@ func TestGenerateEnumsWithNoValues(t *testing.T) {
 	for _, def := range gen.schema.Types {
 		sortedDefs = append(sortedDefs, def)
 	}
-	count := gen.generateEnums(sortedDefs, gen.schema.Types)
+	count := gen.generateEnums(sortedDefs)
 	if count != 1 {
 		t.Errorf("Expected 1 enum, got %d", count)
 	}
@@ -1580,3 +1579,227 @@ func TestFieldWithOnlyChangelog(t *testing.T) {
 	}
 }
 
+func TestQueryFieldWithDefaultValues(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.SchemaFile = testSchemaFile
+
+	queryDef := &ast.Definition{
+		Kind: ast.Object,
+		Name: "Query",
+		Fields: ast.FieldList{
+			&ast.FieldDefinition{
+				Name:        "listItems",
+				Description: "List items with pagination",
+				Type:        &ast.Type{Elem: &ast.Type{NamedType: "Item"}},
+				Arguments: ast.ArgumentDefinitionList{
+					&ast.ArgumentDefinition{
+						Name:         "pageSize",
+						Type:         &ast.Type{NamedType: "Int", NonNull: true},
+						DefaultValue: &ast.Value{Raw: "10", Kind: ast.IntValue},
+					},
+					&ast.ArgumentDefinition{
+						Name:         "includeAll",
+						Type:         &ast.Type{NamedType: "Boolean"},
+						DefaultValue: &ast.Value{Raw: "true", Kind: ast.BooleanValue},
+					},
+					&ast.ArgumentDefinition{
+						Name: "filter",
+						Type: &ast.Type{NamedType: "String"},
+					},
+				},
+			},
+		},
+	}
+
+	schema := &ast.Schema{
+		Query: queryDef,
+		Types: map[string]*ast.Definition{
+			"Query": queryDef,
+			"Item": {
+				Kind: ast.Object,
+				Name: "Item",
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+	_ = gen.Generate()
+	output := buf.String()
+
+	// Default values should appear in the method signature
+	if !strings.Contains(output, "pageSize: Int! = 10") {
+		t.Errorf("Signature should contain default value for pageSize. Output:\n%s", output)
+	}
+	if !strings.Contains(output, "includeAll: Boolean = true") {
+		t.Errorf("Signature should contain default value for includeAll. Output:\n%s", output)
+	}
+
+	// Arguments list should include defaults
+	if !strings.Contains(output, "`pageSize : Int! = 10`") {
+		t.Errorf("Arguments list should contain default value for pageSize. Output:\n%s", output)
+	}
+	if !strings.Contains(output, "`includeAll : Boolean = true`") {
+		t.Errorf("Arguments list should contain default value for includeAll. Output:\n%s", output)
+	}
+	// Argument without default should render normally
+	if !strings.Contains(output, "`filter : String`") {
+		t.Errorf("Arguments list should contain filter without default. Output:\n%s", output)
+	}
+}
+
+func TestMutationWithDefaultValues(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.SchemaFile = testSchemaFile
+
+	mutationDef := &ast.Definition{
+		Kind: ast.Object,
+		Name: "Mutation",
+		Fields: ast.FieldList{
+			&ast.FieldDefinition{
+				Name:        "updateSettings",
+				Description: "Update settings",
+				Type:        &ast.Type{NamedType: "Boolean"},
+				Arguments: ast.ArgumentDefinitionList{
+					&ast.ArgumentDefinition{
+						Name:         "notify",
+						Type:         &ast.Type{NamedType: "Boolean"},
+						DefaultValue: &ast.Value{Raw: "false", Kind: ast.BooleanValue},
+					},
+					&ast.ArgumentDefinition{
+						Name:         "pageSize",
+						Type:         &ast.Type{NamedType: "Int", NonNull: true},
+						DefaultValue: &ast.Value{Raw: "50", Kind: ast.IntValue},
+					},
+				},
+			},
+		},
+	}
+
+	schema := &ast.Schema{
+		Mutation: mutationDef,
+		Types: map[string]*ast.Definition{
+			"Mutation": mutationDef,
+		},
+	}
+
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	count := gen.generateMutations(gen.schema.Types)
+	if count != 1 {
+		t.Errorf("Expected 1 mutation, got %d", count)
+	}
+	output := buf.String()
+
+	// Default values in signature
+	if !strings.Contains(output, "notify: Boolean = false") {
+		t.Errorf("Signature should contain default for notify. Output:\n%s", output)
+	}
+	if !strings.Contains(output, "pageSize: Int! = 50") {
+		t.Errorf("Signature should contain default for pageSize. Output:\n%s", output)
+	}
+
+	// Default values in arguments list (mutations use ProcessTypeName which wraps types in backticks)
+	if !strings.Contains(output, "notify : `Boolean` = false") {
+		t.Errorf("Arguments list should contain default for notify. Output:\n%s", output)
+	}
+	if !strings.Contains(output, "pageSize : `Int!` = 50") {
+		t.Errorf("Arguments list should contain default for pageSize. Output:\n%s", output)
+	}
+}
+
+func TestSubscriptionWithDefaultValues(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: make(map[string]*ast.Definition),
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	field := &ast.FieldDefinition{
+		Name: "onEvents",
+		Type: &ast.Type{NamedType: "Event"},
+		Arguments: ast.ArgumentDefinitionList{
+			&ast.ArgumentDefinition{
+				Name:         "limit",
+				Type:         &ast.Type{NamedType: "Int"},
+				DefaultValue: &ast.Value{Raw: "100", Kind: ast.IntValue},
+			},
+			&ast.ArgumentDefinition{
+				Name: "topic",
+				Type: &ast.Type{NamedType: "String", NonNull: true},
+			},
+		},
+	}
+
+	details := gen.getSubscriptionDetails(field, gen.schema.Types)
+
+	// Default value in signature
+	if !strings.Contains(details, "limit: Int = 100") {
+		t.Errorf("Signature should contain default for limit. Output:\n%s", details)
+	}
+
+	// Default value in arguments list
+	if !strings.Contains(details, "`limit : Int = 100`") {
+		t.Errorf("Arguments list should contain default for limit. Output:\n%s", details)
+	}
+	// No default should render normally
+	if !strings.Contains(details, "`topic : String!`") {
+		t.Errorf("Arguments list should contain topic without default. Output:\n%s", details)
+	}
+}
+
+func TestInputFieldsTableWithDefaultValues(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{Types: make(map[string]*ast.Definition)}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	inputDef := &ast.Definition{
+		Kind: ast.InputObject,
+		Name: "FilterInput",
+		Fields: ast.FieldList{
+			&ast.FieldDefinition{
+				Name:         "pageSize",
+				Description:  "Number of results per page",
+				Type:         &ast.Type{NamedType: "Int", NonNull: true},
+				DefaultValue: &ast.Value{Raw: "10", Kind: ast.IntValue},
+			},
+			&ast.FieldDefinition{
+				Name:         "isActive",
+				Description:  "Filter active items",
+				Type:         &ast.Type{NamedType: "Boolean"},
+				DefaultValue: &ast.Value{Raw: "true", Kind: ast.BooleanValue},
+			},
+			&ast.FieldDefinition{
+				Name:        "name",
+				Description: "Filter by name",
+				Type:        &ast.Type{NamedType: "String"},
+			},
+		},
+	}
+
+	table, err := gen.getInputFieldsTableString(inputDef, gen.schema.Types)
+	if err != nil {
+		t.Fatalf("getInputFieldsTableString returned error: %v", err)
+	}
+
+	// Table should have Default column
+	if !strings.Contains(table, "| Field | Type | Default | Description") {
+		t.Errorf("Table header should include Default column. Output:\n%s", table)
+	}
+
+	// Fields with defaults
+	if !strings.Contains(table, "| `pageSize` | `Int!` | `10`") {
+		t.Errorf("Table should show default 10 for pageSize. Output:\n%s", table)
+	}
+	if !strings.Contains(table, "| `isActive` | `Boolean` | `true`") {
+		t.Errorf("Table should show default true for isActive. Output:\n%s", table)
+	}
+
+	// Field without default
+	if !strings.Contains(table, "| `name` | `String` | _none_") {
+		t.Errorf("Table should show _none_ for name without default. Output:\n%s", table)
+	}
+}

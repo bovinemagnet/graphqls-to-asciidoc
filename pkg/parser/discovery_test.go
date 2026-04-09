@@ -9,7 +9,7 @@ import (
 func TestFindSchemaFiles(t *testing.T) {
 	// Create temporary directory structure for testing
 	tempDir := t.TempDir()
-	
+
 	// Create test files
 	testFiles := []string{
 		"schema.graphql",
@@ -19,27 +19,27 @@ func TestFindSchemaFiles(t *testing.T) {
 		"subdirectory/deep/another.graphqls",
 		"ignored.txt", // Should be ignored
 	}
-	
+
 	for _, file := range testFiles {
 		fullPath := filepath.Join(tempDir, file)
 		dir := filepath.Dir(fullPath)
-		
+
 		// Create directory if it doesn't exist
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0750); err != nil {
 			t.Fatalf("Failed to create directory %s: %v", dir, err)
 		}
-		
+
 		// Create file
-		if err := os.WriteFile(fullPath, []byte("type Test { id: ID! }"), 0644); err != nil {
+		if err := os.WriteFile(fullPath, []byte("type Test { id: ID! }"), 0600); err != nil {
 			t.Fatalf("Failed to create test file %s: %v", fullPath, err)
 		}
 	}
-	
+
 	// Change to temp directory for testing
 	originalDir, _ := os.Getwd()
-	defer os.Chdir(originalDir)
-	os.Chdir(tempDir)
-	
+	defer func() { _ = os.Chdir(originalDir) }()
+	_ = os.Chdir(tempDir)
+
 	tests := []struct {
 		name     string
 		pattern  string
@@ -77,30 +77,30 @@ func TestFindSchemaFiles(t *testing.T) {
 			wantErr:  true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			files, err := FindSchemaFiles(tt.pattern)
-			
+
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("FindSchemaFiles() expected error but got none")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("FindSchemaFiles() unexpected error: %v", err)
 				return
 			}
-			
+
 			if len(files) != len(tt.expected) {
 				t.Errorf("FindSchemaFiles() found %d files, expected %d", len(files), len(tt.expected))
 				t.Errorf("Found: %v", files)
 				t.Errorf("Expected: %v", tt.expected)
 				return
 			}
-			
+
 			for i, expected := range tt.expected {
 				if files[i] != expected {
 					t.Errorf("FindSchemaFiles() file[%d] = %s, expected %s", i, files[i], expected)
@@ -112,14 +112,14 @@ func TestFindSchemaFiles(t *testing.T) {
 
 func TestValidateSchemaFiles(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	// Create test files
 	validFile := filepath.Join(tempDir, "valid.graphql")
 	invalidExtFile := filepath.Join(tempDir, "invalid.txt")
-	
-	os.WriteFile(validFile, []byte("type Test { id: ID! }"), 0644)
-	os.WriteFile(invalidExtFile, []byte("not graphql"), 0644)
-	
+
+	_ = os.WriteFile(validFile, []byte("type Test { id: ID! }"), 0600)
+	_ = os.WriteFile(invalidExtFile, []byte("not graphql"), 0600)
+
 	tests := []struct {
 		name    string
 		files   []string
@@ -146,15 +146,15 @@ func TestValidateSchemaFiles(t *testing.T) {
 			wantErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := ValidateSchemaFiles(tt.files)
-			
+
 			if tt.wantErr && err == nil {
 				t.Errorf("ValidateSchemaFiles() expected error but got none")
 			}
-			
+
 			if !tt.wantErr && err != nil {
 				t.Errorf("ValidateSchemaFiles() unexpected error: %v", err)
 			}
@@ -165,31 +165,31 @@ func TestValidateSchemaFiles(t *testing.T) {
 func TestMatchesPattern(t *testing.T) {
 	// Create a temp directory for testing with actual files
 	tempDir := t.TempDir()
-	
+
 	// Create test directory structure
-	os.MkdirAll(filepath.Join(tempDir, "subdirectory"), 0755)
-	os.MkdirAll(filepath.Join(tempDir, "a", "b", "c"), 0755)
-	os.MkdirAll(filepath.Join(tempDir, "schemas"), 0755)
-	os.MkdirAll(filepath.Join(tempDir, "other"), 0755)
-	
+	_ = os.MkdirAll(filepath.Join(tempDir, "subdirectory"), 0750)
+	_ = os.MkdirAll(filepath.Join(tempDir, "a", "b", "c"), 0750)
+	_ = os.MkdirAll(filepath.Join(tempDir, "schemas"), 0750)
+	_ = os.MkdirAll(filepath.Join(tempDir, "other"), 0750)
+
 	// Create test files
 	testFiles := map[string]string{
-		"schema.graphql":                filepath.Join(tempDir, "schema.graphql"),
-		"schema.txt":                    filepath.Join(tempDir, "schema.txt"),
-		"subdirectory/schema.graphql":   filepath.Join(tempDir, "subdirectory", "schema.graphql"),
-		"a/b/c/schema.graphql":          filepath.Join(tempDir, "a", "b", "c", "schema.graphql"),
-		"schemas/types.graphql":         filepath.Join(tempDir, "schemas", "types.graphql"),
-		"other/types.graphql":           filepath.Join(tempDir, "other", "types.graphql"),
+		"schema.graphql":              filepath.Join(tempDir, "schema.graphql"),
+		"schema.txt":                  filepath.Join(tempDir, "schema.txt"),
+		"subdirectory/schema.graphql": filepath.Join(tempDir, "subdirectory", "schema.graphql"),
+		"a/b/c/schema.graphql":        filepath.Join(tempDir, "a", "b", "c", "schema.graphql"),
+		"schemas/types.graphql":       filepath.Join(tempDir, "schemas", "types.graphql"),
+		"other/types.graphql":         filepath.Join(tempDir, "other", "types.graphql"),
 	}
-	
+
 	// Create the actual files
 	for _, filePath := range testFiles {
-		os.WriteFile(filePath, []byte("type Test { id: ID! }"), 0644)
+		_ = os.WriteFile(filePath, []byte("type Test { id: ID! }"), 0600)
 	}
-	
+
 	testCases := []struct {
 		name, file, pattern string
-		expected bool
+		expected            bool
 	}{
 		{"simple match", "schema.graphql", "*.graphql", true},
 		{"no match", "schema.txt", "*.graphql", false},
@@ -198,18 +198,18 @@ func TestMatchesPattern(t *testing.T) {
 		{"prefix with recursive", "schemas/types.graphql", "schemas/**/*.graphql", true},
 		{"prefix mismatch", "other/types.graphql", "schemas/**/*.graphql", false},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			path := testFiles[tc.file]
 			pattern := filepath.Join(tempDir, tc.pattern)
-			
+
 			matched, err := matchesPattern(path, pattern)
 			if err != nil {
 				t.Errorf("matchesPattern() unexpected error: %v", err)
 				return
 			}
-			
+
 			if matched != tc.expected {
 				t.Errorf("matchesPattern() = %v, expected %v", matched, tc.expected)
 			}

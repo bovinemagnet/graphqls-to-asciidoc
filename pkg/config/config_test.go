@@ -5,6 +5,13 @@ import (
 	"testing"
 )
 
+const (
+	testVersion      = "test-version"
+	testBuildTime    = "2025-01-01_12:00:00"
+	testOutputFile   = "output.adoc"
+	testNonExistPath = "/nonexistentdir/output.adoc"
+)
+
 func TestNewConfig(t *testing.T) {
 	config := NewConfig()
 
@@ -75,8 +82,8 @@ func TestVersionOutput(t *testing.T) {
 	originalBuildTime := BuildTime
 
 	// Set test values
-	Version = "test-version"
-	BuildTime = "2025-01-01_12:00:00"
+	Version = testVersion
+	BuildTime = testBuildTime
 
 	// Restore original values after test
 	defer func() {
@@ -86,10 +93,10 @@ func TestVersionOutput(t *testing.T) {
 
 	// Note: We can't easily test the actual version output without capturing stdout,
 	// but we can verify the variables are accessible
-	if Version != "test-version" {
+	if Version != testVersion {
 		t.Errorf("Version variable not set correctly, got %q", Version)
 	}
-	if BuildTime != "2025-01-01_12:00:00" {
+	if BuildTime != testBuildTime {
 		t.Errorf("BuildTime variable not set correctly, got %q", BuildTime)
 	}
 
@@ -124,11 +131,11 @@ func TestConfigWithAllFlags(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile.Name())
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	// Test string fields
 	cfg.SchemaFile = tmpFile.Name()
-	cfg.OutputFile = "output.adoc"
+	cfg.OutputFile = testOutputFile
 
 	// Test validation
 	err = cfg.Validate()
@@ -140,7 +147,7 @@ func TestConfigWithAllFlags(t *testing.T) {
 	if cfg.SchemaFile != tmpFile.Name() {
 		t.Error("SchemaFile not set correctly")
 	}
-	if cfg.OutputFile != "output.adoc" {
+	if cfg.OutputFile != testOutputFile {
 		t.Error("OutputFile not set correctly")
 	}
 	if !cfg.ExcludeInternal {
@@ -226,7 +233,7 @@ func TestGetOutputWriterFileSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile.Name())
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 	cfg.OutputFile = tmpFile.Name()
 	file, isStdout, err := cfg.GetOutputWriter()
 	if err != nil {
@@ -238,12 +245,12 @@ func TestGetOutputWriterFileSuccess(t *testing.T) {
 	if file == os.Stdout {
 		t.Error("Expected file not to be os.Stdout for OutputFile")
 	}
-	file.Close()
+	_ = file.Close()
 }
 
 func TestGetOutputWriterFileDirNotExist(t *testing.T) {
 	cfg := NewConfig()
-	cfg.OutputFile = "/nonexistentdir/output.adoc"
+	cfg.OutputFile = testNonExistPath
 	_, _, err := cfg.GetOutputWriter()
 	if err == nil {
 		t.Error("Expected error for non-existent output directory")
@@ -256,9 +263,9 @@ func TestValidateOutputDirNotExist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile.Name())
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 	cfg.SchemaFile = tmpFile.Name()
-	cfg.OutputFile = "/nonexistentdir/output.adoc"
+	cfg.OutputFile = testNonExistPath
 	err = cfg.Validate()
 	if err == nil {
 		t.Error("Expected error for non-existent output directory in Validate")
