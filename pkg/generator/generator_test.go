@@ -1067,6 +1067,77 @@ func TestGetArgumentsBlock(t *testing.T) {
 	}
 }
 
+func TestGetArgumentsBlockWithDirectives(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{},
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	field := &ast.FieldDefinition{
+		Name: "getBookings",
+		Arguments: ast.ArgumentDefinitionList{
+			&ast.ArgumentDefinition{
+				Name: "codes",
+				Type: &ast.Type{
+					Elem: &ast.Type{NamedType: "String"},
+				},
+				Directives: ast.DirectiveList{
+					&ast.Directive{
+						Name: "maxElements",
+						Arguments: ast.ArgumentList{
+							&ast.Argument{
+								Name:  "max",
+								Value: &ast.Value{Raw: "50", Kind: ast.IntValue},
+							},
+						},
+					},
+				},
+			},
+			&ast.ArgumentDefinition{
+				Name: "bookingReferenceID",
+				Type: &ast.Type{
+					Elem: &ast.Type{NamedType: "String"},
+				},
+				Directives: ast.DirectiveList{
+					&ast.Directive{
+						Name: "maxExtendedElements",
+					},
+				},
+			},
+			&ast.ArgumentDefinition{
+				Name: "pageNumber",
+				Type: &ast.Type{NamedType: "Int", NonNull: true},
+				DefaultValue: &ast.Value{Raw: "0", Kind: ast.IntValue},
+			},
+		},
+	}
+
+	args := gen.getArgumentsBlock(field, gen.schema.Types)
+
+	expectedContent := []string{
+		"@maxElements(max: 50)",
+		"@maxExtendedElements",
+	}
+
+	for _, expected := range expectedContent {
+		if !strings.Contains(args, expected) {
+			t.Errorf("Arguments block should contain %q, got:\n%s", expected, args)
+		}
+	}
+
+	// Arguments without directives should NOT have @ symbols
+	if strings.Contains(args, "pageNumber") && strings.Contains(args, "pageNumber") {
+		// Find the pageNumber line and check it has no @
+		for _, line := range strings.Split(args, "\n") {
+			if strings.Contains(line, "pageNumber") && strings.Contains(line, "@") {
+				t.Errorf("pageNumber should not have directives, got: %s", line)
+			}
+		}
+	}
+}
+
 func TestGetArgumentsBlockEmpty(t *testing.T) {
 	cfg := config.NewConfig()
 	schema := &ast.Schema{Types: make(map[string]*ast.Definition)}

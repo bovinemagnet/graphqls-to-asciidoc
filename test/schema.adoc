@@ -1,7 +1,7 @@
 = GraphQL Documentation
 :toc: left
-:revdate: Thu, 09 Apr 2026 14:28:17 AEST
-:commandline: /home/paul/.cache/go-build/23/238e9a7b4efda51ac981714a1420b596bff1105fd85a91ebc70be5f6e633253e-d/main -schema test/schema.graphql
+:revdate: Thu, 09 Apr 2026 14:50:25 AEST
+:commandline: /tmp/go-build2242572939/b001/exe/main -schema test/schema.graphql
 :sourceFile: test/schema.graphql
 :reproducible:
 :page-partial:
@@ -119,8 +119,8 @@ FeaturedTweets(
 
 // tag::arguments-FeaturedTweets[]
 .Arguments
-* `limit : Int! = 10`
-* `category : String`
+* `limit : Int! = 10 @Size(min: 1, max: 100)`
+* `category : String @length(max: 50)`
 // end::arguments-FeaturedTweets[]
 
 // end::query-FeaturedTweets[]

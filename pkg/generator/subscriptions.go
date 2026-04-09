@@ -139,7 +139,7 @@ func (g *Generator) getSubscriptionDetails(f *ast.FieldDefinition, definitionsMa
 		fmt.Fprintf(&b, "// tag::subscription-arguments-%s[]\n", f.Name)
 		fmt.Fprintln(&b, ".Arguments")
 		for _, arg := range f.Arguments {
-			fmt.Fprint(&b, formatArgumentListItem(arg.Name, arg.Type.String(), arg.DefaultValue))
+			fmt.Fprint(&b, formatArgumentListItem(arg.Name, arg.Type.String(), arg.DefaultValue, arg.Directives))
 		}
 		fmt.Fprintf(&b, "// end::subscription-arguments-%s[]\n", f.Name)
 		fmt.Fprintln(&b)
