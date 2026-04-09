@@ -77,7 +77,7 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 			HasDirectives:        len(f.Directives) > 0,
 			IsInternal:           isInternal(f.Name, f.Description),
 			Changelog:            changelogText,
-			NumberedRefs:         numberedRefs,
+			NumberedRefs:         parser.CrossReferenceTypeNames(numberedRefs, definitionsMap),
 		}
 		mutationInfos = append(mutationInfos, mutationInfo)
 	}

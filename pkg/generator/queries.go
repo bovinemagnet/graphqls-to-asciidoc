@@ -94,9 +94,10 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 	fmt.Fprintf(g.writer, "// end::method-signature-%s[]\n", field.Name)
 	fmt.Fprintln(g.writer)
 
-	// Add numbered references from description
+	// Add numbered references from description with cross-referenced type names
 	fmt.Fprintf(g.writer, "// tag::method-args-%s[]\n", field.Name)
 	if strings.TrimSpace(numberedRefs) != "" {
+		numberedRefs = parser.CrossReferenceTypeNames(numberedRefs, definitionsMap)
 		fmt.Fprint(g.writer, strings.TrimSpace(numberedRefs))
 		fmt.Fprintln(g.writer)
 	}

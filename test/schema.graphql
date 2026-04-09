@@ -421,6 +421,23 @@ type Query {
     ): [Tweet]
 
     """
+    Retrieve featured tweets with changelog tracking.
+
+    add.version: 1.0.0
+    update.version: 1.5.0
+    update.version: 2.0.0
+
+    **Arguments:**
+    - `limit`: the maximum number of featured tweets to return
+    - `category`: filter by tweet category
+    - _RETURNS_: a list of `Tweet` objects matching the criteria.
+    """
+    FeaturedTweets(
+        limit: Int! = 10
+        category: String
+    ): [Tweet]
+
+    """
     Get a list of tweets, remember that it is `2024-01-08` for testing dates in the conversion.
 
     - `limit`:  the max numer; _Required_

@@ -178,3 +178,45 @@ func ProcessTypeNameForSignature(typeName string, definitionsMap map[string]*ast
 	// For built-in types, just return the plain type name
 	return typeName
 }
+
+// CrossReferenceTypeNames scans text for type names present in definitionsMap and
+// wraps them in AsciiDoc cross-references <<Type,`Type`>>.
+// Handles both backtick-wrapped (`Type`) and bare type names (whole-word match only).
+// Skips names already inside <<...>> cross-references.
+func CrossReferenceTypeNames(text string, definitionsMap map[string]*ast.Definition) string {
+	if text == "" || len(definitionsMap) == 0 {
+		return text
+	}
+
+	result := text
+
+	for typeName := range definitionsMap {
+		xref := fmt.Sprintf("<<%s,`%s`>>", typeName, typeName)
+
+		// First pass: replace backtick-wrapped type names: `Type` → <<Type,`Type`>>
+		// But skip if already inside a cross-reference (preceded by comma)
+		backtickPattern := regexp.MustCompile("(?:^|[^,])`" + regexp.QuoteMeta(typeName) + "`")
+		result = backtickPattern.ReplaceAllStringFunc(result, func(match string) string {
+			// Preserve any leading character that isn't the backtick
+			prefix := ""
+			if !strings.HasPrefix(match, "`") {
+				prefix = match[:1]
+				match = match[1:]
+			}
+			return prefix + xref
+		})
+
+		// Second pass: replace bare type names as whole words
+		// Skip if already inside <<...>> cross-references or backticks
+		barePattern := regexp.MustCompile(`(?:^|[^<` + "`" + `a-zA-Z])` + regexp.QuoteMeta(typeName) + `(?:[^>` + "`" + `a-zA-Z]|$)`)
+		result = barePattern.ReplaceAllStringFunc(result, func(match string) string {
+			// Extract prefix and suffix characters around the type name
+			idx := strings.Index(match, typeName)
+			prefix := match[:idx]
+			suffix := match[idx+len(typeName):]
+			return prefix + xref + suffix
+		})
+	}
+
+	return result
+}

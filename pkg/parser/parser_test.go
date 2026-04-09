@@ -474,6 +474,80 @@ func TestConvertDescriptionToRefNumbers(t *testing.T) {
 	}
 }
 
+func TestCrossReferenceTypeNames(t *testing.T) {
+	mockDefinitionsMap := map[string]*ast.Definition{
+		"Tweet":     {Name: "Tweet", Kind: ast.Object},
+		"Booking":   {Name: "Booking", Kind: ast.Object},
+		"Sentiment": {Name: "Sentiment", Kind: ast.Object},
+	}
+
+	testCases := []struct {
+		name     string
+		text     string
+		expected string
+	}{
+		{
+			name:     "backtick-wrapped type gets cross-referenced",
+			text:     "<5> _RETURNS_: an array of `Tweet`.",
+			expected: "<5> _RETURNS_: an array of <<Tweet,`Tweet`>>.",
+		},
+		{
+			name:     "bare type name gets cross-referenced",
+			text:     "<2> _RETURNS_: a list of Sentiment objects",
+			expected: "<2> _RETURNS_: a list of <<Sentiment,`Sentiment`>> objects",
+		},
+		{
+			name:     "built-in types are not cross-referenced",
+			text:     "<3> _RETURNS_: String containing memory status",
+			expected: "<3> _RETURNS_: String containing memory status",
+		},
+		{
+			name:     "already cross-referenced text is not double-wrapped",
+			text:     "<5> _RETURNS_: an array of <<Tweet,`Tweet`>>.",
+			expected: "<5> _RETURNS_: an array of <<Tweet,`Tweet`>>.",
+		},
+		{
+			name:     "multiple type names in one line",
+			text:     "<3> _RETURNS_: a list of `Tweet` and `Booking` objects",
+			expected: "<3> _RETURNS_: a list of <<Tweet,`Tweet`>> and <<Booking,`Booking`>> objects",
+		},
+		{
+			name:     "type name as substring should not match",
+			text:     "<2> _RETURNS_: a list of Bookings and Tweets",
+			expected: "<2> _RETURNS_: a list of Bookings and Tweets",
+		},
+		{
+			name:     "multiple lines with type names",
+			text:     "<1> `codes`: A list of codes\n<2> _RETURNS_: a list of `Tweet`.",
+			expected: "<1> `codes`: A list of codes\n<2> _RETURNS_: a list of <<Tweet,`Tweet`>>.",
+		},
+		{
+			name:     "empty text",
+			text:     "",
+			expected: "",
+		},
+		{
+			name:     "no type names present",
+			text:     "<1> `param`: some description\n<2> _RETURNS_: the result",
+			expected: "<1> `param`: some description\n<2> _RETURNS_: the result",
+		},
+		{
+			name:     "bare type at end of line",
+			text:     "<2> _RETURNS_ : a list of Sentiment",
+			expected: "<2> _RETURNS_ : a list of <<Sentiment,`Sentiment`>>",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := CrossReferenceTypeNames(tc.text, mockDefinitionsMap)
+			if result != tc.expected {
+				t.Errorf("CrossReferenceTypeNames() = %q; expected %q", result, tc.expected)
+			}
+		})
+	}
+}
+
 func TestConvertAdmonitionBlocks(t *testing.T) {
 	tests := []struct {
 		name     string
