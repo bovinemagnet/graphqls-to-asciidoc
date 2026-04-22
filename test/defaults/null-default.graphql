@@ -1,0 +1,26 @@
+# Fixture: explicit null default distinct from absent default.
+#
+# `middleName: String = null` is NOT the same as `middleName: String`. The
+# former documents that null is the expected default; the latter says
+# there is no default. The rendered output should reflect the difference.
+
+type Query {
+  """
+  Look up a person by given name and optional explicit-null middle name.
+  """
+  findPerson(
+    "Given name (required)."
+    givenName: String!
+    "Middle name. Explicitly defaults to null."
+    middleName: String = null
+    "Family name. No default — client must supply it."
+    familyName: String!
+  ): Person
+}
+
+"A person."
+type Person {
+  givenName: String!
+  middleName: String
+  familyName: String!
+}

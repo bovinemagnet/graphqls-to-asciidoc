@@ -1,0 +1,44 @@
+# Fixture: forward-looking federation-directive coverage alongside default values.
+#
+# Today (pre-#51), this exercises the existing raw-directive renderer in
+# formatDirectiveList (pkg/generator/generator.go). Once federation mode
+# lands, the same fixture naturally drives the new federation-aware rendering
+# without fixture churn.
+#
+# The federation directives are declared inline so the current parser can
+# consume them — the implicit-definitions preamble described in issue #51
+# will make those explicit declarations optional.
+
+"Primary entity key. Declared inline for parseability pre-#51."
+directive @key(fields: String!) repeatable on OBJECT | INTERFACE
+
+"Field owned by another subgraph; satisfied via a resolver elsewhere."
+directive @external on FIELD_DEFINITION
+
+"Field resolvable by multiple subgraphs (federation v2)."
+directive @shareable on OBJECT | FIELD_DEFINITION
+
+type Query {
+  """
+  Look up a product by id with a list-default filter.
+  """
+  product(
+    "Product identifier."
+    id: ID!
+    "Status filter. Defaults to ACTIVE."
+    status: ProductStatus = ACTIVE
+  ): Product
+}
+
+enum ProductStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+"A federated entity. The @key identifies it across subgraphs."
+type Product @key(fields: "id") @shareable {
+  id: ID!
+  name: String!
+  "Owned by the inventory subgraph in a federated deployment."
+  stockLevel: Int @external
+}

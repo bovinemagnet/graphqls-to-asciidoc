@@ -1,0 +1,29 @@
+# Fixture: default values on directive arguments.
+#
+# Exercises the directive-definition rendering path for defaults, which is
+# distinct from argument-list rendering for operations. The `@paginate`
+# directive below has two arguments, both carrying defaults — one scalar,
+# one explicit null.
+
+"""
+Paginate a list field.
+
+Applies a default page size and an optional cursor.
+"""
+directive @paginate(
+  "Maximum number of items per page."
+  max: Int = 100
+  "Cursor token. Defaults to null (start from the beginning)."
+  cursor: String = null
+) on FIELD_DEFINITION
+
+type Query {
+  "A list field annotated with @paginate to show it applied in practice."
+  articles: [Article!]! @paginate(max: 50)
+}
+
+"An article."
+type Article {
+  id: ID!
+  title: String!
+}

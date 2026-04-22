@@ -1,0 +1,29 @@
+# Fixture: defaults on fields of an input type.
+#
+# Distinct from argument defaults on operations — here the default lives
+# on the input type definition and is rendered inside the input's table.
+
+"Input for the updateUser mutation. Each field carries a default."
+input UpdateUserInput {
+  "User's display name. Defaults to empty string."
+  displayName: String = ""
+  "Whether the user is active. Defaults to true."
+  active: Boolean = true
+  "User's tags. Defaults to an empty list."
+  tags: [String!] = []
+}
+
+type Mutation {
+  """
+  Update a user using an input type whose fields carry defaults.
+  """
+  updateUser(id: ID!, input: UpdateUserInput!): User
+}
+
+"A platform user."
+type User {
+  id: ID!
+  displayName: String!
+  active: Boolean!
+  tags: [String!]!
+}
