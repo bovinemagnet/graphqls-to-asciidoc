@@ -1128,7 +1128,7 @@ func TestGetArgumentsBlockWithDirectives(t *testing.T) {
 	}
 
 	// Arguments without directives should NOT have @ symbols
-	if strings.Contains(args, "pageNumber") && strings.Contains(args, "pageNumber") {
+	if strings.Contains(args, "pageNumber") {
 		// Find the pageNumber line and check it has no @
 		for _, line := range strings.Split(args, "\n") {
 			if strings.Contains(line, "pageNumber") && strings.Contains(line, "@") {

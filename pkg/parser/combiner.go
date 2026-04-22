@@ -44,7 +44,7 @@ func CombineSchemaFiles(files []string) (string, error) {
 
 		// Add a comment to indicate source file for debugging
 		if len(files) > 1 {
-			combined.WriteString(fmt.Sprintf("# Source: %s\n", files[i]))
+			fmt.Fprintf(&combined, "# Source: %s\n", files[i])
 		}
 
 		combined.WriteString(strings.TrimSpace(content))

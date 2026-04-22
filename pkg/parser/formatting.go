@@ -197,11 +197,12 @@ func CrossReferenceTypeNames(text string, definitionsMap map[string]*ast.Definit
 		// But skip if already inside a cross-reference (preceded by comma)
 		backtickPattern := regexp.MustCompile("(?:^|[^,])`" + regexp.QuoteMeta(typeName) + "`")
 		result = backtickPattern.ReplaceAllStringFunc(result, func(match string) string {
-			// Preserve any leading character that isn't the backtick
+			// Preserve any leading character that isn't the backtick; the
+			// rest of `match` (the backticked type name) is wholly replaced
+			// by `xref`, so we don't need to reference it again.
 			prefix := ""
 			if !strings.HasPrefix(match, "`") {
 				prefix = match[:1]
-				match = match[1:]
 			}
 			return prefix + xref
 		})

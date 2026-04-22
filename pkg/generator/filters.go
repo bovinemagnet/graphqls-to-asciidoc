@@ -52,19 +52,13 @@ func isDeprecated(description string, directives ast.DirectiveList) bool {
 // isPreview checks if a field is in preview status.
 // A field is considered preview if its description contains "PREVIEW" markers.
 func isPreview(description string) bool {
-	if strings.Contains(strings.ToUpper(description), "PREVIEW") {
-		return true
-	}
-	return false
+	return strings.Contains(strings.ToUpper(description), "PREVIEW")
 }
 
 // isLegacy checks if a field is legacy.
 // A field is considered legacy if its description contains "LEGACY" markers.
 func isLegacy(description string) bool {
-	if strings.Contains(strings.ToUpper(description), "LEGACY") {
-		return true
-	}
-	return false
+	return strings.Contains(strings.ToUpper(description), "LEGACY")
 }
 
 // isZeroVersion checks if a field has version 0.0.0 or 0.0.0.0.

@@ -44,9 +44,9 @@ func Extract(description string) string {
 		versions := changelog[action]
 		if len(versions) > 0 {
 			if len(versions) == 1 {
-				changelogBuilder.WriteString(fmt.Sprintf("* %s: %s\n", action, versions[0]))
+				fmt.Fprintf(&changelogBuilder, "* %s: %s\n", action, versions[0])
 			} else {
-				changelogBuilder.WriteString(fmt.Sprintf("* %s: %s\n", action, strings.Join(versions, ", ")))
+				fmt.Fprintf(&changelogBuilder, "* %s: %s\n", action, strings.Join(versions, ", "))
 			}
 		}
 	}
