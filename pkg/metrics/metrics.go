@@ -5,8 +5,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/config"
 	"github.com/jedib0t/go-pretty/v6/table"
+
+	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/config"
 )
 
 // SectionMetrics holds timing and count data for a processing section

@@ -1107,8 +1107,8 @@ func TestGetArgumentsBlockWithDirectives(t *testing.T) {
 				},
 			},
 			&ast.ArgumentDefinition{
-				Name: "pageNumber",
-				Type: &ast.Type{NamedType: "Int", NonNull: true},
+				Name:         "pageNumber",
+				Type:         &ast.Type{NamedType: "Int", NonNull: true},
 				DefaultValue: &ast.Value{Raw: "0", Kind: ast.IntValue},
 			},
 		},
