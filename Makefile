@@ -134,6 +134,22 @@ test_doc:
 	$(GORUN) main.go -schema test/schema.graphql > test/schema.adoc
 	@echo "$(GREEN)✓ Test documentation generated$(NC)"
 
+# Regenerate default-value fixture goldens under test/defaults/.
+# The two non-deterministic preamble lines (:revdate:, :commandline:) are
+# normalised so the committed goldens stay diff-stable. The matching test
+# (TestDefaultValueGoldens in main_test.go) performs the same normalisation
+# and fails if generated output drifts from the committed golden.
+test_doc_defaults: build
+	@echo "$(BLUE)Regenerating default-value fixture goldens...$(NC)"
+	@for f in test/defaults/*.graphql; do \
+		out="$${f%.graphql}.adoc"; \
+		$(GOBIN)/$(BINARY_NAME) -schema "$$f" 2>/dev/null | \
+			sed -E 's/^:revdate:.*$$/:revdate: <REVDATE>/; s/^:commandline:.*$$/:commandline: <COMMANDLINE>/' \
+			> "$$out"; \
+		echo "  $$out"; \
+	done
+	@echo "$(GREEN)✓ Default-value goldens regenerated$(NC)"
+
 # Validate that test doc generation works
 validate-test-doc: build
 	@echo "$(BLUE)Validating test documentation generation...$(NC)"
@@ -161,4 +177,4 @@ docker-build:
 	docker build -t $(BINARY_NAME):$(VERSION) .
 	@echo "$(GREEN)✓ Docker image built successfully$(NC)"
 
-.PHONY: all build build-all test test-coverage test-bench lint fmt fmt-check vet mod-tidy security clean test_doc validate-test-doc check install-tools docker-build
+.PHONY: all build build-all test test-coverage test-bench lint fmt fmt-check vet mod-tidy security clean test_doc test_doc_defaults validate-test-doc check install-tools docker-build

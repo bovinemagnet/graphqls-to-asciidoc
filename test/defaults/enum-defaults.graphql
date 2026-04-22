@@ -1,0 +1,26 @@
+# Fixture: default values referencing enum types.
+#
+# Exercises argument defaults whose value is an enum literal.
+
+"Sort order for list queries."
+enum SortOrder {
+  "Ascending order."
+  ASC
+  "Descending order."
+  DESC
+}
+
+type Query {
+  """
+  List items with an enum-default sort argument.
+  """
+  listItems(
+    "Sort order. Defaults to ascending."
+    sort: SortOrder = ASC
+  ): [Item!]!
+}
+
+"An opaque item."
+type Item {
+  id: ID!
+}

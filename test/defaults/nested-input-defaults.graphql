@@ -1,0 +1,37 @@
+# Fixture: argument default whose value is a nested input-object literal.
+#
+# Exercises recursive printing of default values: the default for the
+# `filter` argument is itself an object containing another nested object.
+
+"Publication status."
+enum Status {
+  PUBLISHED
+  DRAFT
+}
+
+"Pagination input."
+input PageInput {
+  size: Int! = 10
+  offset: Int! = 0
+}
+
+"Composite filter input. Default is a whole nested object literal."
+input FilterInput {
+  status: Status = PUBLISHED
+  page: PageInput = { size: 10, offset: 0 }
+}
+
+type Query {
+  """
+  Find records using a filter that itself carries nested defaults.
+  """
+  findRecords(
+    "Filter input whose default is an entire nested object literal."
+    filter: FilterInput = { status: PUBLISHED, page: { size: 10, offset: 0 } }
+  ): [Record!]!
+}
+
+"An opaque record."
+type Record {
+  id: ID!
+}

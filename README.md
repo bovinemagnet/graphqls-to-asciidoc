@@ -18,6 +18,7 @@ A powerful CLI tool that converts GraphQL schema files (.graphqls) to comprehens
 - **Code Blocks**: Markdown-style ````lang` blocks converted to AsciiDoc `[source,lang]` format
 - **Table Conversion**: Markdown tables automatically converted to AsciiDoc format with proper headers
 - **AsciiDoc Pass-through**: Existing AsciiDoc tables preserved unchanged for maximum flexibility
+- **Default Values**: Argument and input-field default values rendered in signatures, argument lists, and input tables — including scalar, enum, list, null, and nested-object defaults
 - **Deprecated Directives**: Automatic formatting of `@deprecated` annotations
 
 ### 🔧 Configuration Options
@@ -267,6 +268,62 @@ update.version: 1.2.3
 deprecated.version: 2.0.0
 """
 ```
+
+### Default Values
+
+Default values on field arguments, directive arguments, and input-type fields
+are rendered in the generated output — both in operation signatures and in
+the argument / field tables. Scalar, enum, list, null, and nested-object
+defaults are all supported.
+
+Given this schema fragment:
+
+```graphql
+type Query {
+  listUsers(
+    "Maximum number of items to return."
+    limit: Int! = 10
+    "Sort order. Defaults to ascending."
+    sort: SortOrder = ASC
+    "Tag whitelist. Defaults to common draft-tags."
+    tags: [String!] = ["draft", "preview"]
+    "Middle name. Explicitly defaults to null."
+    middleName: String = null
+  ): [User!]!
+}
+
+input UpdateUserInput {
+  displayName: String = ""
+  active: Boolean = true
+  tags: [String!] = []
+}
+```
+
+the tool produces (abridged):
+
+```asciidoc
+.query: listUsers
+[source, kotlin]
+----
+listUsers(
+  limit: Int! = 10 , <1>
+  sort: SortOrder = ASC , <2>
+  tags: [String!] = ["draft","preview"] , <3>
+  middleName: String = null <4>
+): [User!]!
+----
+
+.Arguments
+* `limit : Int! = 10`
+* `sort : SortOrder = ASC`
+* `tags : [String!] = ["draft","preview"]`
+* `middleName : String = null`
+```
+
+For input types, defaults appear in a dedicated *Default* column alongside
+each field's type and description. See `test/defaults/` for worked fixtures
+covering every supported shape (scalar, enum, list, null, nested input,
+directive argument, and input-field defaults).
 
 ## Output Format
 

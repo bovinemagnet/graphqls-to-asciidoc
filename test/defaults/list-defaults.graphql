@@ -1,0 +1,26 @@
+# Fixture: default values on list-typed arguments.
+#
+# Exercises:
+# - Required-element non-null list default: [String!] = ["draft", "preview"]
+# - Nullable-element nullable list default: [Int] = [1, null, 3]
+# - Empty list default: [ID!] = []
+
+type Query {
+  """
+  Search articles with list-typed default arguments.
+  """
+  searchArticles(
+    "Tag whitelist. Defaults to common draft-tags."
+    tags: [String!] = ["draft", "preview"]
+    "Score buckets. Defaults to a mixed list containing null."
+    scores: [Int] = [1, null, 3]
+    "Pre-selected IDs. Defaults to an empty list."
+    selected: [ID!] = []
+  ): [Article!]!
+}
+
+"A published article."
+type Article {
+  id: ID!
+  title: String!
+}

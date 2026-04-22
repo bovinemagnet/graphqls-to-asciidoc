@@ -35,6 +35,7 @@ The application follows a **modular architecture** with clear separation of conc
 3. **Documentation Generation** (`pkg/generator/`):
    - Template-based AsciiDoc generation
    - Support for all GraphQL constructs (Queries, Mutations, Subscriptions, Types, Enums, Inputs, Directives, Scalars)
+   - Default-value rendering on arguments, directive arguments, and input-type fields — covers scalar, enum, list, null, and nested-object defaults
    - Catalogue mode for quick reference tables of queries, mutations, and subscriptions
    - Advanced description processing (changelog extraction, markdown conversion, cross-references)
    - Configurable section inclusion/exclusion

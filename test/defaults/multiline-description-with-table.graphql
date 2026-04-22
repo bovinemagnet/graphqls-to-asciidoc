@@ -1,0 +1,39 @@
+# Fixture: multi-paragraph description embedding a markdown table, on a
+# query whose arguments also carry default values.
+#
+# Exercises the interaction between description processing (markdown → AsciiDoc
+# table conversion, multi-paragraph handling) and argument-list rendering of
+# defaults. Regression cover for issue #29.
+
+type Query {
+  """
+  Retrieve paginated tweets.
+
+  This query returns tweets filtered by the supplied arguments. The
+  sentiment score is clamped to the range `[-1.0, 1.0]`.
+
+  | Argument  | Type | Required | Description                          |
+  | --------- | ---- | -------- | ------------------------------------ |
+  | limit     | Int  | No       | Maximum results (default: 20)        |
+  | offset    | Int  | No       | Starting position (default: 0)       |
+  | minScore  | Float| No       | Minimum sentiment score (default: 0) |
+
+  Pagination follows the standard offset/limit pattern. Prefer cursor
+  pagination for large result sets.
+  """
+  tweets(
+    "Maximum results to return."
+    limit: Int = 20
+    "Starting offset into the result set."
+    offset: Int = 0
+    "Minimum sentiment score to include."
+    minScore: Float = 0.0
+  ): [Tweet!]!
+}
+
+"A tweet."
+type Tweet {
+  id: ID!
+  body: String!
+  sentiment: Float
+}
