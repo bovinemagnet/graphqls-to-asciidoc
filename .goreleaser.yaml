@@ -86,7 +86,7 @@ brews:
     directory: Formula
     homepage: "https://github.com/bovinemagnet/graphqls-to-asciidoc"
     description: "Convert GraphQL schema files to comprehensive AsciiDoc documentation"
-    license: "MIT"
+    license: "Apache-2.0"
     test: |
       system "#{bin}/graphqls-to-asciidoc -version"
     install: |

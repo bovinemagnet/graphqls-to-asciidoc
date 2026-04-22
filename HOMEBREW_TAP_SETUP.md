@@ -30,7 +30,7 @@ brew install graphqls-to-asciidoc
 1. **`Formula/graphqls-to-asciidoc.rb`** - Main Homebrew formula
 2. **`README.md`** - Tap documentation and usage instructions  
 3. **`SETUP.md`** - Detailed setup and maintenance guide
-4. **`LICENSE`** - MIT license
+4. **`LICENSE`** - Apache 2.0 license
 5. **`.gitignore`** - Standard ignore patterns
 6. **`.github/workflows/update-formula.yml`** - CI for formula validation
 
