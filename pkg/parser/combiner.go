@@ -44,7 +44,7 @@ func CombineSchemaFiles(files []string) (string, error) {
 
 		// Add a comment to indicate source file for debugging
 		if len(files) > 1 {
-			combined.WriteString(fmt.Sprintf("# Source: %s\n", files[i]))
+			fmt.Fprintf(&combined, "# Source: %s\n", files[i])
 		}
 
 		combined.WriteString(strings.TrimSpace(content))
@@ -69,7 +69,7 @@ func checkForConflicts(content, filename string, definedTypes map[string]string)
 	for _, pattern := range typePatterns {
 		matches := pattern.FindAllStringSubmatch(content, -1)
 		for _, match := range matches {
-			if len(match) < 2 {
+			if len(match) < 2 { //nolint:mnd // regex group count
 				continue
 			}
 

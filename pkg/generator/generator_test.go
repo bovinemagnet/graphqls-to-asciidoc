@@ -1107,8 +1107,8 @@ func TestGetArgumentsBlockWithDirectives(t *testing.T) {
 				},
 			},
 			&ast.ArgumentDefinition{
-				Name: "pageNumber",
-				Type: &ast.Type{NamedType: "Int", NonNull: true},
+				Name:         "pageNumber",
+				Type:         &ast.Type{NamedType: "Int", NonNull: true},
 				DefaultValue: &ast.Value{Raw: "0", Kind: ast.IntValue},
 			},
 		},
@@ -1128,7 +1128,7 @@ func TestGetArgumentsBlockWithDirectives(t *testing.T) {
 	}
 
 	// Arguments without directives should NOT have @ symbols
-	if strings.Contains(args, "pageNumber") && strings.Contains(args, "pageNumber") {
+	if strings.Contains(args, "pageNumber") {
 		// Find the pageNumber line and check it has no @
 		for _, line := range strings.Split(args, "\n") {
 			if strings.Contains(line, "pageNumber") && strings.Contains(line, "@") {
@@ -1228,10 +1228,7 @@ func TestGetInputFieldsTableString(t *testing.T) {
 		},
 	}
 
-	table, err := gen.getInputFieldsTableString(inputDef, gen.schema.Types)
-	if err != nil {
-		t.Fatalf("getInputFieldsTableString returned error: %v", err)
-	}
+	table := gen.getInputFieldsTableString(inputDef, gen.schema.Types)
 
 	// Debug: print actual table
 	fmt.Printf("ACTUAL INPUT FIELDS TABLE:\n%s\n", table)
@@ -1851,10 +1848,7 @@ func TestInputFieldsTableWithDefaultValues(t *testing.T) {
 		},
 	}
 
-	table, err := gen.getInputFieldsTableString(inputDef, gen.schema.Types)
-	if err != nil {
-		t.Fatalf("getInputFieldsTableString returned error: %v", err)
-	}
+	table := gen.getInputFieldsTableString(inputDef, gen.schema.Types)
 
 	// Table should have Default column
 	if !strings.Contains(table, "| Field | Type | Default | Description") {

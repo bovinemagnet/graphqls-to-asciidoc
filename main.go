@@ -51,18 +51,18 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to find schema files with pattern '%s': %v", cfg.SchemaPattern, err)
 		}
-		
+
 		// Validate files are accessible and have correct extensions
 		if err := schemaParser.ValidateSchemaFiles(files); err != nil {
 			log.Fatalf("Schema file validation failed: %v", err)
 		}
-		
+
 		// Combine multiple schema files
 		schemaContent, err = schemaParser.CombineSchemaFiles(files)
 		if err != nil {
 			log.Fatalf("Failed to combine schema files: %v", err)
 		}
-		
+
 		if cfg.Verbose {
 			log.Printf("Combined %d schema files: %v", len(files), files)
 		}
@@ -78,11 +78,11 @@ func main() {
 	// Remove fragments from schema content before parsing
 	// Fragments are client-side constructs and don't belong in schema files
 	cleanedSchema := schemaParser.RemoveFragments(schemaContent)
-	
+
 	if cfg.Verbose && cleanedSchema != schemaContent {
 		log.Printf("Removed fragment definitions from schema")
 	}
-	
+
 	// Parse GraphQL schema directly - code blocks in descriptions are safe
 	// because they're inside triple-quoted strings
 	source := &ast.Source{
@@ -94,7 +94,7 @@ func main() {
 	if gqlErr != nil {
 		log.Fatalf("Failed to parse GraphQL schema: %v", gqlErr)
 	}
-	
+
 	// Convert document to schema-like structure for generator
 	// For now, let's create a simple schema from the doc
 	schema := &ast.Schema{
@@ -104,7 +104,7 @@ func main() {
 
 	for _, def := range doc.Definitions {
 		schema.Types[def.Name] = def
-		
+
 		// Identify special root types
 		switch def.Name {
 		case "Query":
@@ -115,7 +115,7 @@ func main() {
 			schema.Subscription = def
 		}
 	}
-	
+
 	// Handle directive definitions
 	for _, def := range doc.Directives {
 		schema.Directives[def.Name] = def
@@ -140,4 +140,3 @@ func main() {
 		log.Fatalf("Failed to generate documentation: %v", err)
 	}
 }
-

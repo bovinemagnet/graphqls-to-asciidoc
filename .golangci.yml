@@ -66,10 +66,17 @@ linters:
       - linters:
           - funlen
           - mnd
+          - lll
         path: _test\.go
       - linters:
           - lll
         source: '^//go:generate '
+      # Templates carry long prose inside raw-string literals where
+      # //nolint:lll comments can't be placed (they would become template
+      # output). Line-length checks aren't meaningful here.
+      - linters:
+          - lll
+        path: pkg/templates/templates\.go
       - path: (.+)\.go$
         text: exported (type|method|function) .* should have comment or be unexported
       - path: (.+)\.go$

@@ -61,25 +61,34 @@ func ParseFlags() *Config {
 	// Core flags with short aliases
 	flag.StringVar(&config.SchemaFile, "schema", "", "Path to the GraphQL schema file")
 	flag.StringVar(&config.SchemaFile, "s", "", "Path to the GraphQL schema file (shorthand)")
+	//nolint:lll // flag usage text
 	flag.StringVar(&config.SchemaPattern, "pattern", "", "Pattern to match multiple GraphQL schema files (e.g., 'schemas/**/*.graphqls')")
 	flag.StringVar(&config.SchemaPattern, "p", "", "Pattern to match multiple GraphQL schema files (shorthand)")
 	flag.StringVar(&config.OutputFile, "output", "", "Output file path (default: stdout)")
 	flag.StringVar(&config.OutputFile, "o", "", "Output file path (shorthand)")
 
 	// Control flags
+	//nolint:lll // flag usage text
 	flag.BoolVar(&config.ExcludeInternal, "exclude-internal", false, "Exclude internal queries from output (deprecated: use --inc-internal)")
 	flag.BoolVar(&config.ExcludeInternal, "x", false, "Exclude internal queries from output (deprecated, shorthand)")
+	//nolint:lll // flag usage text
 	flag.BoolVar(&config.IncludeInternal, "inc-internal", false, "Include internal queries/mutations (those starting with 'internal' or marked INTERNAL)")
+	//nolint:lll // flag usage text
 	flag.BoolVar(&config.IncludeDeprecated, "inc-deprecated", false, "Include deprecated queries/mutations (those with @deprecated directive or marked deprecated)")
+	//nolint:lll // flag usage text
 	flag.BoolVar(&config.IncludePreview, "inc-preview", false, "Include preview queries/mutations (those marked as PREVIEW or preview)")
+	//nolint:lll // flag usage text
 	flag.BoolVar(&config.IncludeLegacy, "inc-legacy", false, "Include legacy queries/mutations (those marked as LEGACY or legacy)")
+	//nolint:lll // flag usage text
 	flag.BoolVar(&config.IncludeZeroVersion, "inc-zero", false, "Include items with version 0.0.0 or 0.0.0.0 (by default, items marked with @version: 0.0.0 or @version: 0.0.0.0 are excluded)")
+	//nolint:lll // flag usage text
 	flag.BoolVar(&config.IncludeChangelog, "inc-changelog", false, "Include changelog information in catalogue descriptions (version annotations)")
 	flag.BoolVar(&config.ShowVersion, "version", false, "Show program version and build information")
 	flag.BoolVar(&config.ShowVersion, "v", false, "Show program version and build information (shorthand)")
 	flag.BoolVar(&config.ShowHelp, "help", false, "Show detailed help information")
 	flag.BoolVar(&config.ShowHelp, "h", false, "Show detailed help information (shorthand)")
 	flag.BoolVar(&config.Verbose, "verbose", false, "Enable verbose logging with metrics")
+	//nolint:lll // flag usage text
 	flag.BoolVar(&config.Catalogue, "catalogue", false, "Generate a catalogue table with query/mutation names and first sentence descriptions")
 	flag.StringVar(&config.SubTitle, "sub-title", "", "Optional subtitle for catalogue (e.g., 'Activities')")
 

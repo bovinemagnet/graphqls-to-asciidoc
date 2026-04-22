@@ -95,7 +95,7 @@ func ConvertMarkdownCodeBlocks(description string) string {
 	return reMarkdownCodeBlock.ReplaceAllStringFunc(description, func(match string) string {
 		// Extract language and content from the match
 		submatches := reMarkdownCodeBlock.FindStringSubmatch(match)
-		if len(submatches) < 3 {
+		if len(submatches) < 3 { //nolint:mnd // regex group count
 			return match // Return original if parsing fails
 		}
 
@@ -228,7 +228,7 @@ func ConvertAdmonitionBlocks(description string) string {
 		patternBold := reAdmonitionBold[admonType]
 		description = patternBold.ReplaceAllStringFunc(description, func(match string) string {
 			submatches := patternBold.FindStringSubmatch(match)
-			if len(submatches) < 2 {
+			if len(submatches) < 2 { //nolint:mnd // regex group count
 				return match
 			}
 			content := strings.TrimSpace(submatches[1])
@@ -239,7 +239,7 @@ func ConvertAdmonitionBlocks(description string) string {
 		patternPlain := reAdmonitionPlain[admonType]
 		description = patternPlain.ReplaceAllStringFunc(description, func(match string) string {
 			submatches := patternPlain.FindStringSubmatch(match)
-			if len(submatches) < 2 {
+			if len(submatches) < 2 { //nolint:mnd // regex group count
 				return match
 			}
 			content := strings.TrimSpace(submatches[1])

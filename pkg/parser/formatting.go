@@ -197,23 +197,23 @@ func CrossReferenceTypeNames(text string, definitionsMap map[string]*ast.Definit
 		// But skip if already inside a cross-reference (preceded by comma)
 		backtickPattern := regexp.MustCompile("(?:^|[^,])`" + regexp.QuoteMeta(typeName) + "`")
 		result = backtickPattern.ReplaceAllStringFunc(result, func(match string) string {
-			// Preserve any leading character that isn't the backtick
+			// Preserve any leading character that isn't the backtick; the
+			// rest of `match` (the backticked type name) is wholly replaced
+			// by `xref`, so we don't need to reference it again.
 			prefix := ""
 			if !strings.HasPrefix(match, "`") {
 				prefix = match[:1]
-				match = match[1:]
 			}
 			return prefix + xref
 		})
 
 		// Second pass: replace bare type names as whole words
 		// Skip if already inside <<...>> cross-references or backticks
-		barePattern := regexp.MustCompile(`(?:^|[^<` + "`" + `a-zA-Z])` + regexp.QuoteMeta(typeName) + `(?:[^>` + "`" + `a-zA-Z]|$)`)
+		barePattern := regexp.MustCompile(`(?:^|[^<` + "`" + `a-zA-Z])` + regexp.QuoteMeta(typeName) + `(?:[^>` + "`" + `a-zA-Z]|$)`) //nolint:lll // inline regex literal
 		result = barePattern.ReplaceAllStringFunc(result, func(match string) string {
-			// Extract prefix and suffix characters around the type name
-			idx := strings.Index(match, typeName)
-			prefix := match[:idx]
-			suffix := match[idx+len(typeName):]
+			// Extract prefix and suffix characters around the type name.
+			// barePattern guarantees typeName is present, so Cut always finds it.
+			prefix, suffix, _ := strings.Cut(match, typeName)
 			return prefix + xref + suffix
 		})
 	}

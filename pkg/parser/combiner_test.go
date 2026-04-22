@@ -7,14 +7,16 @@ import (
 	"testing"
 )
 
+const userTypeSDL = `type User {
+  id: ID!
+  name: String
+}`
+
 func TestCombineSchemaFiles(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create test schema files
-	file1Content := `type User {
-  id: ID!
-  name: String
-}`
+	file1Content := userTypeSDL
 
 	file2Content := `type Post {
   id: ID!
@@ -25,8 +27,8 @@ func TestCombineSchemaFiles(t *testing.T) {
 	file1 := filepath.Join(tempDir, "user.graphql")
 	file2 := filepath.Join(tempDir, "post.graphql")
 
-	_ = os.WriteFile(file1, []byte(file1Content), 0644)
-	_ = os.WriteFile(file2, []byte(file2Content), 0644)
+	_ = os.WriteFile(file1, []byte(file1Content), 0600)
+	_ = os.WriteFile(file2, []byte(file2Content), 0600)
 
 	tests := []struct {
 		name     string
@@ -88,10 +90,7 @@ func TestCombineSchemaFilesConflicts(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create conflicting schema files
-	file1Content := `type User {
-  id: ID!
-  name: String
-}`
+	file1Content := userTypeSDL
 
 	file2Content := `type User {
   id: ID!
@@ -101,8 +100,8 @@ func TestCombineSchemaFilesConflicts(t *testing.T) {
 	file1 := filepath.Join(tempDir, "user1.graphql")
 	file2 := filepath.Join(tempDir, "user2.graphql")
 
-	_ = os.WriteFile(file1, []byte(file1Content), 0644)
-	_ = os.WriteFile(file2, []byte(file2Content), 0644)
+	_ = os.WriteFile(file1, []byte(file1Content), 0600)
+	_ = os.WriteFile(file2, []byte(file2Content), 0600)
 
 	_, err := CombineSchemaFiles([]string{file1, file2})
 	if err == nil {
