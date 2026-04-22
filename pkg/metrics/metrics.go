@@ -174,10 +174,11 @@ func (m *Metrics) LogMetricsTable() {
 	t.Render()
 
 	// Calculate processing efficiency
-	processingRatio := float64(totalSectionTime) / float64(totalDuration) * 100
+	const percent = 100
+	processingRatio := float64(totalSectionTime) / float64(totalDuration) * percent
 	fmt.Fprintf(os.Stderr, "\nProcessing Efficiency: %.1f%% (%.2fms overhead)\n",
 		processingRatio,
-		float64(totalDuration-totalSectionTime)/1000000)
+		float64(totalDuration-totalSectionTime)/float64(time.Millisecond))
 
 	fmt.Fprintf(os.Stderr, "Items per Second:      %.1f\n",
 		float64(totalProcessed)/totalDuration.Seconds())
@@ -195,13 +196,14 @@ func formatEnabled(enabled bool) string {
 
 // formatDuration formats duration in a human-readable way
 func formatDuration(d time.Duration) string {
-	if d < time.Microsecond {
+	switch {
+	case d < time.Microsecond:
 		return fmt.Sprintf("%dns", d.Nanoseconds())
-	} else if d < time.Millisecond {
-		return fmt.Sprintf("%.1fμs", float64(d.Nanoseconds())/1000)
-	} else if d < time.Second {
-		return fmt.Sprintf("%.1fms", float64(d.Nanoseconds())/1000000)
-	} else {
+	case d < time.Millisecond:
+		return fmt.Sprintf("%.1fμs", float64(d.Nanoseconds())/float64(time.Microsecond))
+	case d < time.Second:
+		return fmt.Sprintf("%.1fms", float64(d.Nanoseconds())/float64(time.Millisecond))
+	default:
 		return fmt.Sprintf("%.2fs", d.Seconds())
 	}
 }

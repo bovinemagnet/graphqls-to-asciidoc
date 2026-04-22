@@ -69,7 +69,7 @@ func checkForConflicts(content, filename string, definedTypes map[string]string)
 	for _, pattern := range typePatterns {
 		matches := pattern.FindAllStringSubmatch(content, -1)
 		for _, match := range matches {
-			if len(match) < 2 {
+			if len(match) < 2 { //nolint:mnd // regex group count
 				continue
 			}
 

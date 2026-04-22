@@ -13,6 +13,17 @@ const (
 	langGraphQL       = "graphql"
 	complexitySimple  = "simple"
 	metadataValueTrue = "true"
+
+	// Description-complexity word-count thresholds.
+	simpleWordLimit   = 50  // < this ⇒ "simple"
+	moderateWordLimit = 200 // < this ⇒ "moderate"; otherwise "complex"
+
+	// Maximum first-line preview length before truncating with ellipsis.
+	firstLinePreviewMax = 100
+
+	// splitOnFirstPeriod is the N for strings.SplitN when we only want the
+	// first sentence plus remainder.
+	splitOnFirstPeriod = 2
 )
 
 // DescriptionParser handles parsing of structured and unstructured descriptions
@@ -195,7 +206,7 @@ func (dp *DescriptionParser) parseJSDocAnnotations(description string, structure
 		if strings.Contains(line, "@param") {
 			// Try to match nested parameter first (with dot notation)
 			nestedPattern := regexp.MustCompile(`@param\s+(\S+)\.(\S+)\s*-?\s*(.*)`)
-			if match := nestedPattern.FindStringSubmatch(line); len(match) >= 4 {
+			if match := nestedPattern.FindStringSubmatch(line); len(match) >= 4 { //nolint:mnd // regex group count
 				paramName := match[1]
 				subParam := match[2]
 				paramDesc := strings.TrimSpace(match[3])
@@ -218,7 +229,7 @@ func (dp *DescriptionParser) parseJSDocAnnotations(description string, structure
 			} else {
 				// Try simple parameter pattern
 				simplePattern := regexp.MustCompile(`@param\s+(\S+)\s*-?\s*(.*)`)
-				if match := simplePattern.FindStringSubmatch(line); len(match) >= 3 {
+				if match := simplePattern.FindStringSubmatch(line); len(match) >= 3 { //nolint:mnd // regex group count
 					paramName := match[1]
 					paramDesc := strings.TrimSpace(match[2])
 
@@ -259,7 +270,7 @@ func (dp *DescriptionParser) parseJSDocAnnotations(description string, structure
 	throwsMatches := throwsPattern.FindAllStringSubmatch(description, -1)
 
 	for _, match := range throwsMatches {
-		if len(match) >= 3 {
+		if len(match) >= 3 { //nolint:mnd // regex group count
 			structure.Errors = append(structure.Errors, ErrorDoc{
 				Code:        match[1],
 				Description: strings.TrimSpace(match[2]),
@@ -280,7 +291,7 @@ func (dp *DescriptionParser) parseChangelog(description string, structure *Descr
 	for _, line := range lines {
 		// Check if this is a version annotation
 		versionPattern := regexp.MustCompile(`@version\s+(add|update|deprecate|remove)\.(\S+)(?:\s+(.*))?`)
-		if match := versionPattern.FindStringSubmatch(line); len(match) >= 3 {
+		if match := versionPattern.FindStringSubmatch(line); len(match) >= 3 { //nolint:mnd // regex group count (optional)
 			// Save previous version if exists
 			if currentVersion != "" {
 				structure.Changelog = append(structure.Changelog, ChangelogEntry{
@@ -293,7 +304,7 @@ func (dp *DescriptionParser) parseChangelog(description string, structure *Descr
 			// Start new version
 			currentType = match[1]
 			currentVersion = match[2]
-			if len(match) > 3 {
+			if len(match) > 3 { //nolint:mnd // optional 3rd capture
 				currentDesc = match[3]
 			} else {
 				currentDesc = ""
@@ -322,7 +333,7 @@ func (dp *DescriptionParser) parseExamples(description string, structure *Descri
 	matches := codeBlockPattern.FindAllStringSubmatch(description, -1)
 
 	for _, match := range matches {
-		if len(match) < 4 {
+		if len(match) < 4 { //nolint:mnd // regex group count
 			continue
 		}
 
@@ -348,7 +359,7 @@ func (dp *DescriptionParser) parseExamples(description string, structure *Descri
 		sectionMatches := sectionCodePattern.FindAllStringSubmatch(section, -1)
 
 		for i, match := range sectionMatches {
-			if len(match) >= 3 {
+			if len(match) >= 3 { //nolint:mnd // regex group count
 				// Check if we haven't already added this example
 				alreadyAdded := false
 				for _, ex := range structure.Examples {
@@ -485,11 +496,12 @@ func (dp *DescriptionParser) calculateMetrics(structure *DescriptionStructure, r
 	}
 
 	// Determine complexity
-	if metrics.WordCount < 50 {
+	switch {
+	case metrics.WordCount < simpleWordLimit:
 		metrics.Complexity = complexitySimple
-	} else if metrics.WordCount < 200 {
+	case metrics.WordCount < moderateWordLimit:
 		metrics.Complexity = "moderate"
-	} else {
+	default:
 		metrics.Complexity = "complex"
 	}
 
@@ -500,7 +512,7 @@ func (dp *DescriptionParser) calculateMetrics(structure *DescriptionStructure, r
 func (dp *DescriptionParser) ExtractParameterType(description string) (paramType, cleanDesc string) {
 	// Pattern to match type annotations like (String), [String], {String}, <String>
 	typePattern := regexp.MustCompile(`^\s*[\(\[\{<]([^\)\]\}>]+)[\)\]\}>]\s*(.*)`)
-	if match := typePattern.FindStringSubmatch(description); len(match) > 2 {
+	if match := typePattern.FindStringSubmatch(description); len(match) > 2 { //nolint:mnd // regex group count
 		return match[1], strings.TrimSpace(match[2])
 	}
 	return "", description
@@ -578,16 +590,16 @@ func ExtractFirstSentence(description string) string {
 
 	// If no period with space after it, check for period at end of string
 	if strings.Contains(firstNonEmptyLine, ".") {
-		parts := strings.SplitN(firstNonEmptyLine, ".", 2)
+		parts := strings.SplitN(firstNonEmptyLine, ".", splitOnFirstPeriod)
 		if len(parts) > 0 && strings.TrimSpace(parts[0]) != "" {
 			return strings.TrimSpace(parts[0]) + "."
 		}
 	}
 
 	// If no period found at all, return the whole cleaned description
-	// but limit it to a reasonable length (first 100 chars)
-	if len(firstNonEmptyLine) > 100 {
-		return firstNonEmptyLine[:100] + "..."
+	// but limit it to a reasonable length.
+	if len(firstNonEmptyLine) > firstLinePreviewMax {
+		return firstNonEmptyLine[:firstLinePreviewMax] + "..."
 	}
 	return firstNonEmptyLine
 }

@@ -25,7 +25,7 @@ func Extract(description string) string {
 	}
 
 	for _, match := range matches {
-		if len(match) >= 3 {
+		if len(match) >= 3 { //nolint:mnd // regex group count
 			action := match[1]
 			version := strings.TrimSpace(match[2])
 			if _, exists := changelog[action]; exists {
