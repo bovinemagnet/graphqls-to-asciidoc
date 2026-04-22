@@ -137,11 +137,7 @@ func (g *Generator) generateInputs(sortedDefs []*ast.Definition, definitionsMap 
 			continue
 		}
 
-		fieldsTableString, err := g.getInputFieldsTableString(def, definitionsMap)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error generating fields table for input %s: %v\n", def.Name, err)
-			fieldsTableString = errFieldsTable
-		}
+		fieldsTableString := g.getInputFieldsTableString(def, definitionsMap)
 
 		processedDesc, changelogText := changelog.ProcessWithChangelog(def.Description, parser.ProcessDescription)
 
@@ -183,7 +179,10 @@ func (g *Generator) generateInputs(sortedDefs []*ast.Definition, definitionsMap 
 	return count
 }
 
-func (g *Generator) getInputFieldsTableString(def *ast.Definition, definitionsMap map[string]*ast.Definition) (string, error) {
+func (g *Generator) getInputFieldsTableString(
+	def *ast.Definition,
+	definitionsMap map[string]*ast.Definition,
+) string {
 	var builder strings.Builder
 
 	builder.WriteString(".input: " + def.Name + "\n")
@@ -206,7 +205,7 @@ func (g *Generator) getInputFieldsTableString(def *ast.Definition, definitionsMa
 	}
 
 	builder.WriteString("|===\n")
-	return builder.String(), nil
+	return builder.String()
 }
 
 func (g *Generator) generateDirectives() int {
@@ -389,7 +388,10 @@ func (g *Generator) generateScalars(sortedDefs []*ast.Definition) int {
 }
 
 // getTypeFieldsTableString builds the fields table for a type definition
-func (g *Generator) getTypeFieldsTableString(t *ast.Definition, definitionsMap map[string]*ast.Definition) (string, error) {
+func (g *Generator) getTypeFieldsTableString(
+	t *ast.Definition,
+	definitionsMap map[string]*ast.Definition,
+) (string, error) {
 	var builder strings.Builder
 
 	builder.WriteString(".type: " + t.Name + "\n")

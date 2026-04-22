@@ -117,7 +117,9 @@ func (g *Generator) getSubscriptionDetails(f *ast.FieldDefinition, definitionsMa
 		fmt.Fprintf(&b, " <%d> \n", i+1)
 	}
 
-	fmt.Fprintf(&b, "): %s <%d>\n", parser.ProcessTypeNameForSignature(f.Type.String(), definitionsMap), len(f.Arguments)+1)
+	fmt.Fprintf(&b, "): %s <%d>\n",
+		parser.ProcessTypeNameForSignature(f.Type.String(), definitionsMap),
+		len(f.Arguments)+1)
 	fmt.Fprintln(&b, "----")
 	fmt.Fprintf(&b, "// end::subscription-signature-%s[]\n", f.Name)
 	fmt.Fprintln(&b)

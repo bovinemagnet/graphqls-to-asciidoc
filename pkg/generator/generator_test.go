@@ -1228,10 +1228,7 @@ func TestGetInputFieldsTableString(t *testing.T) {
 		},
 	}
 
-	table, err := gen.getInputFieldsTableString(inputDef, gen.schema.Types)
-	if err != nil {
-		t.Fatalf("getInputFieldsTableString returned error: %v", err)
-	}
+	table := gen.getInputFieldsTableString(inputDef, gen.schema.Types)
 
 	// Debug: print actual table
 	fmt.Printf("ACTUAL INPUT FIELDS TABLE:\n%s\n", table)
@@ -1851,10 +1848,7 @@ func TestInputFieldsTableWithDefaultValues(t *testing.T) {
 		},
 	}
 
-	table, err := gen.getInputFieldsTableString(inputDef, gen.schema.Types)
-	if err != nil {
-		t.Fatalf("getInputFieldsTableString returned error: %v", err)
-	}
+	table := gen.getInputFieldsTableString(inputDef, gen.schema.Types)
 
 	// Table should have Default column
 	if !strings.Contains(table, "| Field | Type | Default | Description") {

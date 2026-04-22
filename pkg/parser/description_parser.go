@@ -556,7 +556,7 @@ func ExtractFirstSentence(description string) string {
 	}
 
 	// Remove common markers like INTERNAL, JDR internal, etc.
-	cleaned := regexp.MustCompile(`(?i)^\s*(\*\*INTERNAL\*\*|INTERNAL|JDR\s+internal)\s*:?\s*`).ReplaceAllString(description, "")
+	cleaned := regexp.MustCompile(`(?i)^\s*(\*\*INTERNAL\*\*|INTERNAL|JDR\s+internal)\s*:?\s*`).ReplaceAllString(description, "") //nolint:lll // inline regex literal
 
 	// Remove asciidoc anchor markers like [#anchor-name] or [anchor-name]
 	cleaned = regexp.MustCompile(`(?m)^\s*\[#?[^\]]+\]\s*\n?`).ReplaceAllString(cleaned, "")

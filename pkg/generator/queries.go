@@ -89,7 +89,9 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 		fmt.Fprintf(g.writer, " <%d> \n", i+1)
 	}
 
-	fmt.Fprintf(g.writer, "): %s <%d>\n", parser.ProcessTypeNameForSignature(field.Type.String(), definitionsMap), len(field.Arguments)+1)
+	fmt.Fprintf(g.writer, "): %s <%d>\n",
+		parser.ProcessTypeNameForSignature(field.Type.String(), definitionsMap),
+		len(field.Arguments)+1)
 	fmt.Fprintln(g.writer, "----")
 	fmt.Fprintf(g.writer, "// end::method-signature-%s[]\n", field.Name)
 	fmt.Fprintln(g.writer)
