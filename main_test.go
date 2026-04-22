@@ -21,6 +21,10 @@ import (
 const (
 	testVersion   = "test-version"
 	testBuildTime = "2025-01-01_12:00:00"
+
+	rootQuery        = "Query"
+	rootMutation     = "Mutation"
+	rootSubscription = "Subscription"
 )
 
 func TestVersionOutput(t *testing.T) {
@@ -138,8 +142,12 @@ func TestDefaultValueGoldens(t *testing.T) {
 			}
 
 			if got != string(want) {
-				t.Errorf("%s: output does not match golden.\nRegenerate with `make test_doc_defaults` and re-run.\n\nFirst-diff region:\n%s",
-					goldenPath, firstDiff(got, string(want)))
+				t.Errorf(
+					"%s: output does not match golden.\n"+
+						"Regenerate with `make test_doc_defaults` and re-run.\n\n"+
+						"First-diff region:\n%s",
+					goldenPath, firstDiff(got, string(want)),
+				)
 			}
 		})
 	}
@@ -169,11 +177,11 @@ func renderFixture(schemaPath string) (string, error) {
 	for _, def := range doc.Definitions {
 		schema.Types[def.Name] = def
 		switch def.Name {
-		case "Query":
+		case rootQuery:
 			schema.Query = def
-		case "Mutation":
+		case rootMutation:
 			schema.Mutation = def
-		case "Subscription":
+		case rootSubscription:
 			schema.Subscription = def
 		}
 	}
