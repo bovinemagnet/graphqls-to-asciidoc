@@ -211,10 +211,9 @@ func CrossReferenceTypeNames(text string, definitionsMap map[string]*ast.Definit
 		// Skip if already inside <<...>> cross-references or backticks
 		barePattern := regexp.MustCompile(`(?:^|[^<` + "`" + `a-zA-Z])` + regexp.QuoteMeta(typeName) + `(?:[^>` + "`" + `a-zA-Z]|$)`)
 		result = barePattern.ReplaceAllStringFunc(result, func(match string) string {
-			// Extract prefix and suffix characters around the type name
-			idx := strings.Index(match, typeName)
-			prefix := match[:idx]
-			suffix := match[idx+len(typeName):]
+			// Extract prefix and suffix characters around the type name.
+			// barePattern guarantees typeName is present, so Cut always finds it.
+			prefix, suffix, _ := strings.Cut(match, typeName)
 			return prefix + xref + suffix
 		})
 	}

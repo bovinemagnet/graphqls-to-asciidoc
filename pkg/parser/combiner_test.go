@@ -7,14 +7,16 @@ import (
 	"testing"
 )
 
+const userTypeSDL = `type User {
+  id: ID!
+  name: String
+}`
+
 func TestCombineSchemaFiles(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create test schema files
-	file1Content := `type User {
-  id: ID!
-  name: String
-}`
+	file1Content := userTypeSDL
 
 	file2Content := `type Post {
   id: ID!
@@ -88,10 +90,7 @@ func TestCombineSchemaFilesConflicts(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create conflicting schema files
-	file1Content := `type User {
-  id: ID!
-  name: String
-}`
+	file1Content := userTypeSDL
 
 	file2Content := `type User {
   id: ID!
