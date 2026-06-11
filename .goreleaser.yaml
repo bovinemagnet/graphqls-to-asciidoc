@@ -15,7 +15,8 @@ before:
     - go mod download
     - go generate ./...
 builds:
-  - env:
+  - id: default
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
@@ -33,9 +34,27 @@ builds:
       - -s -w
       - -X main.Version={{.Version}}
       - -X main.BuildTime={{.Date}}
+  - id: homebrew
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    goamd64:
+      - v1
+    ldflags:
+      - -s -w
+      - -X main.Version={{.Version}}
+      - -X main.BuildTime={{.Date}}
 
 archives:
-  - formats: [tar.gz]
+  - id: default
+    ids:
+      - default
+    formats: [tar.gz]
     # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
       {{ .ProjectName }}_
@@ -50,6 +69,17 @@ archives:
     format_overrides:
       - goos: windows
         formats: [zip]
+  - id: homebrew
+    ids:
+      - homebrew
+    formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- "_homebrew" }}
 
 checksum:
   name_template: 'checksums.txt'
@@ -76,21 +106,20 @@ changelog:
     - title: Others
       order: 999
 
-# Homebrew tap configuration
-brews:
+# Homebrew cask configuration (replaces deprecated 'brews')
+homebrew_casks:
   - name: graphqls-to-asciidoc
+    ids:
+      - homebrew
     repository:
       owner: bovinemagnet
       name: homebrew-tap
       branch: main
-    directory: Formula
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Casks
     homepage: "https://github.com/bovinemagnet/graphqls-to-asciidoc"
     description: "Convert GraphQL schema files to comprehensive AsciiDoc documentation"
     license: "Apache-2.0"
-    test: |
-      system "#{bin}/graphqls-to-asciidoc -version"
-    install: |
-      bin.install "graphqls-to-asciidoc"
 
 release:
   github:
