@@ -51,3 +51,5 @@ internal.adoc
 # Worktrees
 .worktrees/
 scratch.adoc
+AGENTS.md
+.codex

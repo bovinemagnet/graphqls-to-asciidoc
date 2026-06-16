@@ -95,31 +95,9 @@ func main() {
 		log.Fatalf("Failed to parse GraphQL schema: %v", gqlErr)
 	}
 
-	// Convert document to schema-like structure for generator
-	// For now, let's create a simple schema from the doc
-	schema := &ast.Schema{
-		Types:      make(map[string]*ast.Definition),
-		Directives: make(map[string]*ast.DirectiveDefinition),
-	}
-
-	for _, def := range doc.Definitions {
-		schema.Types[def.Name] = def
-
-		// Identify special root types
-		switch def.Name {
-		case "Query":
-			schema.Query = def
-		case "Mutation":
-			schema.Mutation = def
-		case "Subscription":
-			schema.Subscription = def
-		}
-	}
-
-	// Handle directive definitions
-	for _, def := range doc.Directives {
-		schema.Directives[def.Name] = def
-	}
+	// Convert document to schema, merging any `extend type` extensions into
+	// their base definitions.
+	schema := schemaParser.BuildSchema(doc)
 
 	// Get output writer
 	outputWriter, shouldClose, err := cfg.GetOutputWriter()

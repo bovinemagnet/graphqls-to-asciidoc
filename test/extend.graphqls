@@ -1,0 +1,36 @@
+"""
+A minimal schema exercising `extend type` on the root operation types and on a
+regular object type, used to verify that extension fields appear in the
+generated documentation.
+"""
+type Query {
+  baseQuery: String
+}
+
+extend type Query {
+  extendedQuery: String
+}
+
+type Mutation {
+  baseMutation: String
+}
+
+extend type Mutation {
+  extendedMutation: String
+}
+
+type Subscription {
+  baseSubscription: String
+}
+
+extend type Subscription {
+  extendedSubscription: String
+}
+
+type Book {
+  title: String
+}
+
+extend type Book {
+  author: String
+}

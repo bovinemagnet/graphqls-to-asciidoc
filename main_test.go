@@ -21,10 +21,6 @@ import (
 const (
 	testVersion   = "test-version"
 	testBuildTime = "2025-01-01_12:00:00"
-
-	rootQuery        = "Query"
-	rootMutation     = "Mutation"
-	rootSubscription = "Subscription"
 )
 
 func TestVersionOutput(t *testing.T) {
@@ -170,24 +166,7 @@ func renderFixture(schemaPath string) (string, error) {
 		return "", gqlErr
 	}
 
-	schema := &ast.Schema{
-		Types:      make(map[string]*ast.Definition),
-		Directives: make(map[string]*ast.DirectiveDefinition),
-	}
-	for _, def := range doc.Definitions {
-		schema.Types[def.Name] = def
-		switch def.Name {
-		case rootQuery:
-			schema.Query = def
-		case rootMutation:
-			schema.Mutation = def
-		case rootSubscription:
-			schema.Subscription = def
-		}
-	}
-	for _, def := range doc.Directives {
-		schema.Directives[def.Name] = def
-	}
+	schema := parser.BuildSchema(doc)
 
 	cfg := config.NewConfig()
 	cfg.SchemaFile = schemaPath
