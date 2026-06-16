@@ -67,6 +67,8 @@ linters:
           - funlen
           - mnd
           - lll
+          - goconst
+          - dupl
         path: _test\.go
       - linters:
           - lll
