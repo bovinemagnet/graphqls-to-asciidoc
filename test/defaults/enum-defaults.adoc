@@ -66,6 +66,9 @@ listItems(
 *Return:* [<<Item,`Item`>>!]!
 // end::query-return-listItems[]
 
+// tag::query-changelog-listItems[]
+// end::query-changelog-listItems[]
+
 // tag::arguments-listItems[]
 .Arguments
 * `sort : SortOrder = ASC`
@@ -82,6 +85,9 @@ listItems(
 // tag::type-description-Item[]
 An opaque item.
 // end::type-description-Item[]
+
+// tag::type-changelog-Item[]
+// end::type-changelog-Item[]
 
 // tag::type-def-Item[]
 .type: Item
@@ -109,6 +115,8 @@ An opaque item.
 // tag::enum-description-SortOrder[]
 Sort order for list queries.
 // end::enum-description-SortOrder[]
+// tag::enum-changelog-SortOrder[]
+// end::enum-changelog-SortOrder[]
 
 // tag::enum-def-SortOrder[]
 .enum: SortOrder

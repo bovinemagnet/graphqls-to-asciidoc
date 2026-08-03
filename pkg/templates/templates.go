@@ -83,7 +83,7 @@ No subscriptions exist in this schema.
 
 const MutationTemplate = `
 // tag::mutation[]
-[[mutations]]
+[[mutation]]
 {{.MutationTag}}
 
 {{- if .MutationObjectDescription }}
@@ -123,11 +123,11 @@ GraphQL Mutations are entry points on a GraphQL server that provides write acces
 *Return:* {{ .TypeName }}
 // end::mutation-return-{{.Name}}[]
 
-{{- if .Changelog }}
 // tag::mutation-changelog-{{.Name}}[]
+{{- if .Changelog }}
 {{ .Changelog }}
-// end::mutation-changelog-{{.Name}}[]
 {{- end }}
+// end::mutation-changelog-{{.Name}}[]
 
 {{- if .HasArguments }}
 // tag::arguments-{{.Name}}[]
@@ -167,11 +167,11 @@ const TypeSectionTemplate = `
 // end::type-description-{{.Name}}[]
 {{- end }}
 
-{{- if .Changelog }}
 // tag::type-changelog-{{.Name}}[]
+{{- if .Changelog }}
 {{ .Changelog }}
-// end::type-changelog-{{.Name}}[]
 {{- end }}
+// end::type-changelog-{{.Name}}[]
 
 // tag::type-def-{{.Name}}[]
 {{ .FieldsTable }}
@@ -195,6 +195,11 @@ const EnumSectionTemplate = `
 {{ .Description | printAsciiDocTagsTmpl }}
 // end::enum-description-{{.Name}}[]
 {{- end }}
+// tag::enum-changelog-{{.Name}}[]
+{{- if .Changelog }}
+{{ .Changelog }}
+{{- end }}
+// end::enum-changelog-{{.Name}}[]
 
 // tag::enum-def-{{.Name}}[]
 {{ .ValuesTable }}
@@ -238,11 +243,11 @@ const InputSectionTemplate = `
 // end::input-description-{{.Name}}[]
 {{- end }}
 
-{{- if .Changelog }}
 // tag::input-changelog-{{.Name}}[]
+{{- if .Changelog }}
 {{ .Changelog }}
-// end::input-changelog-{{.Name}}[]
 {{- end }}
+// end::input-changelog-{{.Name}}[]
 
 // tag::input-def-{{.Name}}[]
 {{ .FieldsTable }}

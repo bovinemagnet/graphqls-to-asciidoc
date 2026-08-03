@@ -68,6 +68,9 @@ searchArticles(
 *Return:* [<<Article,`Article`>>!]!
 // end::query-return-searchArticles[]
 
+// tag::query-changelog-searchArticles[]
+// end::query-changelog-searchArticles[]
+
 // tag::arguments-searchArticles[]
 .Arguments
 * `tags : [String!] = ["draft","preview"]`
@@ -86,6 +89,9 @@ searchArticles(
 // tag::type-description-Article[]
 A published article.
 // end::type-description-Article[]
+
+// tag::type-changelog-Article[]
+// end::type-changelog-Article[]
 
 // tag::type-def-Article[]
 .type: Article

@@ -121,7 +121,7 @@ func TestGenerateWithEmptySchema(t *testing.T) {
 
 	// Should NOT contain mutation/subscription sections since schema.Mutation and schema.Subscription are nil
 	notExpectedSections := []string{
-		"== Mutations",
+		"== Mutation", // also covers the catalogue's "== Mutations" heading
 		"== Subscriptions",
 	}
 
@@ -238,7 +238,7 @@ func TestGenerateConfigFlags(t *testing.T) {
 			configModifier: func(cfg *config.Config) {
 				cfg.IncludeMutations = false
 			},
-			shouldNotContain: []string{"== Mutations"},
+			shouldNotContain: []string{"== Mutation"}, // also covers "== Mutations"
 		},
 		{
 			name: "types disabled",
@@ -925,7 +925,8 @@ func TestGenerateMutations(t *testing.T) {
 	// Print the actual output for debugging
 	// fmt.Println("ACTUAL OUTPUT:\n" + output)
 	expectedContent := []string{
-		"== Mutations",
+		"[[mutation]]",
+		"== Mutation",
 		"createUser",
 		"Create a new user",
 		"// tag::mutation-createUser[]",
@@ -1289,6 +1290,77 @@ func TestGetEnumValuesTableString(t *testing.T) {
 	for _, expected := range expectedContent {
 		if !strings.Contains(result, expected) {
 			t.Errorf("Enum values table should contain %q, but doesn't", expected)
+		}
+	}
+}
+
+func TestGenerateEnumsChangelog(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{
+			"Status": {
+				Kind:        ast.Enum,
+				Name:        "Status",
+				Description: "User status enum\n\nadd.version: 1.0.0\nupdate.version: 1.2.3",
+				EnumValues: ast.EnumValueList{
+					&ast.EnumValueDefinition{Name: "ACTIVE"},
+				},
+			},
+		},
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	var sortedDefs []*ast.Definition
+	for _, def := range gen.schema.Types {
+		sortedDefs = append(sortedDefs, def)
+	}
+	gen.generateEnums(sortedDefs)
+
+	output := buf.String()
+	for _, expected := range []string{
+		"// tag::enum-changelog-Status[]",
+		".Changelog",
+		"* add: 1.0.0",
+		"* update: 1.2.3",
+		"// end::enum-changelog-Status[]",
+	} {
+		if !strings.Contains(output, expected) {
+			t.Errorf("Enum output should contain %q, but doesn't.\nGot:\n%s", expected, output)
+		}
+	}
+	// The annotation itself must not survive into the description.
+	if strings.Contains(output, "add.version:") {
+		t.Error("Enum description should not still contain the raw version annotation")
+	}
+}
+
+func TestGetSubscriptionDetailsChangelog(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{
+			"User": {Kind: ast.Object, Name: "User"},
+		},
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	field := &ast.FieldDefinition{
+		Name:        "userUpdated",
+		Description: "Fires when a user changes\n\nadd.version: 1.0.0",
+		Type:        &ast.Type{NamedType: "User"},
+	}
+
+	details := gen.getSubscriptionDetails(field, gen.schema.Types)
+
+	for _, expected := range []string{
+		"// tag::subscription-changelog-userUpdated[]",
+		".Changelog",
+		"* add: 1.0.0",
+		"// end::subscription-changelog-userUpdated[]",
+	} {
+		if !strings.Contains(details, expected) {
+			t.Errorf("Subscription details should contain %q, but doesn't.\nGot:\n%s", expected, details)
 		}
 	}
 }

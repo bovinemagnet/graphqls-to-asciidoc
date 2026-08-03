@@ -269,6 +269,12 @@ deprecated.version: 2.0.0
 """
 ```
 
+Every query, mutation, subscription, type, input and enum gets a changelog tag pair —
+`// tag::query-changelog-<name>[]` … `// end::query-changelog-<name>[]` — whether or
+not it carries an annotation. An unannotated item produces an empty pair, so
+`include::schema.adoc[tags=query-changelog-Tweet]` resolves without the including
+document needing to know which items are annotated.
+
 ### Default Values
 
 Default values on field arguments, directive arguments, and input-type fields
@@ -336,6 +342,19 @@ The generated AsciiDoc includes:
 - **Formatted tables** for fields, arguments, and parameters
 - **AsciiDoc tags** for selective inclusion in larger documents
 - **Professional styling** with consistent formatting
+
+### Section Anchors
+
+The summary tables at the top of the document own the plural ids — `queries`,
+`mutations` and `subscriptions`. The detail sections that follow are named after the
+GraphQL root types: `== Query`, `== Mutation` (anchor `[[mutation]]`) and
+`== Subscription`.
+
+> **Changed:** the mutation detail section previously carried the anchor `[[mutations]]`,
+> which collided with the auto-generated id of the `== Mutations` summary table and made
+> Asciidoctor warn `id assigned to section already in use: mutations` (Antora renders with
+> an empty `idprefix`). Update any hand-written `<<mutations>>` cross-reference that
+> targeted the detail section to `<<mutation>>`.
 
 ## Examples
 

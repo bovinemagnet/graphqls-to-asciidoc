@@ -136,6 +136,18 @@ func (g *Generator) getSubscriptionDetails(f *ast.FieldDefinition, definitionsMa
 	fmt.Fprintf(&b, "// end::subscription-return-%s[]\n", f.Name)
 	fmt.Fprintln(&b)
 
+	// Add changelog. The tag pair is emitted even when the subscription has no
+	// changelog, so a downstream include of subscription-changelog-<name>
+	// always resolves.
+	_, changelogText := changelog.ProcessWithChangelog(f.Description, parser.ProcessDescription)
+	fmt.Fprintf(&b, "// tag::subscription-changelog-%s[]\n", f.Name)
+	if changelogText != "" {
+		fmt.Fprint(&b, changelogText)
+		fmt.Fprintln(&b)
+	}
+	fmt.Fprintf(&b, "// end::subscription-changelog-%s[]\n", f.Name)
+	fmt.Fprintln(&b)
+
 	// Add arguments if any
 	if len(f.Arguments) > 0 {
 		fmt.Fprintf(&b, "// tag::subscription-arguments-%s[]\n", f.Name)

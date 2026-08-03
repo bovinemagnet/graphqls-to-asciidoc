@@ -68,6 +68,9 @@ findPerson(
 *Return:* <<Person,`Person`>>
 // end::query-return-findPerson[]
 
+// tag::query-changelog-findPerson[]
+// end::query-changelog-findPerson[]
+
 // tag::arguments-findPerson[]
 .Arguments
 * `givenName : String!`
@@ -86,6 +89,9 @@ findPerson(
 // tag::type-description-Person[]
 A person.
 // end::type-description-Person[]
+
+// tag::type-changelog-Person[]
+// end::type-changelog-Person[]
 
 // tag::type-def-Person[]
 .type: Person

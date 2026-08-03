@@ -28,7 +28,7 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 				FoundMutations            bool
 				Mutations                 []MutationInfo
 			}{
-				MutationTag:               "== Mutations",
+				MutationTag:               "== Mutation",
 				MutationObjectDescription: "",
 				FoundMutations:            false,
 				Mutations:                 nil,
@@ -36,7 +36,7 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 				fmt.Fprintf(os.Stderr, "Warning: template execution error for empty mutations: %v\n", execErr)
 			}
 		} else {
-			fmt.Fprintln(g.writer, "== Mutations")
+			fmt.Fprintln(g.writer, "== Mutation")
 			fmt.Fprintln(g.writer)
 			fmt.Fprintln(g.writer, "[NOTE]")
 			fmt.Fprintln(g.writer, "====")
@@ -98,7 +98,7 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 		FoundMutations            bool
 		Mutations                 []MutationInfo
 	}{
-		MutationTag:               "== Mutations",
+		MutationTag:               "== Mutation",
 		MutationObjectDescription: mutationObjectDescription,
 		FoundMutations:            len(mutationInfos) > 0,
 		Mutations:                 mutationInfos,

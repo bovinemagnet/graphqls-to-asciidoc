@@ -149,6 +149,135 @@ func TestDefaultValueGoldens(t *testing.T) {
 	}
 }
 
+// Asciidoctor refuses to reuse a section id and warns "id assigned to section
+// already in use: <id>", leaving duplicate ids in the rendered HTML. Antora
+// makes this easy to trip over because it sets idprefix to an empty string and
+// idseparator to a hyphen, so a section titled "Mutations" auto-generates the
+// bare id "mutations" rather than Asciidoctor's default "_mutations".
+func TestGeneratedDocumentHasUniqueSectionIds(t *testing.T) {
+	doc, err := renderFixture("test/schema.graphql")
+	if err != nil {
+		t.Fatalf("render test/schema.graphql: %v", err)
+	}
+
+	firstUse := make(map[string]string)
+	for _, s := range sectionIDs(doc) {
+		if prev, seen := firstUse[s.id]; seen {
+			t.Errorf("section id %q assigned twice: first by %q, again by %q", s.id, prev, s.title)
+			continue
+		}
+		firstUse[s.id] = s.title
+	}
+}
+
+// Changelog tags are emitted for every query, mutation, type and input, even
+// when the construct carries no changelog annotation. An always-present tag
+// pair lets a downstream document write
+// include::schema.adoc[tags=query-changelog-Tweet] without having to know
+// whether that particular item happens to be annotated.
+func TestChangelogTagsAlwaysPresent(t *testing.T) {
+	doc, err := renderFixture("test/schema.graphql")
+	if err != nil {
+		t.Fatalf("render test/schema.graphql: %v", err)
+	}
+
+	// Constructs in test/schema.graphql with no changelog annotation: the tag
+	// pair must still be there, with nothing between the two lines.
+	empty := []string{
+		"query-changelog-Tweet",
+		"mutation-changelog-deleteTweet",
+		"type-changelog-Message",
+		"input-changelog-MessageInput",
+		"enum-changelog-Sentiment",
+		"subscription-changelog-commentAdded",
+	}
+	for _, tag := range empty {
+		want := "// tag::" + tag + "[]\n// end::" + tag + "[]\n"
+		if !strings.Contains(doc, want) {
+			t.Errorf("expected an empty changelog tag pair for %s", tag)
+		}
+	}
+
+	// Annotated constructs keep their content between the tags.
+	annotated := []string{
+		"query-changelog-FeaturedTweets",
+		"type-changelog-CLogExample",
+		"input-changelog-CLogExampleInput",
+	}
+	for _, tag := range annotated {
+		open, close := "// tag::"+tag+"[]", "// end::"+tag+"[]"
+		start := strings.Index(doc, open)
+		if start < 0 {
+			t.Errorf("missing changelog tag %s", tag)
+			continue
+		}
+		body := doc[start+len(open):]
+		end := strings.Index(body, close)
+		if end < 0 {
+			t.Errorf("missing closing changelog tag %s", tag)
+			continue
+		}
+		if !strings.Contains(body[:end], ".Changelog") {
+			t.Errorf("changelog tag %s should still wrap its .Changelog block, got %q", tag, body[:end])
+		}
+	}
+}
+
+type sectionID struct {
+	id    string
+	title string
+}
+
+var (
+	headingRE     = regexp.MustCompile(`^={2,6}\s+(\S.*)$`)
+	blockAnchorRE = regexp.MustCompile(`^\[\[([^\]\[]+)\]\]$`)
+	nonAlnumRE    = regexp.MustCompile(`[^a-z0-9]+`)
+)
+
+// sectionIDs returns the id every section heading in doc lays claim to, in
+// document order: the explicit block anchor directly above the heading if there
+// is one, otherwise the id Antora auto-generates from the title.
+func sectionIDs(doc string) []sectionID {
+	var ids []sectionID
+	lines := strings.Split(doc, "\n")
+	delimiter := "" // non-empty while inside a listing block or table
+
+	for i, line := range lines {
+		switch {
+		case delimiter != "":
+			if line == delimiter {
+				delimiter = ""
+			}
+			continue
+		case line == "----" || line == "|===":
+			// Headings inside a source block or table are content, not sections.
+			delimiter = line
+			continue
+		}
+
+		m := headingRE.FindStringSubmatch(line)
+		if m == nil {
+			continue
+		}
+		title := strings.TrimSpace(m[1])
+
+		id := autoID(title)
+		if i > 0 {
+			if anchor := blockAnchorRE.FindStringSubmatch(lines[i-1]); anchor != nil {
+				id = anchor[1]
+			}
+		}
+		ids = append(ids, sectionID{id: id, title: title})
+	}
+	return ids
+}
+
+// autoID mirrors how Asciidoctor derives a section id from its title under
+// Antora's attributes: an empty idprefix and a hyphen idseparator.
+func autoID(title string) string {
+	return strings.Trim(nonAlnumRE.ReplaceAllString(strings.ToLower(title), "-"), "-")
+}
+
 // renderFixture reproduces the parse→generate pipeline from main.go for a
 // single schema file and returns the generated AsciiDoc.
 func renderFixture(schemaPath string) (string, error) {

@@ -116,14 +116,16 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 	fmt.Fprintf(g.writer, "// end::query-return-%s[]\n", field.Name)
 	fmt.Fprintln(g.writer)
 
-	// Add changelog section right after return
+	// Add changelog section right after return. The tag pair is emitted even
+	// when the query has no changelog, so a downstream include of
+	// query-changelog-<name> always resolves.
+	fmt.Fprintf(g.writer, "// tag::query-changelog-%s[]\n", field.Name)
 	if changelogText != "" {
-		fmt.Fprintf(g.writer, "// tag::query-changelog-%s[]\n", field.Name)
 		fmt.Fprint(g.writer, changelogText)
 		fmt.Fprintln(g.writer)
-		fmt.Fprintf(g.writer, "// end::query-changelog-%s[]\n", field.Name)
-		fmt.Fprintln(g.writer)
 	}
+	fmt.Fprintf(g.writer, "// end::query-changelog-%s[]\n", field.Name)
+	fmt.Fprintln(g.writer)
 
 	if len(field.Arguments) > 0 {
 		fmt.Fprintf(g.writer, "// tag::arguments-%s[]\n", field.Name)

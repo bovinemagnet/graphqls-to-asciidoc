@@ -85,13 +85,14 @@ func (g *Generator) generateEnums(sortedDefs []*ast.Definition) int {
 		valuesTableString := g.getEnumValuesTableString(def)
 
 		// Process enum description and extract changelog
-		processedDesc, _ := changelog.ProcessWithChangelog(def.Description, parser.ProcessDescription)
+		processedDesc, changelogText := changelog.ProcessWithChangelog(def.Description, parser.ProcessDescription)
 
 		enumInfo := EnumInfo{
 			Name:        def.Name,
 			AnchorName:  "enum_" + parser.CamelToSnake(def.Name),
 			Description: processedDesc,
 			ValuesTable: valuesTableString,
+			Changelog:   changelogText,
 		}
 		enumInfos = append(enumInfos, enumInfo)
 		count++
