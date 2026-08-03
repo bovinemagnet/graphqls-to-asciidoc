@@ -66,6 +66,9 @@ findRecords(
 *Return:* [<<Record,`Record`>>!]!
 // end::query-return-findRecords[]
 
+// tag::query-changelog-findRecords[]
+// end::query-changelog-findRecords[]
+
 // tag::arguments-findRecords[]
 .Arguments
 * `filter : FilterInput = {status:PUBLISHED,page:{size:10,offset:0}}`
@@ -82,6 +85,9 @@ findRecords(
 // tag::type-description-Record[]
 An opaque record.
 // end::type-description-Record[]
+
+// tag::type-changelog-Record[]
+// end::type-changelog-Record[]
 
 // tag::type-def-Record[]
 .type: Record
@@ -109,6 +115,8 @@ An opaque record.
 // tag::enum-description-Status[]
 Publication status.
 // end::enum-description-Status[]
+// tag::enum-changelog-Status[]
+// end::enum-changelog-Status[]
 
 // tag::enum-def-Status[]
 .enum: Status
@@ -134,6 +142,9 @@ Publication status.
 Composite filter input. Default is a whole nested object literal.
 // end::input-description-FilterInput[]
 
+// tag::input-changelog-FilterInput[]
+// end::input-changelog-FilterInput[]
+
 // tag::input-def-FilterInput[]
 .input: FilterInput
 [options="header",cols="2a,2m,2m,5a"]
@@ -154,6 +165,9 @@ Composite filter input. Default is a whole nested object literal.
 // tag::input-description-PageInput[]
 Pagination input.
 // end::input-description-PageInput[]
+
+// tag::input-changelog-PageInput[]
+// end::input-changelog-PageInput[]
 
 // tag::input-def-PageInput[]
 .input: PageInput

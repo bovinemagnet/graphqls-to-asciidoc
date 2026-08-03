@@ -31,6 +31,7 @@ type EnumInfo struct {
 	AnchorName  string
 	Description string
 	ValuesTable string
+	Changelog   string
 }
 
 // InputInfo represents input type information for template rendering

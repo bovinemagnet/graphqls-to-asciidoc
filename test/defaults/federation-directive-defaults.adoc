@@ -67,6 +67,9 @@ product(
 *Return:* <<Product,`Product`>>
 // end::query-return-product[]
 
+// tag::query-changelog-product[]
+// end::query-changelog-product[]
+
 // tag::arguments-product[]
 .Arguments
 * `id : ID!`
@@ -84,6 +87,9 @@ product(
 // tag::type-description-Product[]
 A federated entity. The @key identifies it across subgraphs.
 // end::type-description-Product[]
+
+// tag::type-changelog-Product[]
+// end::type-changelog-Product[]
 
 // tag::type-def-Product[]
 .type: Product
@@ -114,6 +120,8 @@ A federated entity. The @key identifies it across subgraphs.
 [[enum_product_status]]
 
 === ProductStatus
+// tag::enum-changelog-ProductStatus[]
+// end::enum-changelog-ProductStatus[]
 
 // tag::enum-def-ProductStatus[]
 .enum: ProductStatus

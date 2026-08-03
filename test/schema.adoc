@@ -1,7 +1,7 @@
 = GraphQL Documentation
 :toc: left
-:revdate: Thu, 09 Apr 2026 14:50:25 AEST
-:commandline: /tmp/go-build2242572939/b001/exe/main -schema test/schema.graphql
+:revdate: Mon, 03 Aug 2026 18:16:46 AEST
+:commandline: /tmp/go-build1547550851/b001/exe/main -schema test/schema.graphql
 :sourceFile: test/schema.graphql
 :reproducible:
 :page-partial:
@@ -156,6 +156,9 @@ Notifications(
 *Return:* [<<Notification,`Notification`>>]
 // end::query-return-Notifications[]
 
+// tag::query-changelog-Notifications[]
+// end::query-changelog-Notifications[]
+
 // tag::arguments-Notifications[]
 .Arguments
 * `limit : Int`
@@ -192,6 +195,9 @@ NotificationsMeta(
 // tag::query-return-NotificationsMeta[]
 *Return:* <<Meta,`Meta`>>
 // end::query-return-NotificationsMeta[]
+
+// tag::query-changelog-NotificationsMeta[]
+// end::query-changelog-NotificationsMeta[]
 
 // end::query-NotificationsMeta[]
 
@@ -231,6 +237,9 @@ Tweet(
 *Return:* <<Tweet,`Tweet`>>
 // end::query-return-Tweet[]
 
+// tag::query-changelog-Tweet[]
+// end::query-changelog-Tweet[]
+
 // tag::arguments-Tweet[]
 .Arguments
 * `id : ID!`
@@ -268,6 +277,9 @@ TweetSentiment(
 // tag::query-return-TweetSentiment[]
 *Return:* <<Sentiment,`Sentiment`>>
 // end::query-return-TweetSentiment[]
+
+// tag::query-changelog-TweetSentiment[]
+// end::query-changelog-TweetSentiment[]
 
 // tag::arguments-TweetSentiment[]
 .Arguments
@@ -307,6 +319,9 @@ TweetSentiments1(
 *Return:* [<<Sentiment,`Sentiment`>>]
 // end::query-return-TweetSentiments1[]
 
+// tag::query-changelog-TweetSentiments1[]
+// end::query-changelog-TweetSentiments1[]
+
 // tag::arguments-TweetSentiments1[]
 .Arguments
 * `id : [ID]`
@@ -344,6 +359,9 @@ TweetSentiments2(
 // tag::query-return-TweetSentiments2[]
 *Return:* [<<Sentiment,`Sentiment`>>]
 // end::query-return-TweetSentiments2[]
+
+// tag::query-changelog-TweetSentiments2[]
+// end::query-changelog-TweetSentiments2[]
 
 // tag::arguments-TweetSentiments2[]
 .Arguments
@@ -383,6 +401,9 @@ TweetSentiments3(
 *Return:* [<<Sentiment,`Sentiment`>>]
 // end::query-return-TweetSentiments3[]
 
+// tag::query-changelog-TweetSentiments3[]
+// end::query-changelog-TweetSentiments3[]
+
 // tag::arguments-TweetSentiments3[]
 .Arguments
 * `id : [ID]!`
@@ -420,6 +441,9 @@ TweetSentiments4(
 // tag::query-return-TweetSentiments4[]
 *Return:* [<<Sentiment,`Sentiment`>>]
 // end::query-return-TweetSentiments4[]
+
+// tag::query-changelog-TweetSentiments4[]
+// end::query-changelog-TweetSentiments4[]
 
 // tag::arguments-TweetSentiments4[]
 .Arguments
@@ -472,6 +496,9 @@ Tweets(
 // tag::query-return-Tweets[]
 *Return:* [<<Tweet,`Tweet`>>]
 // end::query-return-Tweets[]
+
+// tag::query-changelog-Tweets[]
+// end::query-changelog-Tweets[]
 
 // tag::arguments-Tweets[]
 .Arguments
@@ -532,6 +559,9 @@ TweetsFour(
 *Return:* [<<Tweet,`Tweet`>>]
 // end::query-return-TweetsFour[]
 
+// tag::query-changelog-TweetsFour[]
+// end::query-changelog-TweetsFour[]
+
 // tag::arguments-TweetsFour[]
 .Arguments
 * `limit : Int!`
@@ -574,6 +604,9 @@ TweetsMeta(
 // tag::query-return-TweetsMeta[]
 *Return:* <<Meta,`Meta`>>
 // end::query-return-TweetsMeta[]
+
+// tag::query-changelog-TweetsMeta[]
+// end::query-changelog-TweetsMeta[]
 
 // end::query-TweetsMeta[]
 
@@ -619,6 +652,9 @@ TweetsThree(
 // tag::query-return-TweetsThree[]
 *Return:* [<<Tweet,`Tweet`>>]
 // end::query-return-TweetsThree[]
+
+// tag::query-changelog-TweetsThree[]
+// end::query-changelog-TweetsThree[]
 
 // tag::arguments-TweetsThree[]
 .Arguments
@@ -669,6 +705,9 @@ TweetsTwo(
 *Return:* [<<Tweet,`Tweet`>>]
 // end::query-return-TweetsTwo[]
 
+// tag::query-changelog-TweetsTwo[]
+// end::query-changelog-TweetsTwo[]
+
 // tag::arguments-TweetsTwo[]
 .Arguments
 * `limit : Int!`
@@ -709,6 +748,9 @@ User(
 // tag::query-return-User[]
 *Return:* <<User,`User`>>
 // end::query-return-User[]
+
+// tag::query-changelog-User[]
+// end::query-changelog-User[]
 
 // tag::arguments-User[]
 .Arguments
@@ -761,6 +803,9 @@ getConfig(
 // tag::query-return-getConfig[]
 *Return:* `String`
 // end::query-return-getConfig[]
+
+// tag::query-changelog-getConfig[]
+// end::query-changelog-getConfig[]
 
 // end::query-getConfig[]
 
@@ -825,6 +870,9 @@ multiCalloutExample(
 *Return:* [<<Sentiment,`Sentiment`>>]
 // end::query-return-multiCalloutExample[]
 
+// tag::query-changelog-multiCalloutExample[]
+// end::query-changelog-multiCalloutExample[]
+
 // tag::arguments-multiCalloutExample[]
 .Arguments
 * `ids : [ID!]!`
@@ -884,6 +932,9 @@ searchTweets(
 *Return:* [<<Tweet,`Tweet`>>]
 // end::query-return-searchTweets[]
 
+// tag::query-changelog-searchTweets[]
+// end::query-changelog-searchTweets[]
+
 // tag::arguments-searchTweets[]
 .Arguments
 * `query : String!`
@@ -896,8 +947,8 @@ searchTweets(
 
 
 // tag::mutation[]
-[[mutations]]
-== Mutations
+[[mutation]]
+== Mutation
 The root mutation
 
 GraphQL Mutations are entry points on a GraphQL server that provides write access to our data sources.
@@ -929,6 +980,9 @@ createMessage(
 // tag::mutation-return-createMessage[]
 *Return:* <<Message,`Message`>>
 // end::mutation-return-createMessage[]
+
+// tag::mutation-changelog-createMessage[]
+// end::mutation-changelog-createMessage[]
 // tag::arguments-createMessage[]
 .Arguments
 * `input : <<MessageInput,`MessageInput`>>`
@@ -989,6 +1043,9 @@ createTweet(
 // tag::mutation-return-createTweet[]
 *Return:* <<Tweet,`Tweet`>>
 // end::mutation-return-createTweet[]
+
+// tag::mutation-changelog-createTweet[]
+// end::mutation-changelog-createTweet[]
 // tag::arguments-createTweet[]
 .Arguments
 * `body : `String``
@@ -1025,6 +1082,9 @@ deleteTweet(
 // tag::mutation-return-deleteTweet[]
 *Return:* <<Tweet,`Tweet`>>
 // end::mutation-return-deleteTweet[]
+
+// tag::mutation-changelog-deleteTweet[]
+// end::mutation-changelog-deleteTweet[]
 // tag::arguments-deleteTweet[]
 .Arguments
 * `id : `ID!``
@@ -1061,6 +1121,9 @@ markTweetRead(
 // tag::mutation-return-markTweetRead[]
 *Return:* `Boolean`
 // end::mutation-return-markTweetRead[]
+
+// tag::mutation-changelog-markTweetRead[]
+// end::mutation-changelog-markTweetRead[]
 // tag::arguments-markTweetRead[]
 .Arguments
 * `id : `ID!``
@@ -1080,6 +1143,7 @@ markTweetRead(
 An example of a type with a changelog in the type definition as well as on the fieds.
 
 // end::type-description-CLogExample[]
+
 // tag::type-changelog-CLogExample[]
 
 .Changelog
@@ -1129,6 +1193,9 @@ An example of a type with a changelog in the type definition as well as on the f
 A message
 // end::type-description-Message[]
 
+// tag::type-changelog-Message[]
+// end::type-changelog-Message[]
+
 // tag::type-def-Message[]
 .type: Message
 [options="header",cols="2a,2m,5a"]
@@ -1152,6 +1219,9 @@ A message
 Meta information about the query
 // end::type-description-Meta[]
 
+// tag::type-changelog-Meta[]
+// end::type-changelog-Meta[]
+
 // tag::type-def-Meta[]
 .type: Meta
 [options="header",cols="2a,2m,5a"]
@@ -1172,6 +1242,9 @@ Meta information about the query
 // tag::type-description-Notification[]
 A notification for a user
 // end::type-description-Notification[]
+
+// tag::type-changelog-Notification[]
+// end::type-changelog-Notification[]
 
 // tag::type-def-Notification[]
 .type: Notification
@@ -1197,6 +1270,9 @@ A notification for a user
 // tag::type-description-Stat[]
 Stats about a tweet, such as number of views, likes, retweets, etc
 // end::type-description-Stat[]
+
+// tag::type-changelog-Stat[]
+// end::type-changelog-Stat[]
 
 // tag::type-def-Stat[]
 .type: Stat
@@ -1225,6 +1301,9 @@ Stats about a tweet, such as number of views, likes, retweets, etc
 A tweet
 This schema came from an example found here https://github.com/marmelab/GraphQL-example/blob/master/schema.graphql
 // end::type-description-Tweet[]
+
+// tag::type-changelog-Tweet[]
+// end::type-changelog-Tweet[]
 
 // tag::type-def-Tweet[]
 .type: Tweet
@@ -1269,6 +1348,9 @@ This schema came from an example found here https://github.com/marmelab/GraphQL-
 A Twitter user. They can publish tweets, and have followers
 // end::type-description-User[]
 
+// tag::type-changelog-User[]
+// end::type-changelog-User[]
+
 // tag::type-def-User[]
 .type: User
 [options="header",cols="2a,2m,5a"]
@@ -1311,6 +1393,8 @@ The direction UP or Down
 
 == end::ENUM_DIRECTION_DES[]
 // end::enum-description-Direction[]
+// tag::enum-changelog-Direction[]
+// end::enum-changelog-Direction[]
 
 // tag::enum-def-Direction[]
 .enum: Direction
@@ -1335,6 +1419,8 @@ The mode of the mutation.
 
 The mutation can be either `synchronous` or `asynchronous`, depending on if the data requires further processing or not.
 // end::enum-description-MutationMode[]
+// tag::enum-changelog-MutationMode[]
+// end::enum-changelog-MutationMode[]
 
 // tag::enum-def-MutationMode[]
 .enum: MutationMode
@@ -1368,6 +1454,8 @@ This is just to demonstrate how to document an enum with asciidoc tags in the de
 
 == end::SENTIMENT_DES[]
 // end::enum-description-Sentiment[]
+// tag::enum-changelog-Sentiment[]
+// end::enum-changelog-Sentiment[]
 
 // tag::enum-def-Sentiment[]
 .enum: Sentiment
@@ -1395,6 +1483,7 @@ This is just to demonstrate how to document an enum with asciidoc tags in the de
 An example of a type with a changelog in the type definition as well as on the fieds.
 
 // end::input-description-CLogExampleInput[]
+
 // tag::input-changelog-CLogExampleInput[]
 
 .Changelog
@@ -1462,6 +1551,9 @@ should be included.
 ----
 // end::input-description-DateFilter[]
 
+// tag::input-changelog-DateFilter[]
+// end::input-changelog-DateFilter[]
+
 // tag::input-def-DateFilter[]
 .input: DateFilter
 [options="header",cols="2a,2m,2m,5a"]
@@ -1505,6 +1597,9 @@ If this field is not strictly later than or equal to fromDateTime, the server wi
 // tag::input-description-MessageInput[]
 Example of an input type
 // end::input-description-MessageInput[]
+
+// tag::input-changelog-MessageInput[]
+// end::input-changelog-MessageInput[]
 
 // tag::input-def-MessageInput[]
 .input: MessageInput

@@ -38,8 +38,8 @@ The following table provides a quick reference to all available mutations in the
 
 
 // tag::mutation[]
-[[mutations]]
-== Mutations
+[[mutation]]
+== Mutation
 
 GraphQL Mutations are entry points on a GraphQL server that provides write access to our data sources.
 // tag::mutation-updateUser[]
@@ -71,6 +71,9 @@ updateUser(
 // tag::mutation-return-updateUser[]
 *Return:* <<User,`User`>>
 // end::mutation-return-updateUser[]
+
+// tag::mutation-changelog-updateUser[]
+// end::mutation-changelog-updateUser[]
 // tag::arguments-updateUser[]
 .Arguments
 * `id : `ID!``
@@ -90,6 +93,9 @@ updateUser(
 // tag::type-description-User[]
 A platform user.
 // end::type-description-User[]
+
+// tag::type-changelog-User[]
+// end::type-changelog-User[]
 
 // tag::type-def-User[]
 .type: User
@@ -135,6 +141,9 @@ No enums exist in this schema.
 // tag::input-description-UpdateUserInput[]
 Input for the updateUser mutation. Each field carries a default.
 // end::input-description-UpdateUserInput[]
+
+// tag::input-changelog-UpdateUserInput[]
+// end::input-changelog-UpdateUserInput[]
 
 // tag::input-def-UpdateUserInput[]
 .input: UpdateUserInput

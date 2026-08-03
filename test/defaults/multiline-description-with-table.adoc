@@ -82,6 +82,9 @@ tweets(
 *Return:* [<<Tweet,`Tweet`>>!]!
 // end::query-return-tweets[]
 
+// tag::query-changelog-tweets[]
+// end::query-changelog-tweets[]
+
 // tag::arguments-tweets[]
 .Arguments
 * `limit : Int = 20`
@@ -100,6 +103,9 @@ tweets(
 // tag::type-description-Tweet[]
 A tweet.
 // end::type-description-Tweet[]
+
+// tag::type-changelog-Tweet[]
+// end::type-changelog-Tweet[]
 
 // tag::type-def-Tweet[]
 .type: Tweet

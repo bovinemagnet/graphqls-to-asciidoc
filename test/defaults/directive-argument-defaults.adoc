@@ -65,6 +65,9 @@ articles(
 *Return:* [<<Article,`Article`>>!]!
 // end::query-return-articles[]
 
+// tag::query-changelog-articles[]
+// end::query-changelog-articles[]
+
 // end::query-articles[]
 
 
@@ -76,6 +79,9 @@ articles(
 // tag::type-description-Article[]
 An article.
 // end::type-description-Article[]
+
+// tag::type-changelog-Article[]
+// end::type-changelog-Article[]
 
 // tag::type-def-Article[]
 .type: Article
