@@ -205,20 +205,18 @@ func TestChangelogTagsAlwaysPresent(t *testing.T) {
 		"input-changelog-CLogExampleInput",
 	}
 	for _, tag := range annotated {
-		open, close := "// tag::"+tag+"[]", "// end::"+tag+"[]"
-		start := strings.Index(doc, open)
-		if start < 0 {
+		_, afterOpen, found := strings.Cut(doc, "// tag::"+tag+"[]")
+		if !found {
 			t.Errorf("missing changelog tag %s", tag)
 			continue
 		}
-		body := doc[start+len(open):]
-		end := strings.Index(body, close)
-		if end < 0 {
+		body, _, found := strings.Cut(afterOpen, "// end::"+tag+"[]")
+		if !found {
 			t.Errorf("missing closing changelog tag %s", tag)
 			continue
 		}
-		if !strings.Contains(body[:end], ".Changelog") {
-			t.Errorf("changelog tag %s should still wrap its .Changelog block, got %q", tag, body[:end])
+		if !strings.Contains(body, ".Changelog") {
+			t.Errorf("changelog tag %s should still wrap its .Changelog block, got %q", tag, body)
 		}
 	}
 }
