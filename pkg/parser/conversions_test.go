@@ -47,6 +47,45 @@ func TestConvertMarkdownHeadersToAsciiDocSkipsCodeBlocks(t *testing.T) {
 	}
 }
 
+// Schema authors mark include regions inside descriptions with "# tag::NAME[]".
+// Converting that to a heading both loses the tag and injects a spurious section.
+func TestConvertMarkdownHeadersToAsciiDocKeepsIncludeTags(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "opening tag",
+			input: "# tag::SENTIMENT_DES[]",
+			want:  "// tag::SENTIMENT_DES[]",
+		},
+		{
+			name:  "closing tag",
+			input: "# end::SENTIMENT_DES[]",
+			want:  "// end::SENTIMENT_DES[]",
+		},
+		{
+			name:  "no space after hash",
+			input: "#tag::NAME[]",
+			want:  "// tag::NAME[]",
+		},
+		{
+			name:  "a heading merely mentioning tags is untouched",
+			input: "# tags and labels",
+			want:  "== tags and labels",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ConvertMarkdownHeadersToAsciiDoc(tt.input); got != tt.want {
+				t.Errorf("ConvertMarkdownHeadersToAsciiDoc()\n got: %q\nwant: %q", got, tt.want)
+			}
+		})
+	}
+}
+
 // A callout legend written in hash-comment style (`# 1 - text`) sits outside the
 // code block it annotates. It is a callout, not a heading — test/schema.graphql
 // pairs it with the (1), // 1 and /* 1 */ styles for the same list.

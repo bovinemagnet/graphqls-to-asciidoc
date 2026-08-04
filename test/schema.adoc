@@ -1,7 +1,7 @@
 = GraphQL Documentation
 :toc: left
-:revdate: Tue, 04 Aug 2026 10:04:32 AEST
-:commandline: /tmp/go-build952340262/b001/exe/main -schema test/schema.graphql
+:revdate: Tue, 04 Aug 2026 10:05:30 AEST
+:commandline: /tmp/go-build3680122256/b001/exe/main -schema test/schema.graphql
 :sourceFile: test/schema.graphql
 :reproducible:
 :page-partial:
@@ -1387,11 +1387,11 @@ A Twitter user. They can publish tweets, and have followers
 
 === Direction
 // tag::enum-description-Direction[]
-== tag::ENUM_DIRECTION_DES[]
+// tag::ENUM_DIRECTION_DES[]
 
 The direction UP or Down
 
-== end::ENUM_DIRECTION_DES[]
+// end::ENUM_DIRECTION_DES[]
 // end::enum-description-Direction[]
 // tag::enum-changelog-Direction[]
 // end::enum-changelog-Direction[]
@@ -1441,7 +1441,7 @@ The mutation can be either `synchronous` or `asynchronous`, depending on if the 
 
 === Sentiment
 // tag::enum-description-Sentiment[]
-== tag::SENTIMENT_DES[]
+// tag::SENTIMENT_DES[]
 A sentiment enum
 
 .Values
@@ -1452,7 +1452,7 @@ A sentiment enum
 
 This is just to demonstrate how to document an enum with asciidoc tags in the description.
 
-== end::SENTIMENT_DES[]
+// end::SENTIMENT_DES[]
 // end::enum-description-Sentiment[]
 // tag::enum-changelog-Sentiment[]
 // end::enum-changelog-Sentiment[]
@@ -1717,9 +1717,9 @@ The following custom scalar types are defined in this schema:
 === Date
 
 // tag::scalar-description-Date[]
-== tag::SCALAR_DATE_DES[]
+// tag::SCALAR_DATE_DES[]
 A date string scalar
-== end::SCALAR_DATE_DES[]
+// end::SCALAR_DATE_DES[]
 // end::scalar-description-Date[]
 
 
@@ -1750,9 +1750,9 @@ Internally, this should map to something like java.time.OffsetDateTime
 === Url
 
 // tag::scalar-description-Url[]
-== tag::SCALAR_URL_DES[]
+// tag::SCALAR_URL_DES[]
 A URL string scalar
-== end::SCALAR_URL_DES[]
+// end::SCALAR_URL_DES[]
 // end::scalar-description-Url[]
 
 

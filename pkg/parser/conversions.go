@@ -18,6 +18,10 @@ var (
 	// each callout, written in comment style. An optional separator between the
 	// number and the text is consumed. Text after the number is required, so a
 	// bare "# 1" stays a header and a "(1)" mid-sentence is left alone.
+	// AsciiDoc include tag written as a hash comment inside a description:
+	// "# tag::NAME[]" / "# end::NAME[]".
+	reHashIncludeTag = regexp.MustCompile(`^#\s*((?:tag|end)::\S*\[\])\s*$`)
+
 	reCalloutLegends = []*regexp.Regexp{
 		regexp.MustCompile(`^#\s*(\d+)\s*[-*.):]?\s+(\S.*)$`),        // # 1 - text
 		regexp.MustCompile(`^\((\d+)\)\s*[-*.:]?\s+(\S.*)$`),         // (1) text
@@ -79,6 +83,11 @@ func ConvertMarkdownHeadersToAsciiDoc(description string) string {
 
 		if inCodeBlock {
 			result = append(result, line)
+			continue
+		}
+
+		if tag := reHashIncludeTag.FindStringSubmatch(trimmed); tag != nil {
+			result = append(result, "// "+tag[1])
 			continue
 		}
 
