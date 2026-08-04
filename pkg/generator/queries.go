@@ -72,29 +72,7 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 	fmt.Fprintf(g.writer, "// end::method-description-%s[]\n", field.Name)
 	fmt.Fprintln(g.writer)
 
-	// Generate method signature
-	fmt.Fprintf(g.writer, "// tag::method-signature-%s[]\n", field.Name)
-	fmt.Fprintf(g.writer, ".query: %s\n", field.Name)
-	fmt.Fprintln(g.writer, "[source, kotlin]")
-	fmt.Fprintln(g.writer, "----")
-	fmt.Fprintf(g.writer, "%s(\n", field.Name)
-
-	// Generate arguments
-	for i, arg := range field.Arguments {
-		argType := parser.ProcessTypeNameForSignature(arg.Type.String(), definitionsMap)
-		fmt.Fprintf(g.writer, "  %s: %s%s", arg.Name, argType, formatDefaultValue(arg.DefaultValue))
-		if i < len(field.Arguments)-1 {
-			fmt.Fprint(g.writer, " ,")
-		}
-		fmt.Fprintf(g.writer, " <%d> \n", i+1)
-	}
-
-	fmt.Fprintf(g.writer, "): %s <%d>\n",
-		parser.ProcessTypeNameForSignature(field.Type.String(), definitionsMap),
-		len(field.Arguments)+1)
-	fmt.Fprintln(g.writer, "----")
-	fmt.Fprintf(g.writer, "// end::method-signature-%s[]\n", field.Name)
-	fmt.Fprintln(g.writer)
+	g.writeQuerySignature(field, definitionsMap)
 
 	// Add numbered references from description with cross-referenced type names
 	fmt.Fprintf(g.writer, "// tag::method-args-%s[]\n", field.Name)
@@ -127,16 +105,50 @@ func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMa
 	fmt.Fprintf(g.writer, "// end::query-changelog-%s[]\n", field.Name)
 	fmt.Fprintln(g.writer)
 
-	if len(field.Arguments) > 0 {
-		fmt.Fprintf(g.writer, "// tag::arguments-%s[]\n", field.Name)
-		fmt.Fprintln(g.writer, ".Arguments")
-		for _, arg := range field.Arguments {
-			fmt.Fprint(g.writer, formatArgumentListItem(arg.Name, arg.Type.String(), arg.DefaultValue, arg.Directives))
-		}
-		fmt.Fprintf(g.writer, "// end::arguments-%s[]\n", field.Name)
-		fmt.Fprintln(g.writer)
-	}
+	g.writeQueryArguments(field)
 
 	fmt.Fprintf(g.writer, "// end::query-%s[]\n", field.Name)
+	fmt.Fprintln(g.writer)
+}
+
+// writeQuerySignature writes the query call signature block.
+func (g *Generator) writeQuerySignature(
+	field *ast.FieldDefinition,
+	definitionsMap map[string]*ast.Definition,
+) {
+	fmt.Fprintf(g.writer, "// tag::method-signature-%s[]\n", field.Name)
+	fmt.Fprintf(g.writer, ".query: %s\n", field.Name)
+	fmt.Fprintln(g.writer, "[source, kotlin]")
+	fmt.Fprintln(g.writer, "----")
+	fmt.Fprintf(g.writer, "%s(\n", field.Name)
+
+	for i, arg := range field.Arguments {
+		argType := parser.ProcessTypeNameForSignature(arg.Type.String(), definitionsMap)
+		fmt.Fprintf(g.writer, "  %s: %s%s", arg.Name, argType, formatDefaultValue(arg.DefaultValue))
+		if i < len(field.Arguments)-1 {
+			fmt.Fprint(g.writer, " ,")
+		}
+		fmt.Fprintf(g.writer, " <%d> \n", i+1)
+	}
+
+	fmt.Fprintf(g.writer, "): %s <%d>\n",
+		parser.ProcessTypeNameForSignature(field.Type.String(), definitionsMap),
+		len(field.Arguments)+1)
+	fmt.Fprintln(g.writer, "----")
+	fmt.Fprintf(g.writer, "// end::method-signature-%s[]\n", field.Name)
+	fmt.Fprintln(g.writer)
+}
+
+// writeQueryArguments writes the query's argument list, if any.
+func (g *Generator) writeQueryArguments(field *ast.FieldDefinition) {
+	if len(field.Arguments) == 0 {
+		return
+	}
+	fmt.Fprintf(g.writer, "// tag::arguments-%s[]\n", field.Name)
+	fmt.Fprintln(g.writer, ".Arguments")
+	for _, arg := range field.Arguments {
+		fmt.Fprint(g.writer, formatArgumentListItem(arg.Name, arg.Type.String(), arg.DefaultValue, arg.Directives))
+	}
+	fmt.Fprintf(g.writer, "// end::arguments-%s[]\n", field.Name)
 	fmt.Fprintln(g.writer)
 }

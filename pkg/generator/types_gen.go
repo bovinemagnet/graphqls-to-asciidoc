@@ -16,9 +16,16 @@ import (
 
 const errFieldsTable = "[ERROR generating fields table]"
 
-// scalarsSectionHeading is the heading for the scalars section; the anchor
-// itself lives in ScalarTemplate.
-const scalarsSectionHeading = "== Scalars"
+// Anchored headings for the type-definition sections. The anchors are explicit
+// so the ids do not depend on the idprefix/idseparator attributes of the
+// rendering toolchain. The scalars anchor lives in ScalarTemplate instead.
+const (
+	scalarsSectionHeading    = "== Scalars"
+	typesSectionHeading      = "[[types]]\n== Types"
+	enumsSectionHeading      = "[[enums]]\n== Enums"
+	inputsSectionHeading     = "[[inputs]]\n== Inputs"
+	directivesSectionHeading = "[[directives]]\n== Directives"
+)
 
 func (g *Generator) generateTypes(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) int {
 	g.metrics.LogProgress("Types", "Starting types generation")
@@ -59,7 +66,7 @@ func (g *Generator) generateTypes(sortedDefs []*ast.Definition, definitionsMap m
 			TypesTag string
 			Types    []TypeInfo
 		}{
-			TypesTag: "[[types]]\n== Types",
+			TypesTag: typesSectionHeading,
 			Types:    typeInfos,
 		}
 
@@ -107,27 +114,36 @@ func (g *Generator) generateEnums(sortedDefs []*ast.Definition) int {
 			EnumsTag string
 			Enums    []EnumInfo
 		}{
-			EnumsTag: "[[enums]]\n== Enums",
+			EnumsTag: enumsSectionHeading,
 			Enums:    enumInfos,
 		}
-
-		if err := g.executeTemplate("enums", templates.EnumSectionTemplate, data); err != nil {
-			g.metrics.LogProgress("Enums", fmt.Sprintf("Generated %d enums", count))
-			return count
-		}
+		g.renderOrNote("Enums", "enums", templates.EnumSectionTemplate, data, count)
 	} else {
-		// No enums found, write a note
-		fmt.Fprintln(g.writer, "[[enums]]\n== Enums")
-		fmt.Fprintln(g.writer)
-		fmt.Fprintln(g.writer, "[NOTE]")
-		fmt.Fprintln(g.writer, "====")
-		fmt.Fprintln(g.writer, "No enums exist in this schema.")
-		fmt.Fprintln(g.writer, "====")
-		fmt.Fprintln(g.writer)
+		g.writeEmptySectionNote(enumsSectionHeading, "No enums exist in this schema.")
 	}
 
 	g.metrics.LogProgress("Enums", fmt.Sprintf("Generated %d enums", count))
 	return count
+}
+
+// renderOrNote executes a section template, logging progress on failure so the
+// caller can simply return its count either way.
+func (g *Generator) renderOrNote(section, name, tmpl string, data any, count int) {
+	if err := g.executeTemplate(name, tmpl, data); err != nil {
+		g.metrics.LogProgress(section, fmt.Sprintf("Generated %d %s", count, strings.ToLower(section)))
+	}
+}
+
+// writeEmptySectionNote writes a section heading followed by a NOTE block
+// explaining that the schema defines nothing of that kind.
+func (g *Generator) writeEmptySectionNote(heading, note string) {
+	fmt.Fprintln(g.writer, heading)
+	fmt.Fprintln(g.writer)
+	fmt.Fprintln(g.writer, "[NOTE]")
+	fmt.Fprintln(g.writer, "====")
+	fmt.Fprintln(g.writer, note)
+	fmt.Fprintln(g.writer, "====")
+	fmt.Fprintln(g.writer)
 }
 
 func (g *Generator) generateInputs(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) int {
@@ -162,22 +178,12 @@ func (g *Generator) generateInputs(sortedDefs []*ast.Definition, definitionsMap 
 			InputsTag string
 			Inputs    []InputInfo
 		}{
-			InputsTag: "[[inputs]]\n== Inputs",
+			InputsTag: inputsSectionHeading,
 			Inputs:    inputInfos,
 		}
-
-		if err := g.executeTemplate("inputs", templates.InputSectionTemplate, data); err != nil {
-			g.metrics.LogProgress("Inputs", fmt.Sprintf("Generated %d inputs", count))
-			return count
-		}
+		g.renderOrNote("Inputs", "inputs", templates.InputSectionTemplate, data, count)
 	} else {
-		fmt.Fprintln(g.writer, "[[inputs]]\n== Inputs")
-		fmt.Fprintln(g.writer)
-		fmt.Fprintln(g.writer, "[NOTE]")
-		fmt.Fprintln(g.writer, "====")
-		fmt.Fprintln(g.writer, "No input types exist in this schema.")
-		fmt.Fprintln(g.writer, "====")
-		fmt.Fprintln(g.writer)
+		g.writeEmptySectionNote(inputsSectionHeading, "No input types exist in this schema.")
 	}
 
 	g.metrics.LogProgress("Inputs", fmt.Sprintf("Generated %d inputs", count))
@@ -221,7 +227,7 @@ func (g *Generator) generateDirectives() int {
 		return 0
 	}
 
-	fmt.Fprintln(g.writer, "[[directives]]\n== Directives")
+	fmt.Fprintln(g.writer, directivesSectionHeading)
 	fmt.Fprintln(g.writer)
 	fmt.Fprintln(g.writer, "// tag::DIRECTIVES[]")
 	fmt.Fprintln(g.writer)
@@ -274,7 +280,17 @@ func (g *Generator) generateDirective(directive *ast.DirectiveDefinition) {
 	fmt.Fprintf(g.writer, "// end::directive-changelog-%s[]\n", directive.Name)
 	fmt.Fprintln(g.writer)
 
-	// Generate directive signature
+	g.writeDirectiveSignature(directive)
+	g.writeDirectiveArguments(directive)
+	g.writeDirectiveLocations(directive)
+	g.writeDirectiveRepeatable(directive)
+
+	fmt.Fprintf(g.writer, "// end::directive-%s[]\n", directive.Name)
+	fmt.Fprintln(g.writer)
+}
+
+// writeDirectiveSignature writes the directive declaration as a source block.
+func (g *Generator) writeDirectiveSignature(directive *ast.DirectiveDefinition) {
 	fmt.Fprintf(g.writer, "// tag::directive-signature-%s[]\n", directive.Name)
 	fmt.Fprintln(g.writer, ".Directive Signature")
 	fmt.Fprintln(g.writer, "[source, graphql]")
@@ -309,59 +325,67 @@ func (g *Generator) generateDirective(directive *ast.DirectiveDefinition) {
 	fmt.Fprintln(g.writer, "----")
 	fmt.Fprintf(g.writer, "// end::directive-signature-%s[]\n", directive.Name)
 	fmt.Fprintln(g.writer)
+}
 
-	// Generate arguments table if there are arguments
-	if len(directive.Arguments) > 0 {
-		fmt.Fprintf(g.writer, "// tag::directive-arguments-%s[]\n", directive.Name)
-		fmt.Fprintf(g.writer, ".@%s Arguments\n", directive.Name)
-		fmt.Fprintln(g.writer, "[options=\"header\",stripes=\"even\"]")
-		fmt.Fprintln(g.writer, "|===")
-		fmt.Fprintln(g.writer, "| Argument | Type | Default | Description")
+// writeDirectiveArguments writes the directive's arguments table, if any.
+func (g *Generator) writeDirectiveArguments(directive *ast.DirectiveDefinition) {
+	if len(directive.Arguments) == 0 {
+		return
+	}
 
-		for _, arg := range directive.Arguments {
-			fmt.Fprintf(g.writer, "| `%s`", arg.Name)
-			fmt.Fprintf(g.writer, " | `%s`", arg.Type.String())
+	fmt.Fprintf(g.writer, "// tag::directive-arguments-%s[]\n", directive.Name)
+	fmt.Fprintf(g.writer, ".@%s Arguments\n", directive.Name)
+	fmt.Fprintln(g.writer, "[options=\"header\",stripes=\"even\"]")
+	fmt.Fprintln(g.writer, "|===")
+	fmt.Fprintln(g.writer, "| Argument | Type | Default | Description")
 
-			if arg.DefaultValue != nil {
-				fmt.Fprintf(g.writer, " | `%s`", arg.DefaultValue.String())
-			} else {
-				fmt.Fprint(g.writer, " | _none_")
-			}
+	for _, arg := range directive.Arguments {
+		fmt.Fprintf(g.writer, "| `%s`", arg.Name)
+		fmt.Fprintf(g.writer, " | `%s`", arg.Type.String())
 
-			if arg.Description != "" {
-				processedDesc := parser.ProcessDescription(arg.Description)
-				fmt.Fprintf(g.writer, " | %s", processedDesc)
-			} else {
-				fmt.Fprint(g.writer, " | _No description_")
-			}
-			fmt.Fprintln(g.writer)
+		if arg.DefaultValue != nil {
+			fmt.Fprintf(g.writer, " | `%s`", arg.DefaultValue.String())
+		} else {
+			fmt.Fprint(g.writer, " | _none_")
 		}
 
-		fmt.Fprintln(g.writer, "|===")
-		fmt.Fprintf(g.writer, "// end::directive-arguments-%s[]\n", directive.Name)
-		fmt.Fprintln(g.writer)
-	}
-
-	// Generate locations information
-	if len(directive.Locations) > 0 {
-		fmt.Fprintf(g.writer, "// tag::directive-locations-%s[]\n", directive.Name)
-		fmt.Fprintf(g.writer, ".@%s Usage Locations\n", directive.Name)
-		for _, location := range directive.Locations {
-			fmt.Fprintf(g.writer, "* `%s`\n", string(location))
+		if arg.Description != "" {
+			fmt.Fprintf(g.writer, " | %s", parser.ProcessDescription(arg.Description))
+		} else {
+			fmt.Fprint(g.writer, " | _No description_")
 		}
-		fmt.Fprintf(g.writer, "// end::directive-locations-%s[]\n", directive.Name)
 		fmt.Fprintln(g.writer)
 	}
 
-	// Repeatable information
-	if directive.IsRepeatable {
-		fmt.Fprintf(g.writer, "// tag::directive-repeatable-%s[]\n", directive.Name)
-		fmt.Fprintln(g.writer, "NOTE: This directive is repeatable and can be used multiple times on the same element.")
-		fmt.Fprintf(g.writer, "// end::directive-repeatable-%s[]\n", directive.Name)
-		fmt.Fprintln(g.writer)
+	fmt.Fprintln(g.writer, "|===")
+	fmt.Fprintf(g.writer, "// end::directive-arguments-%s[]\n", directive.Name)
+	fmt.Fprintln(g.writer)
+}
+
+// writeDirectiveLocations lists where the directive may be applied.
+func (g *Generator) writeDirectiveLocations(directive *ast.DirectiveDefinition) {
+	if len(directive.Locations) == 0 {
+		return
 	}
 
-	fmt.Fprintf(g.writer, "// end::directive-%s[]\n", directive.Name)
+	fmt.Fprintf(g.writer, "// tag::directive-locations-%s[]\n", directive.Name)
+	fmt.Fprintf(g.writer, ".@%s Usage Locations\n", directive.Name)
+	for _, location := range directive.Locations {
+		fmt.Fprintf(g.writer, "* `%s`\n", string(location))
+	}
+	fmt.Fprintf(g.writer, "// end::directive-locations-%s[]\n", directive.Name)
+	fmt.Fprintln(g.writer)
+}
+
+// writeDirectiveRepeatable notes whether the directive may be repeated.
+func (g *Generator) writeDirectiveRepeatable(directive *ast.DirectiveDefinition) {
+	if !directive.IsRepeatable {
+		return
+	}
+
+	fmt.Fprintf(g.writer, "// tag::directive-repeatable-%s[]\n", directive.Name)
+	fmt.Fprintln(g.writer, "NOTE: This directive is repeatable and can be used multiple times on the same element.")
+	fmt.Fprintf(g.writer, "// end::directive-repeatable-%s[]\n", directive.Name)
 	fmt.Fprintln(g.writer)
 }
 
