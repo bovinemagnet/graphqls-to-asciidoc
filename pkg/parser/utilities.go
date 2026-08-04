@@ -27,57 +27,59 @@ func NormalizeIndentation(description string) string {
 		return description
 	}
 
-	// Find the minimum indentation (excluding empty lines)
+	minIndent := commonIndent(lines)
+	if minIndent <= 0 {
+		return description
+	}
+
+	result := make([]string, 0, len(lines))
+	for _, line := range lines {
+		switch {
+		case strings.TrimSpace(line) == "":
+			result = append(result, "") // Preserve empty lines
+		case len(line) > minIndent:
+			result = append(result, line[minIndent:])
+		default:
+			result = append(result, strings.TrimSpace(line))
+		}
+	}
+
+	return strings.Join(trimBlankEdges(result), "\n")
+}
+
+// commonIndent returns the smallest leading-whitespace width across the
+// non-blank lines, or -1 when every line is blank.
+func commonIndent(lines []string) int {
 	minIndent := -1
 	for _, line := range lines {
 		if strings.TrimSpace(line) == "" {
-			continue // Skip empty lines
+			continue
 		}
 
-		// Count leading spaces/tabs
 		indent := 0
 		for _, char := range line {
-			if char == ' ' || char == '\t' {
-				indent++
-			} else {
+			if char != ' ' && char != '\t' {
 				break
 			}
+			indent++
 		}
 
 		if minIndent == -1 || indent < minIndent {
 			minIndent = indent
 		}
 	}
+	return minIndent
+}
 
-	// If no indentation found, return as-is
-	if minIndent <= 0 {
-		return description
+// trimBlankEdges drops leading and trailing blank lines.
+func trimBlankEdges(lines []string) []string {
+	for len(lines) > 0 && strings.TrimSpace(lines[0]) == "" {
+		lines = lines[1:]
 	}
-
-	// Remove the common indentation from all lines
-	var result []string
-	for _, line := range lines {
-		if strings.TrimSpace(line) == "" {
-			result = append(result, "") // Preserve empty lines
-		} else if len(line) > minIndent {
-			result = append(result, line[minIndent:])
-		} else {
-			result = append(result, strings.TrimSpace(line))
-		}
+	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
+		lines = lines[:len(lines)-1]
 	}
-
-	// Also trim leading and trailing empty lines
-	// Trim leading empty lines
-	for len(result) > 0 && strings.TrimSpace(result[0]) == "" {
-		result = result[1:]
-	}
-
-	// Trim trailing empty lines
-	for len(result) > 0 && strings.TrimSpace(result[len(result)-1]) == "" {
-		result = result[:len(result)-1]
-	}
-
-	return strings.Join(result, "\n")
+	return lines
 }
 
 // CamelToSnake converts CamelCase to snake_case

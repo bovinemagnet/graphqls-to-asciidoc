@@ -272,91 +272,78 @@ func parseTableRow(row string) []string {
 
 // ConvertAdmonitionBlocks converts admonition patterns to AsciiDoc admonition blocks
 func ConvertAdmonitionBlocks(description string) string {
-	// Define supported admonition types
-	admonitionTypes := admonitionNames()
+	description = convertInlineAdmonitions(description)
+	return convertBlockAdmonitions(description)
+}
 
-	for _, admonType := range admonitionTypes {
-		// Pattern 1: **ADMONITION**: content (single line)
-		patternBold := reAdmonitionBold[admonType]
-		description = patternBold.ReplaceAllStringFunc(description, func(match string) string {
-			submatches := patternBold.FindStringSubmatch(match)
-			if len(submatches) < 2 { //nolint:mnd // regex group count
-				return match
-			}
-			content := strings.TrimSpace(submatches[1])
-			return fmt.Sprintf("[%s]\n====\n%s\n====", admonType, content)
-		})
-
-		// Pattern 2: ADMONITION: content (without asterisks, single line)
-		patternPlain := reAdmonitionPlain[admonType]
-		description = patternPlain.ReplaceAllStringFunc(description, func(match string) string {
-			submatches := patternPlain.FindStringSubmatch(match)
-			if len(submatches) < 2 { //nolint:mnd // regex group count
-				return match
-			}
-			content := strings.TrimSpace(submatches[1])
-			return fmt.Sprintf("[%s]\n====\n%s\n====", admonType, content)
-		})
+// convertInlineAdmonitions rewrites single-line "**NOTE**: text" and
+// "NOTE: text" forms as AsciiDoc admonition blocks.
+func convertInlineAdmonitions(description string) string {
+	for _, admonType := range admonitionNames() {
+		for _, pattern := range []*regexp.Regexp{reAdmonitionBold[admonType], reAdmonitionPlain[admonType]} {
+			description = pattern.ReplaceAllStringFunc(description, func(match string) string {
+				submatches := pattern.FindStringSubmatch(match)
+				if len(submatches) < 2 { //nolint:mnd // regex group count
+					return match
+				}
+				return fmt.Sprintf("[%s]\n====\n%s\n====", admonType, strings.TrimSpace(submatches[1]))
+			})
+		}
 	}
+	return description
+}
 
-	// Handle multi-line admonitions with a simpler approach
-	// Process **ADMONITION** on its own line followed by content
+// convertBlockAdmonitions rewrites a "**NOTE**" marker on its own line, with the
+// following lines as its content, as an AsciiDoc admonition block. The block
+// ends at a blank line or the next marker.
+func convertBlockAdmonitions(description string) string {
 	lines := strings.Split(description, "\n")
 	var result []string
-	i := 0
 
-	for i < len(lines) {
-		line := strings.TrimSpace(lines[i])
-
-		// Check if this line is an admonition marker
-		var admonType string
-		for _, aType := range admonitionTypes {
-			if line == "**"+aType+"**" {
-				admonType = aType
-				break
-			}
+	for i := 0; i < len(lines); {
+		admonType := admonitionMarker(strings.TrimSpace(lines[i]))
+		if admonType == "" {
+			result = append(result, lines[i])
+			i++
+			continue
 		}
 
-		if admonType != "" {
-			// Found an admonition marker, collect content until next empty line or end
-			result = append(result, fmt.Sprintf("[%s]", admonType), "====")
-			i++ // Move to next line
-
-			// Collect content lines
-			for i < len(lines) {
-				contentLine := lines[i]
-				trimmedContent := strings.TrimSpace(contentLine)
-
-				// Stop if we hit an empty line or another admonition
-				if trimmedContent == "" {
-					break
-				}
-
-				// Check if this is another admonition marker
-				isNextAdmonition := false
-				for _, aType := range admonitionTypes {
-					if trimmedContent == "**"+aType+"**" || strings.HasPrefix(trimmedContent, "**"+aType+"**:") {
-						isNextAdmonition = true
-						break
-					}
-				}
-
-				if isNextAdmonition {
-					break
-				}
-
-				result = append(result, contentLine)
-				i++
+		result = append(result, fmt.Sprintf("[%s]", admonType), "====")
+		i++
+		for i < len(lines) {
+			trimmed := strings.TrimSpace(lines[i])
+			if trimmed == "" || startsAdmonition(trimmed) {
+				break
 			}
-
-			result = append(result, "====")
-		} else {
 			result = append(result, lines[i])
 			i++
 		}
+		result = append(result, "====")
 	}
 
 	return strings.Join(result, "\n")
+}
+
+// admonitionMarker returns the admonition type when line is exactly a bold
+// marker such as "**NOTE**", or "" when it is not one.
+func admonitionMarker(line string) string {
+	for _, aType := range admonitionNames() {
+		if line == "**"+aType+"**" {
+			return aType
+		}
+	}
+	return ""
+}
+
+// startsAdmonition reports whether line opens a new admonition, either as a
+// bare marker or as "**NOTE**: text".
+func startsAdmonition(line string) bool {
+	for _, aType := range admonitionNames() {
+		if line == "**"+aType+"**" || strings.HasPrefix(line, "**"+aType+"**:") {
+			return true
+		}
+	}
+	return false
 }
 
 // ConvertArgumentsPatterns converts .Arguments: and **Arguments:** patterns to AsciiDoc format

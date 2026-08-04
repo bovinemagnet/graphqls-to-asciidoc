@@ -89,71 +89,64 @@ func matchesPattern(path, pattern string) (bool, error) {
 		return filepath.Match(pattern, absPath)
 	}
 
-	// Handle ** patterns
 	// Extract the filename pattern (part after the last /)
 	patternParts := strings.Split(pattern, "/")
 	if len(patternParts) == 0 {
 		return false, nil
 	}
 
-	filenamePattern := patternParts[len(patternParts)-1]
+	filenameMatched, err := matchesFilename(patternParts[len(patternParts)-1], filepath.Base(absPath))
+	if err != nil || !filenameMatched {
+		return false, err
+	}
 
-	// Check if filename matches the pattern
-	var filenameMatched bool
-	if strings.Contains(filenamePattern, "{") && strings.Contains(filenamePattern, "}") {
-		// Handle brace expansion
-		expandedPatterns := expandBraces(filenamePattern)
-		for _, expandedPattern := range expandedPatterns {
-			matched, err := filepath.Match(expandedPattern, filepath.Base(absPath))
-			if err != nil {
-				return false, err
-			}
-			if matched {
-				filenameMatched = true
-				break
-			}
-		}
-	} else {
-		filenameMatched, err = filepath.Match(filenamePattern, filepath.Base(absPath))
+	return matchesPrefixDir(pattern, absPath)
+}
+
+// matchesFilename matches a base name against the filename portion of a
+// pattern, expanding any {a,b} alternatives first.
+func matchesFilename(filenamePattern, base string) (bool, error) {
+	if !strings.Contains(filenamePattern, "{") || !strings.Contains(filenamePattern, "}") {
+		return filepath.Match(filenamePattern, base)
+	}
+
+	for _, expanded := range expandBraces(filenamePattern) {
+		matched, err := filepath.Match(expanded, base)
 		if err != nil {
 			return false, err
 		}
+		if matched {
+			return true, nil
+		}
 	}
+	return false, nil
+}
 
-	if !filenameMatched {
-		return false, nil
-	}
-
-	// Check directory structure
+// matchesPrefixDir checks that absPath sits under the directory preceding the
+// ** in pattern. A pattern with no prefix matches any directory.
+func matchesPrefixDir(pattern, absPath string) (bool, error) {
 	doubleStar := strings.Index(pattern, "**")
 	if doubleStar == -1 {
-		return filenameMatched, nil
+		return true, nil
 	}
 
-	// Get the prefix before **
 	prefix := pattern[:doubleStar]
 	prefix = strings.TrimSuffix(prefix, "/")
 	prefix = strings.TrimSuffix(prefix, "\\")
-
-	// If there's no prefix, any path matches
 	if prefix == "" {
-		return filenameMatched, nil
+		return true, nil
 	}
 
-	// Convert prefix to absolute path for comparison
-	var absPrefix string
-	if filepath.IsAbs(prefix) {
-		absPrefix = prefix
-	} else {
-		absPrefix, err = filepath.Abs(prefix)
+	absPrefix := prefix
+	if !filepath.IsAbs(prefix) {
+		abs, err := filepath.Abs(prefix)
 		if err != nil {
 			return false, err
 		}
+		absPrefix = abs
 	}
 
-	// Check if the path is under the prefix directory
-	pathDir := filepath.Dir(absPath)
-	return strings.HasPrefix(pathDir, absPrefix), nil
+	return strings.HasPrefix(filepath.Dir(absPath), absPrefix), nil
 }
 
 // ValidateSchemaFiles checks that all files are readable and have appropriate extensions
