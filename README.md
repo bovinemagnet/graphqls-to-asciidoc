@@ -73,7 +73,12 @@ graphqls-to-asciidoc -p "schemas/**/*.graphqls" -o documentation.adoc
 
 # Multiple file extensions
 graphqls-to-asciidoc -p "**/*.{graphql,graphqls,gql}" -o full-schema.adoc
+
+# Watch the schema and rebuild on every save, with a dashboard on http://127.0.0.1:8088
+graphqls-to-asciidoc -s schema.graphql -o documentation.adoc --daemon
 ```
+
+See [Daemon mode](#daemon-mode) for the watch options and the Kroki integration.
 
 ### Catalogue Mode
 Generate a quick reference catalogue of all queries, mutations, and subscriptions:
