@@ -397,7 +397,7 @@ graphqls-to-asciidoc -p "/absolute/path/to/schemas/**/*.graphqls" -o docs.adoc -
 ## Development
 
 ### Requirements
-- Go 1.19+ 
+- Go 1.25+ (set by the `go` directive in `go.mod`)
 - Make
 
 ### Commands
