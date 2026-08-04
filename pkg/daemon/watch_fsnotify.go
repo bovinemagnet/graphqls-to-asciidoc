@@ -34,7 +34,7 @@ func NewFSNotifyWatcher(cfg *config.Config) (Watcher, error) {
 	w := &fsWatcher{
 		cfg:    cfg,
 		inner:  inner,
-		events: make(chan Event, 16),
+		events: make(chan Event, eventBufferSize),
 		done:   make(chan struct{}),
 	}
 

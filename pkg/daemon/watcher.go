@@ -13,6 +13,11 @@ type Event struct {
 	Path string
 }
 
+// eventBufferSize is the capacity of a backend's events channel. It absorbs a
+// burst of changes (e.g. an editor's save-then-rename sequence) so a slow
+// consumer doesn't block the watcher's internal loop.
+const eventBufferSize = 16
+
 // Watcher reports changes to the schema files named by the configuration.
 type Watcher interface {
 	// Events delivers one event per detected change.
@@ -22,30 +27,32 @@ type Watcher interface {
 }
 
 // NewWatcher builds the watcher named by --watch-mode, returning the backend
-// actually in use. Under "auto" an fsnotify failure falls back to polling; a
-// forced "fsnotify" reports the error instead, because forcing a backend should
-// mean it.
+// actually in use. The backend name is one of config.WatchModeFSNotify or
+// config.WatchModePoll — the same vocabulary as --watch-mode, since the
+// backend in use is the watch mode that was actually resolved. Under "auto"
+// an fsnotify failure falls back to polling; a forced "fsnotify" reports the
+// error instead, because forcing a backend should mean it.
 func NewWatcher(cfg *config.Config) (Watcher, string, error) {
 	switch cfg.WatchMode {
 	case config.WatchModePoll:
 		w, err := NewPollWatcher(cfg)
-		return w, "poll", err
+		return w, config.WatchModePoll, err
 
 	case config.WatchModeFSNotify:
 		w, err := NewFSNotifyWatcher(cfg)
 		if err != nil {
 			return nil, "", fmt.Errorf("--watch-mode=fsnotify was requested but the watcher could not start: %w", err)
 		}
-		return w, "fsnotify", nil
+		return w, config.WatchModeFSNotify, nil
 
 	default:
 		w, err := NewFSNotifyWatcher(cfg)
 		if err == nil {
-			return w, "fsnotify", nil
+			return w, config.WatchModeFSNotify, nil
 		}
 		log.Printf("fsnotify unavailable (%v); falling back to polling every %s", err, cfg.PollInterval)
 
 		w, err = NewPollWatcher(cfg)
-		return w, "poll", err
+		return w, config.WatchModePoll, err
 	}
 }

@@ -74,7 +74,7 @@ func NewPollWatcher(cfg *config.Config) (Watcher, error) {
 
 	w := &pollWatcher{
 		cfg:    cfg,
-		events: make(chan Event, 16),
+		events: make(chan Event, eventBufferSize),
 		done:   make(chan struct{}),
 	}
 	go w.loop(snapshotFiles(files))
