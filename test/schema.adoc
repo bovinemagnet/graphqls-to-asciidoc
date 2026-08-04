@@ -1,7 +1,7 @@
 = GraphQL Documentation
 :toc: left
-:revdate: Mon, 03 Aug 2026 18:16:46 AEST
-:commandline: /tmp/go-build1547550851/b001/exe/main -schema test/schema.graphql
+:revdate: Tue, 04 Aug 2026 10:01:02 AEST
+:commandline: /tmp/go-build2805910500/b001/exe/main -schema test/schema.graphql
 :sourceFile: test/schema.graphql
 :reproducible:
 :page-partial:
@@ -837,11 +837,11 @@ const result = await client.request(query, {
 
 **Callout explanations:**
 
-(1) Initialize the GraphQL client with endpoint
-(2) Define the parameterized query with required ID array
-(3) Fetch tweets using the provided IDs
-(4) Transform results to extract sentiment data
-(5) Pass the actual ID values as variables
+<1> Initialize the GraphQL client with endpoint
+<2> Define the parameterized query with required ID array
+<3> Fetch tweets using the provided IDs
+<4> Transform results to extract sentiment data
+<5> Pass the actual ID values as variables
 
 [NOTE]
 ====
@@ -1003,11 +1003,11 @@ Example implementation pattern:
 [source,python]
 ----
 def create_tweet(body: str) -> Tweet:
-== Validate input <1>
+    # Validate input <1>
     if not body or len(body) > 280: <2>
         raise ValidationError("Invalid tweet body")
 
-== Create tweet object <3>
+    # Create tweet object <3>
     tweet = Tweet.create(
         body=body,
         author=current_user() <4>
@@ -1016,11 +1016,11 @@ def create_tweet(body: str) -> Tweet:
     return tweet <5>
 ----
 
-== 1 * Always validate user input first
-== 2 * Check Twitter's character limit
-(3) Use the domain model to create the tweet
-/* 4 */ Get the authenticated user context
-(5) Return the newly created tweet
+<1> Always validate user input first
+<2> Check Twitter's character limit
+<3> Use the domain model to create the tweet
+<4> Get the authenticated user context
+<5> Return the newly created tweet
 // end::method-description-createTweet[]
 
 // tag::method-signature-createTweet[]

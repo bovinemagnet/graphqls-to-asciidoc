@@ -14,6 +14,16 @@ var (
 	// Markdown code block pattern
 	reMarkdownCodeBlock = regexp.MustCompile("(?s)```(\\w*)\n(.*?)\n```")
 
+	// Callout legend lines: the entries listed under a code block that explain
+	// each callout, written in comment style. An optional separator between the
+	// number and the text is consumed. Text after the number is required, so a
+	// bare "# 1" stays a header and a "(1)" mid-sentence is left alone.
+	reCalloutLegends = []*regexp.Regexp{
+		regexp.MustCompile(`^#\s*(\d+)\s*[-*.):]?\s+(\S.*)$`),        // # 1 - text
+		regexp.MustCompile(`^\((\d+)\)\s*[-*.:]?\s+(\S.*)$`),         // (1) text
+		regexp.MustCompile(`^/\*\s*(\d+)\s*\*/\s*[-*.:]?\s+(\S.*)$`), // /* 1 */ text
+	}
+
 	// Table separator pattern
 	reTableSeparator = regexp.MustCompile(`^\s*\|[\s\-|:]+\|\s*$`)
 
@@ -35,14 +45,47 @@ func init() {
 	}
 }
 
+// calloutLegend renders line as an AsciiDoc callout legend if it is one of the
+// supported comment-style legend forms.
+func calloutLegend(line string) (string, bool) {
+	for _, re := range reCalloutLegends {
+		if m := re.FindStringSubmatch(line); m != nil {
+			return fmt.Sprintf("<%s> %s", m[1], m[2]), true
+		}
+	}
+	return "", false
+}
+
 // ConvertMarkdownHeadersToAsciiDoc converts markdown headers to AsciiDoc format
 // # -> =, ## -> ==, ### -> ===, etc.
+//
+// Lines inside a fenced code block are left alone: a leading # there is source
+// code (a Python or shell comment), not a header. A hash-style callout legend
+// (# 1 - text) is converted to an AsciiDoc callout rather than a header, matching
+// the (1), // 1 and /* 1 */ styles handled by ProcessCallouts.
 func ConvertMarkdownHeadersToAsciiDoc(description string) string {
 	lines := strings.Split(description, "\n")
 	var result []string
+	inCodeBlock := false
 
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
+
+		if strings.HasPrefix(trimmed, "```") {
+			inCodeBlock = !inCodeBlock
+			result = append(result, line)
+			continue
+		}
+
+		if inCodeBlock {
+			result = append(result, line)
+			continue
+		}
+
+		if legend, ok := calloutLegend(trimmed); ok {
+			result = append(result, legend)
+			continue
+		}
 
 		// Check if this line is a markdown header
 		if strings.HasPrefix(trimmed, "#") {
