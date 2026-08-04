@@ -8,9 +8,9 @@ import (
 	"time"
 )
 
-func sampleState() State {
+func sampleState() *State {
 	started := time.Date(2026, 8, 4, 12, 0, 0, 0, time.UTC)
-	return State{
+	return &State{
 		Mode:      ModeWatching,
 		Backend:   "fsnotify",
 		LastBuild: started,
@@ -94,7 +94,7 @@ func TestStatusViewCountsWatchedFiles(t *testing.T) {
 }
 
 func TestStatusViewHandlesAnAbsentBuild(t *testing.T) {
-	v := newStatusView(State{Mode: ModeWatching, Backend: "poll"}, "/docs.adoc")
+	v := newStatusView(&State{Mode: ModeWatching, Backend: "poll"}, "/docs.adoc")
 	if v.LastBuildText != noBuildYetText {
 		t.Fatalf(`expected %q before the first build, got %q`, noBuildYetText, v.LastBuildText)
 	}

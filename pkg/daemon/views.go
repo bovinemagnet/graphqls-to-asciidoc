@@ -28,15 +28,16 @@ type statusView struct {
 	LastBuildText string
 }
 
-// newStatusView adapts the coordinator's state for rendering.
-func newStatusView(s State, documentPath string) statusView {
+// newStatusView adapts the coordinator's state for rendering. It returns a
+// pointer so callers can chain it straight into renderStatus/renderDashboard.
+func newStatusView(s *State, documentPath string) *statusView {
 	text := noBuildYetText
 	if !s.LastBuild.IsZero() {
 		text = s.LastBuild.Format("15:04:05")
 	}
 
-	return statusView{
-		State:         s,
+	return &statusView{
+		State:         *s,
 		DocumentPath:  documentPath,
 		Watching:      len(s.Watched),
 		LastBuildText: text,
@@ -44,11 +45,11 @@ func newStatusView(s State, documentPath string) statusView {
 }
 
 // renderStatus writes the polled fragment.
-func renderStatus(w io.Writer, v statusView) error {
+func renderStatus(w io.Writer, v *statusView) error {
 	return dashboardTemplates.ExecuteTemplate(w, "status", v)
 }
 
 // renderDashboard writes the full page.
-func renderDashboard(w io.Writer, v statusView) error {
+func renderDashboard(w io.Writer, v *statusView) error {
 	return dashboardTemplates.ExecuteTemplate(w, "dashboard", v)
 }

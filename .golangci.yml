@@ -86,14 +86,6 @@ linters:
         text: exported (type|method|function) .* should have comment or be unexported
       - path: (.+)\.go$
         text: 'G304: Potential file inclusion via variable'
-      # The dashboard view functions take State/statusView by value because
-      # that signature is the fixed contract a later task's HTTP server
-      # depends on; gocritic's hugeParam heuristic doesn't apply to this
-      # deliberately simple, copy-friendly view struct.
-      - linters:
-          - gocritic
-        path: pkg/daemon/views\.go
-        text: 'hugeParam:'
     paths:
       - third_party$
       - builtin$
