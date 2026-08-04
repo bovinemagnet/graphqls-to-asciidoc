@@ -231,6 +231,10 @@ func (g *Generator) printHeader() {
 	fmt.Fprintf(g.writer, ":revdate: %s\n", time.Now().Format("Mon, 02 Jan 2006 15:04:05 MST"))
 	fmt.Fprintf(g.writer, ":commandline: %s\n", strings.Join(os.Args, " "))
 	fmt.Fprintf(g.writer, ":sourceFile: %s\n", g.config.SchemaFile)
+	if krokiURL := g.config.KrokiDocumentURL(); krokiURL != "" {
+		fmt.Fprintf(g.writer, ":kroki-server-url: %s\n", krokiURL)
+		fmt.Fprintln(g.writer, ":kroki-fetch-diagram:")
+	}
 	fmt.Fprintln(g.writer, ":reproducible:")
 	fmt.Fprintln(g.writer, ":page-partial:")
 	fmt.Fprintln(g.writer, ":sect-anchors:")

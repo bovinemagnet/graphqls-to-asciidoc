@@ -68,3 +68,18 @@ func TestRunReturnsErrorOnMissingFile(t *testing.T) {
 		t.Fatal("expected an error for a missing schema file, got nil")
 	}
 }
+
+func TestCatalogueEmitsKrokiAttributes(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.SchemaFile = "../../test/schema.graphql"
+	cfg.Catalogue = true
+	cfg.KrokiURL = "https://kroki.io"
+
+	result, err := Run(cfg)
+	if err != nil {
+		t.Fatalf("build failed: %v", err)
+	}
+	if !strings.Contains(string(result.Content), ":kroki-server-url: https://kroki.io") {
+		t.Error("expected the catalogue header to carry the kroki-server-url attribute")
+	}
+}

@@ -119,6 +119,7 @@ type CatalogueData struct {
 	SubTitle       string
 	RevDate        string
 	CommandLine    string
+	KrokiServerURL string
 	Queries        []CatalogueEntry
 	Mutations      []CatalogueEntry // Keep for backward compatibility
 	MutationGroups []MutationGroup  // Grouped mutations

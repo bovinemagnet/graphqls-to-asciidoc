@@ -82,6 +82,7 @@ func (g *Generator) collectCatalogueData() CatalogueData {
 		SubTitle:       g.config.SubTitle,
 		RevDate:        time.Now().Format("Mon, 02 Jan 2006 15:04:05 MST"),
 		CommandLine:    strings.Join(os.Args, " "),
+		KrokiServerURL: g.config.KrokiDocumentURL(),
 		Queries:        queries,
 		Mutations:      mutations,
 		MutationGroups: mutationGroups,
