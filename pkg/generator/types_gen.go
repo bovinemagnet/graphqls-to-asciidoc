@@ -438,8 +438,11 @@ func (g *Generator) getEnumValuesTableString(e *ast.Definition) string {
 	builder.WriteString("| Value | Description \n")
 
 	for _, value := range e.EnumValues {
-		processedDesc := parser.ProcessDescription(value.Description)
+		processedDesc, changelogText := changelog.ProcessWithChangelog(value.Description, parser.ProcessDescription)
 		fmt.Fprintf(&builder, "| `%s` | %s\n", value.Name, processedDesc)
+		if changelogText != "" {
+			fmt.Fprintf(&builder, "%s\n", changelogText)
+		}
 	}
 
 	builder.WriteString("|===\n")

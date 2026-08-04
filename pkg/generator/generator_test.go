@@ -1335,6 +1335,46 @@ func TestGenerateEnumsChangelog(t *testing.T) {
 	}
 }
 
+func TestGenerateEnumValueChangelog(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{
+			"Direction": {
+				Kind: ast.Enum,
+				Name: "Direction",
+				EnumValues: ast.EnumValueList{
+					&ast.EnumValueDefinition{
+						Name:        "NORTH",
+						Description: "Heading north.\n\nadd.version: 2.0.0",
+					},
+					&ast.EnumValueDefinition{
+						Name:        "SOUTH",
+						Description: "Heading south.",
+					},
+				},
+			},
+		},
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	var sortedDefs []*ast.Definition
+	for _, def := range gen.schema.Types {
+		sortedDefs = append(sortedDefs, def)
+	}
+	gen.generateEnums(sortedDefs)
+
+	output := buf.String()
+	// The raw annotation must not survive into the values table.
+	if strings.Contains(output, "add.version:") {
+		t.Errorf("Enum value description should not contain the raw version annotation.\nGot:\n%s", output)
+	}
+	// It should be rendered as a changelog in the value's cell instead.
+	if !strings.Contains(output, "* add: 2.0.0") {
+		t.Errorf("Enum value should render its changelog.\nGot:\n%s", output)
+	}
+}
+
 func TestGetSubscriptionDetailsChangelog(t *testing.T) {
 	cfg := config.NewConfig()
 	schema := &ast.Schema{
