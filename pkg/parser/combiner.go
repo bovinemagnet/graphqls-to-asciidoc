@@ -21,6 +21,9 @@ func CombineSchemaFiles(files []string) (string, error) {
 
 	// Read all files
 	for _, file := range files {
+		// #nosec G304 -- the path comes from the user's own -schema/-pattern
+		// argument and has already been checked by ValidateSchemaFiles.
+		// Reading the schema the caller named is what this tool is for.
 		content, err := os.ReadFile(file)
 		if err != nil {
 			return "", fmt.Errorf("failed to read schema file '%s': %v", file, err)
