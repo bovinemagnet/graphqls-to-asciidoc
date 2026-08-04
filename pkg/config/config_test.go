@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -269,5 +270,97 @@ func TestValidateOutputDirNotExist(t *testing.T) {
 	err = cfg.Validate()
 	if err == nil {
 		t.Error("Expected error for non-existent output directory in Validate")
+	}
+}
+
+func TestValidateDaemonRequiresOutput(t *testing.T) {
+	cfg := NewConfig()
+	cfg.SchemaFile = "../../test/schema.graphql"
+	cfg.Daemon = true
+
+	err := cfg.Validate()
+	if err == nil || !strings.Contains(err.Error(), "--daemon requires") {
+		t.Fatalf("expected a missing-output error, got %v", err)
+	}
+}
+
+func TestValidateDaemonFlagsWithoutDaemon(t *testing.T) {
+	cases := []string{"daemon-addr", "debounce", "watch-mode", "poll-interval"}
+	for _, name := range cases {
+		t.Run(name, func(t *testing.T) {
+			cfg := NewConfig()
+			cfg.SchemaFile = "../../test/schema.graphql"
+			cfg.SetFlags = map[string]bool{name: true}
+
+			err := cfg.Validate()
+			if err == nil || !strings.Contains(err.Error(), name) {
+				t.Fatalf("expected --%s to be rejected without --daemon, got %v", name, err)
+			}
+		})
+	}
+}
+
+func TestValidateDaemonAccepts(t *testing.T) {
+	cfg := NewConfig()
+	cfg.SchemaFile = "../../test/schema.graphql"
+	cfg.OutputFile = "out.adoc"
+	cfg.Daemon = true
+	cfg.SetFlags = map[string]bool{"debounce": true, "watch-mode": true}
+
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("expected a valid daemon configuration, got %v", err)
+	}
+}
+
+func TestValidateWatchMode(t *testing.T) {
+	cfg := NewConfig()
+	cfg.SchemaFile = "../../test/schema.graphql"
+	cfg.OutputFile = "out.adoc"
+	cfg.Daemon = true
+	cfg.WatchMode = "magic"
+
+	err := cfg.Validate()
+	if err == nil || !strings.Contains(err.Error(), "watch-mode") {
+		t.Fatalf("expected an invalid watch-mode error, got %v", err)
+	}
+}
+
+func TestValidateNonPositiveDurations(t *testing.T) {
+	cfg := NewConfig()
+	cfg.SchemaFile = "../../test/schema.graphql"
+	cfg.OutputFile = "out.adoc"
+	cfg.Daemon = true
+	cfg.Debounce = 0
+
+	err := cfg.Validate()
+	if err == nil || !strings.Contains(err.Error(), "debounce") {
+		t.Fatalf("expected a non-positive debounce error, got %v", err)
+	}
+}
+
+func TestKrokiDocumentURL(t *testing.T) {
+	tests := []struct {
+		name   string
+		kroki  string
+		daemon bool
+		addr   string
+		want   string
+	}{
+		{"disabled", "", false, "", ""},
+		{"one-shot uses the raw url", "https://kroki.io", false, "", "https://kroki.io"},
+		{"daemon uses the local proxy", "https://kroki.io", true, "127.0.0.1:8088", "http://127.0.0.1:8088/kroki"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := NewConfig()
+			cfg.KrokiURL = tt.kroki
+			cfg.Daemon = tt.daemon
+			cfg.DaemonAddr = tt.addr
+
+			if got := cfg.KrokiDocumentURL(); got != tt.want {
+				t.Fatalf("KrokiDocumentURL() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
