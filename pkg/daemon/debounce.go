@@ -36,7 +36,7 @@ func (d *Debouncer) Ready() bool {
 	if now.Sub(d.lastChange) < d.quiet {
 		return false
 	}
-	if !d.lastBuild.IsZero() && now.Sub(d.lastBuild) <= d.quiet {
+	if !d.lastBuild.IsZero() && now.Sub(d.lastBuild) < d.quiet {
 		return false
 	}
 	return true

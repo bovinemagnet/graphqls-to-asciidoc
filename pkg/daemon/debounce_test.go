@@ -68,7 +68,11 @@ func TestBurstOfChangesResetsTheQuietPeriod(t *testing.T) {
 }
 
 // The second condition from the spec: a rebuild may not follow within the
-// debounce interval of the previous one.
+// debounce interval of the previous one. This isolates that condition from
+// the quiet-since-change one by making the change settle well before the
+// build finishes, so lastChange is already older than the quiet period by
+// the time lastBuild is set — only the last-build window can be holding
+// Ready() back.
 func TestRateLimitedByTheLastBuild(t *testing.T) {
 	clock := newFakeClock()
 	d := NewDebouncer(5*time.Second, clock)
@@ -76,17 +80,21 @@ func TestRateLimitedByTheLastBuild(t *testing.T) {
 	d.Changed()
 	clock.advance(5 * time.Second)
 	d.BuildStarted()
+
+	// A change arrives while the build is running.
+	d.Changed()
+	clock.advance(3 * time.Second)
 	d.BuildCompleted()
 
-	d.Changed()
-	clock.advance(5 * time.Second)
+	// The change settled two seconds ago; only the build window blocks.
+	clock.advance(2 * time.Second)
 	if d.Ready() {
-		t.Fatal("expected the previous build to rate-limit this one")
+		t.Fatal("expected the last build to rate-limit this one")
 	}
 
-	clock.advance(time.Second)
+	clock.advance(3 * time.Second)
 	if !d.Ready() {
-		t.Fatal("expected a rebuild once both conditions held")
+		t.Fatal("expected a rebuild once the build window passed")
 	}
 }
 
