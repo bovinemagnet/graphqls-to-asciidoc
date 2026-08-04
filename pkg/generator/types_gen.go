@@ -55,7 +55,7 @@ func (g *Generator) generateTypes(sortedDefs []*ast.Definition, definitionsMap m
 			TypesTag string
 			Types    []TypeInfo
 		}{
-			TypesTag: "== Types",
+			TypesTag: "[[types]]\n== Types",
 			Types:    typeInfos,
 		}
 
@@ -103,7 +103,7 @@ func (g *Generator) generateEnums(sortedDefs []*ast.Definition) int {
 			EnumsTag string
 			Enums    []EnumInfo
 		}{
-			EnumsTag: "== Enums",
+			EnumsTag: "[[enums]]\n== Enums",
 			Enums:    enumInfos,
 		}
 
@@ -113,7 +113,7 @@ func (g *Generator) generateEnums(sortedDefs []*ast.Definition) int {
 		}
 	} else {
 		// No enums found, write a note
-		fmt.Fprintln(g.writer, "== Enums")
+		fmt.Fprintln(g.writer, "[[enums]]\n== Enums")
 		fmt.Fprintln(g.writer)
 		fmt.Fprintln(g.writer, "[NOTE]")
 		fmt.Fprintln(g.writer, "====")
@@ -158,7 +158,7 @@ func (g *Generator) generateInputs(sortedDefs []*ast.Definition, definitionsMap 
 			InputsTag string
 			Inputs    []InputInfo
 		}{
-			InputsTag: "== Inputs",
+			InputsTag: "[[inputs]]\n== Inputs",
 			Inputs:    inputInfos,
 		}
 
@@ -167,7 +167,7 @@ func (g *Generator) generateInputs(sortedDefs []*ast.Definition, definitionsMap 
 			return count
 		}
 	} else {
-		fmt.Fprintln(g.writer, "== Inputs")
+		fmt.Fprintln(g.writer, "[[inputs]]\n== Inputs")
 		fmt.Fprintln(g.writer)
 		fmt.Fprintln(g.writer, "[NOTE]")
 		fmt.Fprintln(g.writer, "====")
@@ -217,7 +217,7 @@ func (g *Generator) generateDirectives() int {
 		return 0
 	}
 
-	fmt.Fprintln(g.writer, "== Directives")
+	fmt.Fprintln(g.writer, "[[directives]]\n== Directives")
 	fmt.Fprintln(g.writer)
 	fmt.Fprintln(g.writer, "// tag::DIRECTIVES[]")
 	fmt.Fprintln(g.writer)
@@ -246,7 +246,7 @@ func (g *Generator) generateDirectives() int {
 func (g *Generator) generateDirective(directive *ast.DirectiveDefinition) {
 	fmt.Fprintf(g.writer, "// tag::directive-%s[]\n", directive.Name)
 	fmt.Fprintln(g.writer)
-	fmt.Fprintf(g.writer, "[[directive_%s]]\n", strings.ToLower(directive.Name))
+	fmt.Fprintf(g.writer, "[[directive_%s]]\n", parser.CamelToSnake(directive.Name))
 	fmt.Fprintf(g.writer, "=== @%s\n", directive.Name)
 	fmt.Fprintln(g.writer)
 

@@ -32,7 +32,7 @@ func (g *Generator) generateSubscriptions(definitionsMap map[string]*ast.Definit
 				fmt.Fprintf(os.Stderr, "Warning: template execution error for empty subscriptions: %v\n", execErr)
 			}
 		} else {
-			fmt.Fprintln(g.writer, "== Subscription")
+			fmt.Fprintln(g.writer, "[[subscription]]\n== Subscription")
 			fmt.Fprintln(g.writer)
 			fmt.Fprintln(g.writer, "[NOTE]")
 			fmt.Fprintln(g.writer, "====")

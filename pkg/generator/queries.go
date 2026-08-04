@@ -19,7 +19,7 @@ func (g *Generator) generateQueries(definitionsMap map[string]*ast.Definition) i
 
 	g.metrics.LogProgress("Queries", "Starting query generation")
 
-	fmt.Fprintln(g.writer, "== Query")
+	fmt.Fprintln(g.writer, "[[query]]\n== Query")
 	fmt.Fprintln(g.writer)
 	fmt.Fprintln(g.writer)
 	if g.schema.Query.Description != "" {

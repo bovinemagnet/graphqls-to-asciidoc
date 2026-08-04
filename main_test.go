@@ -221,13 +221,31 @@ func TestChangelogTagsAlwaysPresent(t *testing.T) {
 	}
 }
 
+// Section ids that are auto-generated depend on the toolchain: Asciidoctor's
+// defaults give "_types" while Antora's give "types". An explicit anchor pins
+// the id so a cross-reference means the same thing under either.
+func TestTopLevelSectionsHaveExplicitAnchors(t *testing.T) {
+	doc, err := renderFixture("test/schema.graphql")
+	if err != nil {
+		t.Fatalf("render test/schema.graphql: %v", err)
+	}
+
+	for _, s := range sectionIDs(doc) {
+		if s.level == 1 && !s.explicit {
+			t.Errorf("section %q relies on an auto-generated id (%q); give it an explicit anchor", s.title, s.id)
+		}
+	}
+}
+
 type sectionID struct {
-	id    string
-	title string
+	id       string
+	title    string
+	level    int
+	explicit bool
 }
 
 var (
-	headingRE     = regexp.MustCompile(`^={2,6}\s+(\S.*)$`)
+	headingRE     = regexp.MustCompile(`^(={2,6})\s+(\S.*)$`)
 	blockAnchorRE = regexp.MustCompile(`^\[\[([^\]\[]+)\]\]$`)
 	nonAlnumRE    = regexp.MustCompile(`[^a-z0-9]+`)
 )
@@ -257,15 +275,16 @@ func sectionIDs(doc string) []sectionID {
 		if m == nil {
 			continue
 		}
-		title := strings.TrimSpace(m[1])
+		title := strings.TrimSpace(m[2])
+		level := len(m[1]) - 1 // "==" is level 1, "===" is level 2
 
-		id := autoID(title)
+		id, explicit := autoID(title), false
 		if i > 0 {
 			if anchor := blockAnchorRE.FindStringSubmatch(lines[i-1]); anchor != nil {
-				id = anchor[1]
+				id, explicit = anchor[1], true
 			}
 		}
-		ids = append(ids, sectionID{id: id, title: title})
+		ids = append(ids, sectionID{id: id, title: title, level: level, explicit: explicit})
 	}
 	return ids
 }

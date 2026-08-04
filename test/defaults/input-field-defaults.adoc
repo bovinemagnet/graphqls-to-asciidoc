@@ -20,6 +20,7 @@ Last generated _{revdate}_
 ====
 
 
+[[mutations]]
 == Mutations
 
 
@@ -85,6 +86,7 @@ updateUser(
 
 // end::mutation[]
 
+[[types]]
 == Types
 
 // tag::type-User[]
@@ -125,6 +127,7 @@ A platform user.
 // end::type-User[]
 
 
+[[enums]]
 == Enums
 
 [NOTE]
@@ -133,6 +136,7 @@ No enums exist in this schema.
 ====
 
 
+[[inputs]]
 == Inputs
 
 // tag::input-UpdateUserInput[]

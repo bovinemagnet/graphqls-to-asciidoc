@@ -95,7 +95,8 @@ func (g *Generator) writeCatalogueSection() error {
 
 	// Add queries section if enabled and schema defines queries
 	if g.config.IncludeQueries && g.schema.Query != nil {
-		querySection := `== Queries
+		querySection := `[[queries]]
+== Queries
 
 *Queries* are how clients *read or fetch data* in GraphQL.
 They describe _what_ data the client wants, not _how_ to get it.
@@ -127,6 +128,7 @@ No queries exist in this schema.
 	// Add mutations section if enabled and schema defines mutations
 	if g.config.IncludeMutations && g.schema.Mutation != nil {
 		mutationSection := `
+[[mutations]]
 == Mutations
 
 
@@ -173,7 +175,8 @@ No mutations exist in this schema.
 
 	// Add subscriptions section if enabled and schema defines subscriptions
 	if g.config.IncludeSubscriptions && g.schema.Subscription != nil {
-		subscriptionSection := `== Subscriptions
+		subscriptionSection := `[[subscriptions]]
+== Subscriptions
 
 {{- if .Subscriptions }}
 
