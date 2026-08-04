@@ -63,20 +63,27 @@ jobs:
   security:
     name: Security Scan
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: read
+      security-events: write
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
         go-version: '1.22'
-    
+
+    # -no-fail keeps the step green so the SARIF upload below always runs;
+    # findings surface in the Security tab rather than as an opaque failure.
+    # With -fmt sarif the report goes to the file, so a bare failure prints
+    # nothing about what was found.
     - name: Run Gosec Security Scanner
       uses: securego/gosec@v2.27.1
       with:
-        args: '-fmt sarif -out results.sarif ./...'
-    
+        args: '-no-fail -fmt sarif -out results.sarif ./...'
+
     - name: Upload SARIF file
       uses: github/codeql-action/upload-sarif@v3
       with:
