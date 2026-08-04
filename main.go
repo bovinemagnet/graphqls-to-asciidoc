@@ -12,6 +12,9 @@ import (
 	schemaParser "github.com/bovinemagnet/graphqls-to-asciidoc/pkg/parser"
 )
 
+// schemaSourceName labels the combined schema passed to the GraphQL parser.
+const schemaSourceName = "GraphQL schema"
+
 var (
 	Version   = "development"
 	BuildTime = "unknown"
@@ -21,6 +24,39 @@ func init() {
 	// Set version variables in config package
 	config.Version = Version
 	config.BuildTime = BuildTime
+}
+
+// readSchemaContent loads the schema named by the configuration, combining
+// several files when a pattern was given. Any failure is fatal.
+func readSchemaContent(cfg *config.Config) string {
+	if cfg.SchemaPattern == "" {
+		// #nosec G304 -- the path is the user's own -schema argument, already
+		// checked by Validate; reading it is what this tool is for.
+		schemaBytes, err := os.ReadFile(cfg.SchemaFile)
+		if err != nil {
+			log.Fatalf("Failed to read schema file %s: %v", cfg.SchemaFile, err)
+		}
+		return string(schemaBytes)
+	}
+
+	files, err := schemaParser.FindSchemaFiles(cfg.SchemaPattern)
+	if err != nil {
+		log.Fatalf("Failed to find schema files with pattern '%s': %v", cfg.SchemaPattern, err)
+	}
+
+	if err := schemaParser.ValidateSchemaFiles(files); err != nil {
+		log.Fatalf("Schema file validation failed: %v", err)
+	}
+
+	schemaContent, err := schemaParser.CombineSchemaFiles(files)
+	if err != nil {
+		log.Fatalf("Failed to combine schema files: %v", err)
+	}
+
+	if cfg.Verbose {
+		log.Printf("Combined %d schema files: %v", len(files), files)
+	}
+	return schemaContent
 }
 
 func main() {
@@ -43,37 +79,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Read schema content (single file or multiple files)
-	var schemaContent string
-	if cfg.SchemaPattern != "" {
-		// Multi-file mode using pattern
-		files, err := schemaParser.FindSchemaFiles(cfg.SchemaPattern)
-		if err != nil {
-			log.Fatalf("Failed to find schema files with pattern '%s': %v", cfg.SchemaPattern, err)
-		}
-
-		// Validate files are accessible and have correct extensions
-		if err := schemaParser.ValidateSchemaFiles(files); err != nil {
-			log.Fatalf("Schema file validation failed: %v", err)
-		}
-
-		// Combine multiple schema files
-		schemaContent, err = schemaParser.CombineSchemaFiles(files)
-		if err != nil {
-			log.Fatalf("Failed to combine schema files: %v", err)
-		}
-
-		if cfg.Verbose {
-			log.Printf("Combined %d schema files: %v", len(files), files)
-		}
-	} else {
-		// Single file mode
-		schemaBytes, err := os.ReadFile(cfg.SchemaFile)
-		if err != nil {
-			log.Fatalf("Failed to read schema file %s: %v", cfg.SchemaFile, err)
-		}
-		schemaContent = string(schemaBytes)
-	}
+	schemaContent := readSchemaContent(cfg)
 
 	// Remove fragments from schema content before parsing
 	// Fragments are client-side constructs and don't belong in schema files
@@ -86,7 +92,7 @@ func main() {
 	// Parse GraphQL schema directly - code blocks in descriptions are safe
 	// because they're inside triple-quoted strings
 	source := &ast.Source{
-		Name:  "GraphQL schema",
+		Name:  schemaSourceName,
 		Input: cleanedSchema,
 	}
 

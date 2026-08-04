@@ -47,6 +47,12 @@ The following custom scalar types are defined in this schema:
 // end::scalar-description-{{.Name}}[]
 
 {{ end }}
+// tag::scalar-changelog-{{.Name}}[]
+{{- if .Changelog }}
+{{ .Changelog }}
+{{- end }}
+// end::scalar-changelog-{{.Name}}[]
+
 // end::scalar-{{.Name}}[]
 
 {{ end }}
@@ -61,6 +67,7 @@ No custom scalars exist in this schema.
 
 const SubscriptionTemplate = `
 // tag::subscription[]
+[[subscription]]
 == Subscription
 
 {{- if .FoundSubscriptions }}
@@ -83,7 +90,6 @@ No subscriptions exist in this schema.
 
 const MutationTemplate = `
 // tag::mutation[]
-[[mutation]]
 {{.MutationTag}}
 
 {{- if .MutationObjectDescription }}
@@ -284,6 +290,7 @@ GraphQL exposes a *single endpoint* where clients can *ask for exactly the data 
 
 
 {{ if .Queries }}
+[[queries]]
 == Queries
 
 *Queries* are how clients *read or fetch data* in GraphQL.
@@ -303,6 +310,7 @@ The following table provides a quick reference to all available queries in the G
 {{ end }}
 
 {{ if .MutationGroups }}
+[[mutations]]
 == Mutations
 
 
@@ -326,6 +334,7 @@ The following table provides a quick reference to all available mutations in the
 |===
 {{ end }}
 
+[[subscriptions]]
 == Subscriptions
 
 {{- if .Subscriptions }}

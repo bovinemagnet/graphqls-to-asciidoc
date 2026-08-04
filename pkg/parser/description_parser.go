@@ -6,6 +6,22 @@ import (
 	"strings"
 )
 
+// reJSDocLine matches a JSDoc annotation line such as "@param x".
+// Example code-block patterns: one for a heading mentioning "Example" followed
+// by a fenced block, one for a bare fenced block.
+var (
+	reTitledExample = regexp.MustCompile("(?s)(###?\\s*[^\\n]*Example[^\\n]*)\\n```(\\w*)\\n(.*?)\\n```")
+	reCodeBlock     = regexp.MustCompile("(?s)```(\\w*)\\n(.*?)\\n```")
+)
+
+// JSDoc @param forms: "@param parent.child - text" and "@param name - text".
+var (
+	reNestedParam = regexp.MustCompile(`@param\s+(\S+)\.(\S+)\s*-?\s*(.*)`)
+	reSimpleParam = regexp.MustCompile(`@param\s+(\S+)\s*-?\s*(.*)`)
+)
+
+var reJSDocLine = regexp.MustCompile(`(?m)^@\w+.*$`)
+
 const (
 	sectionOverview   = "overview"
 	sectionReturn     = "return"
@@ -13,6 +29,13 @@ const (
 	langGraphQL       = "graphql"
 	complexitySimple  = "simple"
 	metadataValueTrue = "true"
+
+	// Weights used to score how complete a description is.
+	weightOverview   = 0.3
+	weightParameters = 0.2
+	weightReturns    = 0.2
+	weightExamples   = 0.15
+	weightErrors     = 0.15
 
 	// Description-complexity word-count thresholds.
 	simpleWordLimit   = 50  // < this ⇒ "simple"
@@ -121,7 +144,6 @@ func (dp *DescriptionParser) parseStructuredDescription(description string) *Des
 
 // parseSections extracts markdown-style sections from the description
 func (dp *DescriptionParser) parseSections(description string, structure *DescriptionStructure) {
-	// Split description into lines for line-by-line processing
 	lines := strings.Split(description, "\n")
 	currentSection := ""
 	currentContent := []string{}
@@ -133,53 +155,22 @@ func (dp *DescriptionParser) parseSections(description string, structure *Descri
 		isH2 := strings.HasPrefix(line, "## ") && !strings.HasPrefix(line, "### ")
 		isH3 := strings.HasPrefix(line, "### ")
 
-		if isH2 || (isH3 && !inSection) {
-			// Save previous section if any
-			if currentSection != "" {
-				sectionContent := strings.TrimSpace(strings.Join(currentContent, "\n"))
-				switch strings.ToLower(currentSection) {
-				case sectionOverview:
-					structure.Overview = sectionContent
-				case sectionReturns, sectionReturn:
-					structure.Returns = sectionContent
-				default:
-					// Store all sections including Parameters, Errors, Examples etc
-					// They'll be parsed separately later but we keep them here too
-					structure.Sections[currentSection] = sectionContent
-				}
-			}
-
-			// Start new section
-			sectionName := strings.TrimSpace(line)
-			sectionName = strings.TrimPrefix(sectionName, "###")
-			sectionName = strings.TrimPrefix(sectionName, "##")
-			sectionName = strings.TrimSpace(sectionName)
-			currentSection = sectionName
+		switch {
+		case isH2 || (isH3 && !inSection):
+			storeSection(structure, currentSection, currentContent)
+			currentSection = sectionHeading(line)
 			currentContent = []string{}
 			inSection = true
-		} else if isH3 && inSection {
-			// ### within an existing ## section — treat as content
+		case inSection:
+			// Content of the current section, including any ### subheading.
 			currentContent = append(currentContent, line)
-		} else if inSection {
-			// Add line to current section
-			currentContent = append(currentContent, line)
-		} else {
+		default:
 			// Before any section - this is overview content
 			overviewContent = append(overviewContent, line)
 		}
 
-		// Check if we're at the end
-		if i == len(lines)-1 && currentSection != "" {
-			// Save the last section
-			sectionContent := strings.TrimSpace(strings.Join(currentContent, "\n"))
-			switch strings.ToLower(currentSection) {
-			case sectionOverview:
-				structure.Overview = sectionContent
-			case sectionReturns, sectionReturn:
-				structure.Returns = sectionContent
-			default:
-				structure.Sections[currentSection] = sectionContent
-			}
+		if i == len(lines)-1 {
+			storeSection(structure, currentSection, currentContent)
 		}
 	}
 
@@ -187,76 +178,89 @@ func (dp *DescriptionParser) parseSections(description string, structure *Descri
 	if structure.Overview == "" && len(overviewContent) > 0 {
 		overview := strings.TrimSpace(strings.Join(overviewContent, "\n"))
 		// Remove JSDoc annotations from overview
-		overview = regexp.MustCompile(`(?m)^@\w+.*$`).ReplaceAllString(overview, "")
+		overview = reJSDocLine.ReplaceAllString(overview, "")
 		structure.Overview = strings.TrimSpace(overview)
 	}
 }
 
+// storeSection files a completed section's content under the right field of
+// structure. A section with no name has not started yet and is ignored.
+func storeSection(structure *DescriptionStructure, name string, content []string) {
+	if name == "" {
+		return
+	}
+
+	sectionContent := strings.TrimSpace(strings.Join(content, "\n"))
+	switch strings.ToLower(name) {
+	case sectionOverview:
+		structure.Overview = sectionContent
+	case sectionReturns, sectionReturn:
+		structure.Returns = sectionContent
+	default:
+		// Store all sections including Parameters, Errors, Examples etc.
+		// They are parsed separately later but kept here too.
+		structure.Sections[name] = sectionContent
+	}
+}
+
+// sectionHeading strips the markdown heading markers from a section title.
+func sectionHeading(line string) string {
+	name := strings.TrimSpace(line)
+	name = strings.TrimPrefix(name, "###")
+	name = strings.TrimPrefix(name, "##")
+	return strings.TrimSpace(name)
+}
+
 // parseJSDocAnnotations extracts JSDoc-style annotations
-func (dp *DescriptionParser) parseJSDocAnnotations(description string, structure *DescriptionStructure) {
-	// Parse @param annotations - handle both dot notation and without
-	// First pattern: @param name.subname - description
-	// Second pattern: @param name - description
-	lines := strings.Split(description, "\n")
+// parseParamAnnotations collects @param annotations in declaration order,
+// attaching "@param parent.child" entries to their parent parameter.
+func parseParamAnnotations(description string) []ParameterDoc {
 	paramMap := make(map[string]*ParameterDoc)
-	paramOrder := []string{} // Keep track of order
+	paramOrder := []string{}
 
-	for _, line := range lines {
-		// Check for @param annotations
-		if strings.Contains(line, "@param") {
-			// Try to match nested parameter first (with dot notation)
-			nestedPattern := regexp.MustCompile(`@param\s+(\S+)\.(\S+)\s*-?\s*(.*)`)
-			if match := nestedPattern.FindStringSubmatch(line); len(match) >= 4 { //nolint:mnd // regex group count
-				paramName := match[1]
-				subParam := match[2]
-				paramDesc := strings.TrimSpace(match[3])
+	ensureParent := func(name, desc string) *ParameterDoc {
+		if existing, exists := paramMap[name]; exists {
+			return existing
+		}
+		paramMap[name] = &ParameterDoc{Name: name, Description: desc, SubParams: []ParameterDoc{}}
+		paramOrder = append(paramOrder, name)
+		return paramMap[name]
+	}
 
-				// Ensure parent exists
-				if _, exists := paramMap[paramName]; !exists {
-					paramMap[paramName] = &ParameterDoc{
-						Name:        paramName,
-						Description: "",
-						SubParams:   []ParameterDoc{},
-					}
-					paramOrder = append(paramOrder, paramName)
-				}
+	for _, line := range strings.Split(description, "\n") {
+		if !strings.Contains(line, "@param") {
+			continue
+		}
 
-				// Add sub-parameter
-				paramMap[paramName].SubParams = append(paramMap[paramName].SubParams, ParameterDoc{
-					Name:        subParam,
-					Description: paramDesc,
-				})
-			} else {
-				// Try simple parameter pattern
-				simplePattern := regexp.MustCompile(`@param\s+(\S+)\s*-?\s*(.*)`)
-				if match := simplePattern.FindStringSubmatch(line); len(match) >= 3 { //nolint:mnd // regex group count
-					paramName := match[1]
-					paramDesc := strings.TrimSpace(match[2])
+		// Nested parameters (dot notation) take precedence over the simple form.
+		if match := reNestedParam.FindStringSubmatch(line); len(match) >= 4 { //nolint:mnd // regex group count
+			parent := ensureParent(match[1], "")
+			parent.SubParams = append(parent.SubParams, ParameterDoc{
+				Name:        match[2],
+				Description: strings.TrimSpace(match[3]),
+			})
+			continue
+		}
 
-					if existing, exists := paramMap[paramName]; exists {
-						// Update description if empty
-						if existing.Description == "" {
-							existing.Description = paramDesc
-						}
-					} else {
-						paramMap[paramName] = &ParameterDoc{
-							Name:        paramName,
-							Description: paramDesc,
-							SubParams:   []ParameterDoc{},
-						}
-						paramOrder = append(paramOrder, paramName)
-					}
-				}
+		if match := reSimpleParam.FindStringSubmatch(line); len(match) >= 3 { //nolint:mnd // regex group count
+			desc := strings.TrimSpace(match[2])
+			if param := ensureParent(match[1], desc); param.Description == "" {
+				param.Description = desc
 			}
 		}
 	}
 
-	// Convert map to slice maintaining order
-	for _, paramName := range paramOrder {
-		if param, exists := paramMap[paramName]; exists {
-			structure.Parameters = append(structure.Parameters, *param)
+	params := make([]ParameterDoc, 0, len(paramOrder))
+	for _, name := range paramOrder {
+		if param, exists := paramMap[name]; exists {
+			params = append(params, *param)
 		}
 	}
+	return params
+}
+
+func (dp *DescriptionParser) parseJSDocAnnotations(description string, structure *DescriptionStructure) {
+	structure.Parameters = append(structure.Parameters, parseParamAnnotations(description)...)
 
 	// Parse @returns annotation
 	returnsPattern := regexp.MustCompile(`@returns?\s+(.*)`)
@@ -326,63 +330,76 @@ func (dp *DescriptionParser) parseChangelog(description string, structure *Descr
 }
 
 // parseExamples extracts code examples from the description
-func (dp *DescriptionParser) parseExamples(description string, structure *DescriptionStructure) {
-	// Pattern for code blocks with optional title - handle various formats
-	// First try to match titled examples with markdown code blocks
-	codeBlockPattern := regexp.MustCompile("(?s)(###?\\s*[^\\n]*Example[^\\n]*)\\n```(\\w*)\\n(.*?)\\n```")
-	matches := codeBlockPattern.FindAllStringSubmatch(description, -1)
-
-	for _, match := range matches {
+// titledExamples collects code blocks introduced by a heading containing the
+// word "Example".
+func titledExamples(description string) []Example {
+	var examples []Example
+	for _, match := range reTitledExample.FindAllStringSubmatch(description, -1) {
 		if len(match) < 4 { //nolint:mnd // regex group count
 			continue
 		}
 
-		example := Example{
-			Title:    strings.TrimSpace(match[1]),
-			Language: match[2],
+		title := strings.TrimSpace(match[1])
+		title = strings.TrimPrefix(title, "###")
+		title = strings.TrimPrefix(title, "##")
+
+		language := match[2]
+		if language == "" {
+			language = langGraphQL
+		}
+
+		examples = append(examples, Example{
+			Title:    strings.TrimSpace(title),
+			Language: language,
 			Code:     match[3],
-		}
-		if example.Language == "" {
-			example.Language = langGraphQL
-		}
-		// Clean up title - remove leading ###
-		example.Title = strings.TrimPrefix(example.Title, "###")
-		example.Title = strings.TrimPrefix(example.Title, "##")
-		example.Title = strings.TrimSpace(example.Title)
-		structure.Examples = append(structure.Examples, example)
+		})
+	}
+	return examples
+}
+
+// examplesSectionBlocks collects any code block inside an "Examples" section
+// that titledExamples did not already pick up.
+func examplesSectionBlocks(structure *DescriptionStructure) []Example {
+	section, exists := structure.Sections["Examples"]
+	if !exists {
+		return nil
 	}
 
-	// Also try to match code blocks without Example in title but in Examples section
-	if section, exists := structure.Sections["Examples"]; exists {
-		// Look for code blocks in the Examples section
-		sectionCodePattern := regexp.MustCompile("(?s)```(\\w*)\\n(.*?)\\n```")
-		sectionMatches := sectionCodePattern.FindAllStringSubmatch(section, -1)
+	var examples []Example
+	for i, match := range reCodeBlock.FindAllStringSubmatch(section, -1) {
+		if len(match) < 3 { //nolint:mnd // regex group count
+			continue
+		}
+		if containsExampleCode(structure.Examples, match[2]) {
+			continue
+		}
 
-		for i, match := range sectionMatches {
-			if len(match) >= 3 { //nolint:mnd // regex group count
-				// Check if we haven't already added this example
-				alreadyAdded := false
-				for _, ex := range structure.Examples {
-					if ex.Code == match[2] {
-						alreadyAdded = true
-						break
-					}
-				}
+		language := match[1]
+		if language == "" {
+			language = langGraphQL
+		}
+		examples = append(examples, Example{
+			Title:    fmt.Sprintf("Example %d", i+1),
+			Language: language,
+			Code:     match[2],
+		})
+	}
+	return examples
+}
 
-				if !alreadyAdded {
-					lang := match[1]
-					if lang == "" {
-						lang = langGraphQL
-					}
-					structure.Examples = append(structure.Examples, Example{
-						Title:    fmt.Sprintf("Example %d", i+1),
-						Language: lang,
-						Code:     match[2],
-					})
-				}
-			}
+// containsExampleCode reports whether code has already been collected.
+func containsExampleCode(examples []Example, code string) bool {
+	for _, ex := range examples {
+		if ex.Code == code {
+			return true
 		}
 	}
+	return false
+}
+
+func (dp *DescriptionParser) parseExamples(description string, structure *DescriptionStructure) {
+	structure.Examples = append(structure.Examples, titledExamples(description)...)
+	structure.Examples = append(structure.Examples, examplesSectionBlocks(structure)...)
 
 	// Also parse @example annotations
 	examplePattern := regexp.MustCompile(`@example\s*\n?(.*)`)
@@ -391,7 +408,7 @@ func (dp *DescriptionParser) parseExamples(description string, structure *Descri
 	for _, match := range exampleMatches {
 		if len(match) > 1 && strings.TrimSpace(match[1]) != "" {
 			structure.Examples = append(structure.Examples, Example{
-				Title:    "Example",
+				Title:    defaultExampleTitle,
 				Code:     strings.TrimSpace(match[1]),
 				Language: langGraphQL,
 			})
@@ -428,84 +445,90 @@ func (dp *DescriptionParser) parseMetadata(description string, structure *Descri
 }
 
 // calculateMetrics calculates quality metrics for the description
-func (dp *DescriptionParser) calculateMetrics(structure *DescriptionStructure, rawDescription string) *DescriptionMetrics {
+func (dp *DescriptionParser) calculateMetrics(
+	structure *DescriptionStructure,
+	rawDescription string,
+) *DescriptionMetrics {
 	if !dp.enableMetrics {
 		return nil
 	}
 
 	metrics := &DescriptionMetrics{}
-
-	if structure != nil {
-		// Calculate from structured description
-		metrics.HasOverview = structure.Overview != ""
-		metrics.HasChangelog = len(structure.Changelog) > 0
-		metrics.HasExamples = len(structure.Examples) > 0
-		metrics.HasParameters = len(structure.Parameters) > 0
-		metrics.HasReturns = structure.Returns != ""
-		metrics.HasErrors = len(structure.Errors) > 0
-
-		metrics.Sections = len(structure.Sections)
-		metrics.Examples = len(structure.Examples)
-		metrics.Parameters = len(structure.Parameters)
-
-		// Calculate word count
-		allText := structure.Overview + structure.Returns
-		for i := range structure.Parameters {
-			allText += " " + structure.Parameters[i].Description
-		}
-		for _, err := range structure.Errors {
-			allText += " " + err.Description
-		}
-		metrics.WordCount = len(strings.Fields(allText))
-	} else if rawDescription != "" {
-		// Calculate from raw description
+	switch {
+	case structure != nil:
+		populateStructureMetrics(metrics, structure)
+	case rawDescription != "":
 		metrics.WordCount = len(strings.Fields(rawDescription))
 	}
 
-	// Calculate completeness score
-	completeness := 0.0
-	factors := 0.0
-
-	if metrics.HasOverview {
-		completeness += 0.3
-	}
-	factors += 0.3
-
-	if metrics.HasParameters {
-		completeness += 0.2
-	}
-	factors += 0.2
-
-	if metrics.HasReturns {
-		completeness += 0.2
-	}
-	factors += 0.2
-
-	if metrics.HasExamples {
-		completeness += 0.15
-	}
-	factors += 0.15
-
-	if metrics.HasErrors {
-		completeness += 0.15
-	}
-	factors += 0.15
-
-	if factors > 0 {
-		metrics.Completeness = completeness / factors
-	}
-
-	// Determine complexity
-	switch {
-	case metrics.WordCount < simpleWordLimit:
-		metrics.Complexity = complexitySimple
-	case metrics.WordCount < moderateWordLimit:
-		metrics.Complexity = "moderate"
-	default:
-		metrics.Complexity = "complex"
-	}
+	metrics.Completeness = completenessScore(metrics)
+	metrics.Complexity = complexityFor(metrics.WordCount)
 
 	return metrics
+}
+
+// populateStructureMetrics fills in the counts and presence flags derived from
+// a parsed description.
+func populateStructureMetrics(metrics *DescriptionMetrics, structure *DescriptionStructure) {
+	metrics.HasOverview = structure.Overview != ""
+	metrics.HasChangelog = len(structure.Changelog) > 0
+	metrics.HasExamples = len(structure.Examples) > 0
+	metrics.HasParameters = len(structure.Parameters) > 0
+	metrics.HasReturns = structure.Returns != ""
+	metrics.HasErrors = len(structure.Errors) > 0
+
+	metrics.Sections = len(structure.Sections)
+	metrics.Examples = len(structure.Examples)
+	metrics.Parameters = len(structure.Parameters)
+
+	allText := structure.Overview + structure.Returns
+	for i := range structure.Parameters {
+		allText += " " + structure.Parameters[i].Description
+	}
+	for _, err := range structure.Errors {
+		allText += " " + err.Description
+	}
+	metrics.WordCount = len(strings.Fields(allText))
+}
+
+// completenessScore weights the documentation elements that are present against
+// the total available weight.
+func completenessScore(metrics *DescriptionMetrics) float64 {
+	elements := []struct {
+		present bool
+		weight  float64
+	}{
+		{metrics.HasOverview, weightOverview},
+		{metrics.HasParameters, weightParameters},
+		{metrics.HasReturns, weightReturns},
+		{metrics.HasExamples, weightExamples},
+		{metrics.HasErrors, weightErrors},
+	}
+
+	completeness, factors := 0.0, 0.0
+	for _, e := range elements {
+		if e.present {
+			completeness += e.weight
+		}
+		factors += e.weight
+	}
+
+	if factors == 0 {
+		return 0
+	}
+	return completeness / factors
+}
+
+// complexityFor classifies a description by its word count.
+func complexityFor(wordCount int) string {
+	switch {
+	case wordCount < simpleWordLimit:
+		return complexitySimple
+	case wordCount < moderateWordLimit:
+		return "moderate"
+	default:
+		return "complex"
+	}
 }
 
 // ExtractParameterType attempts to extract type information from parameter description

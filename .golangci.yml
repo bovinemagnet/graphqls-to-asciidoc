@@ -63,12 +63,15 @@ linters:
   exclusions:
     generated: lax
     rules:
+      # Table-driven tests are legitimately long and branchy: the size and
+      # complexity linters measure something that is a virtue there.
       - linters:
           - funlen
           - mnd
           - lll
           - goconst
           - dupl
+          - gocyclo
         path: _test\.go
       - linters:
           - lll

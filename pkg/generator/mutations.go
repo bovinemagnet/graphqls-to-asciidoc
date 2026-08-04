@@ -14,73 +14,22 @@ import (
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/templates"
 )
 
+// mutationSectionHeading is the anchored heading for the mutation detail
+// section. The anchor is explicit so the id does not depend on the
+// idprefix/idseparator attributes of the rendering toolchain.
+const mutationSectionHeading = "[[mutation]]\n== Mutation"
+
 // generateMutations generates the mutations section
 func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition) int {
 	g.metrics.LogProgress("Mutations", "Starting mutations generation")
 
 	if g.schema.Mutation == nil || len(g.schema.Mutation.Fields) == 0 {
-		// No mutations exist
-		tmpl, err := template.New("mutation").Parse(templates.MutationTemplate)
-		if err == nil {
-			if execErr := tmpl.Execute(g.writer, struct {
-				MutationTag               string
-				MutationObjectDescription string
-				FoundMutations            bool
-				Mutations                 []MutationInfo
-			}{
-				MutationTag:               "== Mutation",
-				MutationObjectDescription: "",
-				FoundMutations:            false,
-				Mutations:                 nil,
-			}); execErr != nil {
-				fmt.Fprintf(os.Stderr, "Warning: template execution error for empty mutations: %v\n", execErr)
-			}
-		} else {
-			fmt.Fprintln(g.writer, "== Mutation")
-			fmt.Fprintln(g.writer)
-			fmt.Fprintln(g.writer, "[NOTE]")
-			fmt.Fprintln(g.writer, "====")
-			fmt.Fprintln(g.writer, "No mutations exist in this schema.")
-			fmt.Fprintln(g.writer, "====")
-			fmt.Fprintln(g.writer)
-		}
+		g.writeEmptyMutations()
 		g.metrics.LogProgress("Mutations", "Generated 0 mutations")
 		return 0
 	}
 
-	var mutationInfos []MutationInfo
-	for _, f := range g.schema.Mutation.Fields {
-		if !g.shouldIncludeField(f.Name, f.Description, f.Directives) {
-			continue
-		}
-
-		processedDesc, changelogText := changelog.ProcessWithChangelog(f.Description, parser.ProcessDescription)
-
-		numberedRefs := ""
-		if len(f.Arguments) > 0 && f.Description != "" {
-			processedDesc, numberedRefs = splitOnArgumentsMarker(processedDesc)
-		}
-
-		methodSignature := g.getMethodSignatureBlock(f, definitionsMap)
-		argsBlock := g.getArgumentsBlock(f, definitionsMap)
-		directivesBlock := g.getDirectivesBlock(f)
-		mutationInfo := MutationInfo{
-			Name:                 f.Name,
-			AnchorName:           "mutation_" + parser.CamelToSnake(f.Name),
-			Description:          f.Description,
-			CleanedDescription:   processedDesc,
-			TypeName:             parser.ProcessTypeName(f.Type.String(), definitionsMap),
-			MethodSignatureBlock: methodSignature,
-			Arguments:            argsBlock,
-			Directives:           directivesBlock,
-			HasArguments:         len(f.Arguments) > 0,
-			HasDirectives:        len(f.Directives) > 0,
-			IsInternal:           isInternal(f.Name, f.Description),
-			Changelog:            changelogText,
-			NumberedRefs:         parser.CrossReferenceTypeNames(numberedRefs, definitionsMap),
-		}
-		mutationInfos = append(mutationInfos, mutationInfo)
-	}
+	mutationInfos := g.collectMutationInfos(definitionsMap)
 
 	// Sort mutations alphabetically by name
 	sort.Slice(mutationInfos, func(i, j int) bool {
@@ -98,7 +47,7 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 		FoundMutations            bool
 		Mutations                 []MutationInfo
 	}{
-		MutationTag:               "== Mutation",
+		MutationTag:               mutationSectionHeading,
 		MutationObjectDescription: mutationObjectDescription,
 		FoundMutations:            len(mutationInfos) > 0,
 		Mutations:                 mutationInfos,
@@ -111,6 +60,64 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 
 	g.metrics.LogProgress("Mutations", fmt.Sprintf("Generated %d mutations", len(mutationInfos)))
 	return len(mutationInfos)
+}
+
+// writeEmptyMutations renders the mutation section for a schema that defines
+// none, falling back to a plain note if the template will not parse.
+func (g *Generator) writeEmptyMutations() {
+	tmpl, err := template.New("mutation").Parse(templates.MutationTemplate)
+	if err != nil {
+		g.writeEmptySectionNote(mutationSectionHeading, "No mutations exist in this schema.")
+		return
+	}
+
+	if execErr := tmpl.Execute(g.writer, struct {
+		MutationTag               string
+		MutationObjectDescription string
+		FoundMutations            bool
+		Mutations                 []MutationInfo
+	}{
+		MutationTag:               mutationSectionHeading,
+		MutationObjectDescription: "",
+		FoundMutations:            false,
+		Mutations:                 nil,
+	}); execErr != nil {
+		fmt.Fprintf(os.Stderr, "Warning: template execution error for empty mutations: %v\n", execErr)
+	}
+}
+
+// collectMutationInfos filters and renders each mutation field.
+func (g *Generator) collectMutationInfos(definitionsMap map[string]*ast.Definition) []MutationInfo {
+	var mutationInfos []MutationInfo
+	for _, f := range g.schema.Mutation.Fields {
+		if !g.shouldIncludeField(f.Name, f.Description, f.Directives) {
+			continue
+		}
+
+		processedDesc, changelogText := changelog.ProcessWithChangelog(f.Description, parser.ProcessDescription)
+
+		numberedRefs := ""
+		if len(f.Arguments) > 0 && f.Description != "" {
+			processedDesc, numberedRefs = splitOnArgumentsMarker(processedDesc)
+		}
+
+		mutationInfos = append(mutationInfos, MutationInfo{
+			Name:                 f.Name,
+			AnchorName:           "mutation_" + parser.CamelToSnake(f.Name),
+			Description:          f.Description,
+			CleanedDescription:   processedDesc,
+			TypeName:             parser.ProcessTypeName(f.Type.String(), definitionsMap),
+			MethodSignatureBlock: g.getMethodSignatureBlock(f, definitionsMap),
+			Arguments:            g.getArgumentsBlock(f, definitionsMap),
+			Directives:           g.getDirectivesBlock(f),
+			HasArguments:         len(f.Arguments) > 0,
+			HasDirectives:        len(f.Directives) > 0,
+			IsInternal:           isInternal(f.Name, f.Description),
+			Changelog:            changelogText,
+			NumberedRefs:         parser.CrossReferenceTypeNames(numberedRefs, definitionsMap),
+		})
+	}
+	return mutationInfos
 }
 
 // getMethodSignatureBlock builds the method signature block for a mutation

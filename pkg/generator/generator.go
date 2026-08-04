@@ -190,66 +190,38 @@ func (g *Generator) Generate() error {
 	g.metrics.LogProgress("Setup", fmt.Sprintf("Found %d total definitions", len(g.schema.Types)))
 
 	// Generate sections based on configuration
-	if g.config.IncludeQueries && g.schema.Query != nil {
-		timer := g.metrics.StartSection("Queries")
-		count := g.generateQueries(definitionsMap)
-		timer.AddCount(count)
-		timer.Finish()
-	}
-
-	if g.config.IncludeMutations && g.schema.Mutation != nil {
-		timer := g.metrics.StartSection("Mutations")
-		count := g.generateMutations(definitionsMap)
-		timer.AddCount(count)
-		timer.Finish()
-	}
-
-	if g.config.IncludeSubscriptions && g.schema.Subscription != nil {
-		timer := g.metrics.StartSection("Subscriptions")
-		count := g.generateSubscriptions(definitionsMap)
-		timer.AddCount(count)
-		timer.Finish()
-	}
-
-	if g.config.IncludeTypes {
-		timer := g.metrics.StartSection("Types")
-		count := g.generateTypes(sortedDefs, definitionsMap)
-		timer.AddCount(count)
-		timer.Finish()
-	}
-
-	if g.config.IncludeEnums {
-		timer := g.metrics.StartSection("Enums")
-		count := g.generateEnums(sortedDefs)
-		timer.AddCount(count)
-		timer.Finish()
-	}
-
-	if g.config.IncludeInputs {
-		timer := g.metrics.StartSection("Inputs")
-		count := g.generateInputs(sortedDefs, definitionsMap)
-		timer.AddCount(count)
-		timer.Finish()
-	}
-
-	if g.config.IncludeDirectives {
-		timer := g.metrics.StartSection("Directives")
-		count := g.generateDirectives()
-		timer.AddCount(count)
-		timer.Finish()
-	}
-
-	if g.config.IncludeScalars {
-		timer := g.metrics.StartSection("Scalars")
-		count := g.generateScalars(sortedDefs)
-		timer.AddCount(count)
-		timer.Finish()
-	}
+	g.timeSection("Queries", g.config.IncludeQueries && g.schema.Query != nil,
+		func() int { return g.generateQueries(definitionsMap) })
+	g.timeSection("Mutations", g.config.IncludeMutations && g.schema.Mutation != nil,
+		func() int { return g.generateMutations(definitionsMap) })
+	g.timeSection("Subscriptions", g.config.IncludeSubscriptions && g.schema.Subscription != nil,
+		func() int { return g.generateSubscriptions(definitionsMap) })
+	g.timeSection("Types", g.config.IncludeTypes,
+		func() int { return g.generateTypes(sortedDefs, definitionsMap) })
+	g.timeSection("Enums", g.config.IncludeEnums,
+		func() int { return g.generateEnums(sortedDefs) })
+	g.timeSection("Inputs", g.config.IncludeInputs,
+		func() int { return g.generateInputs(sortedDefs, definitionsMap) })
+	g.timeSection("Directives", g.config.IncludeDirectives,
+		g.generateDirectives)
+	g.timeSection("Scalars", g.config.IncludeScalars,
+		func() int { return g.generateScalars(sortedDefs) })
 
 	// Log final metrics table
 	g.metrics.LogMetricsTable()
 
 	return nil
+}
+
+// timeSection runs generate under a metrics timer when enabled is true,
+// recording how many items it produced.
+func (g *Generator) timeSection(name string, enabled bool, generate func() int) {
+	if !enabled {
+		return
+	}
+	timer := g.metrics.StartSection(name)
+	timer.AddCount(generate())
+	timer.Finish()
 }
 
 // printHeader prints the AsciiDoc document header

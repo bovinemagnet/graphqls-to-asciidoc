@@ -6,6 +6,9 @@ import (
 	"strings"
 )
 
+// defaultExampleTitle is the title given to an untitled example block.
+const defaultExampleTitle = "Example"
+
 // Pre-compiled regex patterns for list item processing
 var (
 	reAsteriskList = regexp.MustCompile(`(^|\s)\*\s`)
@@ -189,7 +192,7 @@ func formatExamplesSection(examples []Example) string {
 	var lines []string
 
 	for _, example := range examples {
-		if example.Title != "" && example.Title != "Example" {
+		if example.Title != "" && example.Title != defaultExampleTitle {
 			lines = append(lines, fmt.Sprintf(".%s", example.Title))
 		} else {
 			lines = append(lines, ".Example")

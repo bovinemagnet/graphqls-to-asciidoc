@@ -6,14 +6,23 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
+// Built-in GraphQL scalar names.
+const (
+	scalarString  = "String"
+	scalarInt     = "Int"
+	scalarFloat   = "Float"
+	scalarBoolean = "Boolean"
+	scalarID      = "ID"
+)
+
 // isBuiltInScalar checks if a type name is a built-in GraphQL scalar
 func isBuiltInScalar(typeName string) bool {
 	builtInScalars := map[string]bool{
-		"String":  true,
-		"Int":     true,
-		"Float":   true,
-		"Boolean": true,
-		"ID":      true,
+		scalarString:  true,
+		scalarInt:     true,
+		scalarFloat:   true,
+		scalarBoolean: true,
+		scalarID:      true,
 	}
 	return builtInScalars[typeName]
 }

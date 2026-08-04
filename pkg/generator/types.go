@@ -71,6 +71,7 @@ type ScalarData struct {
 type ScalarInfo struct {
 	Name        string
 	Description string
+	Changelog   string
 }
 
 // SubscriptionData represents subscription information for template rendering

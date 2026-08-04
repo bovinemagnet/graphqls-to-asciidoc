@@ -15,6 +15,15 @@ import (
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/templates"
 )
 
+// Mutation catalogue group names, derived from the mutation name prefix.
+const (
+	groupAdds    = "Adds"
+	groupUpdates = "Updates"
+	groupDeletes = "Deletes"
+	groupSaves   = "Saves"
+	groupGeneral = "General"
+)
+
 // collectCatalogueEntries collects catalogue entries from a schema definition's fields
 func (g *Generator) collectCatalogueEntries(def *ast.Definition) []CatalogueEntry {
 	if def == nil {
@@ -80,22 +89,11 @@ func (g *Generator) collectCatalogueData() CatalogueData {
 	}
 }
 
-// writeCatalogueSection writes the catalogue tables section to the output.
-// This is used in standard documentation mode to include catalogue at the top.
-func (g *Generator) writeCatalogueSection() error {
-	// Skip catalogue section if all components are disabled
-	if !g.config.IncludeQueries && !g.config.IncludeMutations && !g.config.IncludeSubscriptions {
-		return nil
-	}
-
-	data := g.collectCatalogueData()
-
-	// Build template based on what's enabled
-	var templateParts []string
-
-	// Add queries section if enabled and schema defines queries
-	if g.config.IncludeQueries && g.schema.Query != nil {
-		querySection := `== Queries
+// Catalogue table templates for the summary section at the top of a full
+// document. Each declares an explicit anchor so its id does not depend on the
+// idprefix/idseparator attributes of the rendering toolchain.
+const catalogueQueriesSection = `[[queries]]
+== Queries
 
 *Queries* are how clients *read or fetch data* in GraphQL.
 They describe _what_ data the client wants, not _how_ to get it.
@@ -121,12 +119,9 @@ No queries exist in this schema.
 {{- end }}
 
 `
-		templateParts = append(templateParts, querySection)
-	}
 
-	// Add mutations section if enabled and schema defines mutations
-	if g.config.IncludeMutations && g.schema.Mutation != nil {
-		mutationSection := `
+const catalogueMutationsSection = `
+[[mutations]]
 == Mutations
 
 
@@ -168,12 +163,9 @@ No mutations exist in this schema.
 {{- end }}
 
 `
-		templateParts = append(templateParts, mutationSection)
-	}
 
-	// Add subscriptions section if enabled and schema defines subscriptions
-	if g.config.IncludeSubscriptions && g.schema.Subscription != nil {
-		subscriptionSection := `== Subscriptions
+const catalogueSubscriptionsSection = `[[subscriptions]]
+== Subscriptions
 
 {{- if .Subscriptions }}
 
@@ -196,7 +188,33 @@ No subscriptions exist in this schema.
 {{- end }}
 
 `
-		templateParts = append(templateParts, subscriptionSection)
+
+// writeCatalogueSection writes the catalogue tables section to the output.
+// This is used in standard documentation mode to include catalogue at the top.
+func (g *Generator) writeCatalogueSection() error {
+	// Skip catalogue section if all components are disabled
+	if !g.config.IncludeQueries && !g.config.IncludeMutations && !g.config.IncludeSubscriptions {
+		return nil
+	}
+
+	data := g.collectCatalogueData()
+
+	// Build template based on what's enabled
+	var templateParts []string
+
+	// Add queries section if enabled and schema defines queries
+	if g.config.IncludeQueries && g.schema.Query != nil {
+		templateParts = append(templateParts, catalogueQueriesSection)
+	}
+
+	// Add mutations section if enabled and schema defines mutations
+	if g.config.IncludeMutations && g.schema.Mutation != nil {
+		templateParts = append(templateParts, catalogueMutationsSection)
+	}
+
+	// Add subscriptions section if enabled and schema defines subscriptions
+	if g.config.IncludeSubscriptions && g.schema.Subscription != nil {
+		templateParts = append(templateParts, catalogueSubscriptionsSection)
 	}
 
 	// Combine all enabled sections
@@ -239,7 +257,7 @@ func (g *Generator) generateCatalogue() error {
 
 // groupMutationsByType groups mutations by their naming prefix (add, update, delete, save, general)
 func groupMutationsByType(mutations []CatalogueEntry) []MutationGroup {
-	groupOrder := []string{"Adds", "Updates", "Deletes", "Saves", "General"}
+	groupOrder := []string{groupAdds, groupUpdates, groupDeletes, groupSaves, groupGeneral}
 	groupMap := make(map[string][]CatalogueEntry)
 
 	for _, mutation := range mutations {
@@ -265,17 +283,17 @@ func getMutationGroupName(mutationName string) string {
 	lowerName := strings.ToLower(mutationName)
 
 	if strings.HasPrefix(lowerName, "add") {
-		return "Adds"
+		return groupAdds
 	}
 	if strings.HasPrefix(lowerName, "update") {
-		return "Updates"
+		return groupUpdates
 	}
 	if strings.HasPrefix(lowerName, "delete") {
-		return "Deletes"
+		return groupDeletes
 	}
 	if strings.HasPrefix(lowerName, "save") {
-		return "Saves"
+		return groupSaves
 	}
 
-	return "General"
+	return groupGeneral
 }

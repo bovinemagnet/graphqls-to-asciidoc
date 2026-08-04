@@ -168,9 +168,8 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// PrintUsage prints detailed usage information
-func PrintUsage() {
-	fmt.Printf(`graphqls-to-asciidoc - Convert GraphQL schema files to comprehensive AsciiDoc documentation
+// usageText is the help screen shown by -h/--help.
+const usageText = `graphqls-to-asciidoc - Convert GraphQL schema files to comprehensive AsciiDoc documentation
 
 USAGE:
     graphqls-to-asciidoc [OPTIONS]
@@ -249,7 +248,11 @@ FEATURES:
     ✓ Comprehensive type documentation
 
 For more information, visit: https://github.com/bovinemagnet/graphqls-to-asciidoc
-`)
+`
+
+// PrintUsage prints detailed usage information
+func PrintUsage() {
+	fmt.Print(usageText)
 }
 
 // PrintError prints usage information for errors and exits

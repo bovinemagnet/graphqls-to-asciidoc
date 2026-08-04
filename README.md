@@ -225,6 +225,11 @@ console.log(result); # 3
 """
 ```
 
+Callout legends are recognised in `(1)`, `# 1` and `/* 1 */` comment styles and
+rendered as AsciiDoc callouts. A `#` inside a fenced code block stays a code
+comment rather than becoming a heading, and `# tag::NAME[]` in a description is
+emitted as an AsciiDoc include tag.
+
 ### Anchors and Cross-References
 ```graphql
 """
@@ -269,7 +274,8 @@ deprecated.version: 2.0.0
 """
 ```
 
-Every query, mutation, subscription, type, input and enum gets a changelog tag pair —
+Every query, mutation, subscription, type, input, enum, scalar and directive gets a
+changelog tag pair —
 `// tag::query-changelog-<name>[]` … `// end::query-changelog-<name>[]` — whether or
 not it carries an annotation. An unannotated item produces an empty pair, so
 `include::schema.adoc[tags=query-changelog-Tweet]` resolves without the including
@@ -345,16 +351,25 @@ The generated AsciiDoc includes:
 
 ### Section Anchors
 
-The summary tables at the top of the document own the plural ids — `queries`,
-`mutations` and `subscriptions`. The detail sections that follow are named after the
-GraphQL root types: `== Query`, `== Mutation` (anchor `[[mutation]]`) and
-`== Subscription`.
+Every section declares an explicit anchor, so its id is the same whichever
+toolchain renders the document. Auto-generated ids are not: Asciidoctor's defaults
+produce `_types` where Antora's produce `types`.
+
+| Section | Anchor |
+|---|---|
+| Summary tables | `queries`, `mutations`, `subscriptions` |
+| Detail sections | `query`, `mutation`, `subscription` |
+| Type definitions | `types`, `enums`, `inputs`, `directives`, `scalars` |
+| Individual items | `query_<snake_name>`, `mutation_<snake_name>`, `type_<snake_name>`, … |
 
 > **Changed:** the mutation detail section previously carried the anchor `[[mutations]]`,
 > which collided with the auto-generated id of the `== Mutations` summary table and made
-> Asciidoctor warn `id assigned to section already in use: mutations` (Antora renders with
-> an empty `idprefix`). Update any hand-written `<<mutations>>` cross-reference that
-> targeted the detail section to `<<mutation>>`.
+> Asciidoctor warn `id assigned to section already in use: mutations`. It is now
+> `[[mutation]]` under the heading `== Mutation`.
+>
+> **Changed:** query, subscription and directive anchors were built by lower-casing the
+> name and are now snake_case like every other construct, so `<<query_featuredtweets>>`
+> becomes `<<query_featured_tweets>>`.
 
 ## Examples
 

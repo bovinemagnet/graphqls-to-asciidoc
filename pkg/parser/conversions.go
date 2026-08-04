@@ -14,6 +14,20 @@ var (
 	// Markdown code block pattern
 	reMarkdownCodeBlock = regexp.MustCompile("(?s)```(\\w*)\n(.*?)\n```")
 
+	// AsciiDoc include tag written as a hash comment inside a description:
+	// "# tag::NAME[]" / "# end::NAME[]".
+	reHashIncludeTag = regexp.MustCompile(`^#\s*((?:tag|end)::\S*\[\])\s*$`)
+
+	// Callout legend lines: the entries listed under a code block that explain
+	// each callout, written in comment style. An optional separator between the
+	// number and the text is consumed. Text after the number is required, so a
+	// bare "# 1" stays a header and a "(1)" mid-sentence is left alone.
+	reCalloutLegends = []*regexp.Regexp{
+		regexp.MustCompile(`^#\s*(\d+)\s*[-*.):]?\s+(\S.*)$`),        // # 1 - text
+		regexp.MustCompile(`^\((\d+)\)\s*[-*.:]?\s+(\S.*)$`),         // (1) text
+		regexp.MustCompile(`^/\*\s*(\d+)\s*\*/\s*[-*.:]?\s+(\S.*)$`), // /* 1 */ text
+	}
+
 	// Table separator pattern
 	reTableSeparator = regexp.MustCompile(`^\s*\|[\s\-|:]+\|\s*$`)
 
@@ -28,21 +42,59 @@ var (
 
 func init() {
 	// Pre-compile admonition patterns for each type
-	admonitionTypes := []string{"NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"}
+	admonitionTypes := admonitionNames()
 	for _, admonType := range admonitionTypes {
 		reAdmonitionBold[admonType] = regexp.MustCompile(fmt.Sprintf(`\*\*%s\*\*:\s*(.+)`, admonType))
 		reAdmonitionPlain[admonType] = regexp.MustCompile(fmt.Sprintf(`(?m)^%s:\s*(.+)$`, admonType))
 	}
 }
 
+// calloutLegend renders line as an AsciiDoc callout legend if it is one of the
+// supported comment-style legend forms.
+func calloutLegend(line string) (string, bool) {
+	for _, re := range reCalloutLegends {
+		if m := re.FindStringSubmatch(line); m != nil {
+			return fmt.Sprintf("<%s> %s", m[1], m[2]), true
+		}
+	}
+	return "", false
+}
+
 // ConvertMarkdownHeadersToAsciiDoc converts markdown headers to AsciiDoc format
 // # -> =, ## -> ==, ### -> ===, etc.
+//
+// Lines inside a fenced code block are left alone: a leading # there is source
+// code (a Python or shell comment), not a header. A hash-style callout legend
+// (# 1 - text) is converted to an AsciiDoc callout rather than a header, matching
+// the (1), // 1 and /* 1 */ styles handled by ProcessCallouts.
 func ConvertMarkdownHeadersToAsciiDoc(description string) string {
 	lines := strings.Split(description, "\n")
 	var result []string
+	inCodeBlock := false
 
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
+
+		if strings.HasPrefix(trimmed, "```") {
+			inCodeBlock = !inCodeBlock
+			result = append(result, line)
+			continue
+		}
+
+		if inCodeBlock {
+			result = append(result, line)
+			continue
+		}
+
+		if tag := reHashIncludeTag.FindStringSubmatch(trimmed); tag != nil {
+			result = append(result, "// "+tag[1])
+			continue
+		}
+
+		if legend, ok := calloutLegend(trimmed); ok {
+			result = append(result, legend)
+			continue
+		}
 
 		// Check if this line is a markdown header
 		if strings.HasPrefix(trimmed, "#") {
@@ -220,91 +272,78 @@ func parseTableRow(row string) []string {
 
 // ConvertAdmonitionBlocks converts admonition patterns to AsciiDoc admonition blocks
 func ConvertAdmonitionBlocks(description string) string {
-	// Define supported admonition types
-	admonitionTypes := []string{"NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"}
+	description = convertInlineAdmonitions(description)
+	return convertBlockAdmonitions(description)
+}
 
-	for _, admonType := range admonitionTypes {
-		// Pattern 1: **ADMONITION**: content (single line)
-		patternBold := reAdmonitionBold[admonType]
-		description = patternBold.ReplaceAllStringFunc(description, func(match string) string {
-			submatches := patternBold.FindStringSubmatch(match)
-			if len(submatches) < 2 { //nolint:mnd // regex group count
-				return match
-			}
-			content := strings.TrimSpace(submatches[1])
-			return fmt.Sprintf("[%s]\n====\n%s\n====", admonType, content)
-		})
-
-		// Pattern 2: ADMONITION: content (without asterisks, single line)
-		patternPlain := reAdmonitionPlain[admonType]
-		description = patternPlain.ReplaceAllStringFunc(description, func(match string) string {
-			submatches := patternPlain.FindStringSubmatch(match)
-			if len(submatches) < 2 { //nolint:mnd // regex group count
-				return match
-			}
-			content := strings.TrimSpace(submatches[1])
-			return fmt.Sprintf("[%s]\n====\n%s\n====", admonType, content)
-		})
+// convertInlineAdmonitions rewrites single-line "**NOTE**: text" and
+// "NOTE: text" forms as AsciiDoc admonition blocks.
+func convertInlineAdmonitions(description string) string {
+	for _, admonType := range admonitionNames() {
+		for _, pattern := range []*regexp.Regexp{reAdmonitionBold[admonType], reAdmonitionPlain[admonType]} {
+			description = pattern.ReplaceAllStringFunc(description, func(match string) string {
+				submatches := pattern.FindStringSubmatch(match)
+				if len(submatches) < 2 { //nolint:mnd // regex group count
+					return match
+				}
+				return fmt.Sprintf("[%s]\n====\n%s\n====", admonType, strings.TrimSpace(submatches[1]))
+			})
+		}
 	}
+	return description
+}
 
-	// Handle multi-line admonitions with a simpler approach
-	// Process **ADMONITION** on its own line followed by content
+// convertBlockAdmonitions rewrites a "**NOTE**" marker on its own line, with the
+// following lines as its content, as an AsciiDoc admonition block. The block
+// ends at a blank line or the next marker.
+func convertBlockAdmonitions(description string) string {
 	lines := strings.Split(description, "\n")
 	var result []string
-	i := 0
 
-	for i < len(lines) {
-		line := strings.TrimSpace(lines[i])
-
-		// Check if this line is an admonition marker
-		var admonType string
-		for _, aType := range admonitionTypes {
-			if line == "**"+aType+"**" {
-				admonType = aType
-				break
-			}
+	for i := 0; i < len(lines); {
+		admonType := admonitionMarker(strings.TrimSpace(lines[i]))
+		if admonType == "" {
+			result = append(result, lines[i])
+			i++
+			continue
 		}
 
-		if admonType != "" {
-			// Found an admonition marker, collect content until next empty line or end
-			result = append(result, fmt.Sprintf("[%s]", admonType), "====")
-			i++ // Move to next line
-
-			// Collect content lines
-			for i < len(lines) {
-				contentLine := lines[i]
-				trimmedContent := strings.TrimSpace(contentLine)
-
-				// Stop if we hit an empty line or another admonition
-				if trimmedContent == "" {
-					break
-				}
-
-				// Check if this is another admonition marker
-				isNextAdmonition := false
-				for _, aType := range admonitionTypes {
-					if trimmedContent == "**"+aType+"**" || strings.HasPrefix(trimmedContent, "**"+aType+"**:") {
-						isNextAdmonition = true
-						break
-					}
-				}
-
-				if isNextAdmonition {
-					break
-				}
-
-				result = append(result, contentLine)
-				i++
+		result = append(result, fmt.Sprintf("[%s]", admonType), "====")
+		i++
+		for i < len(lines) {
+			trimmed := strings.TrimSpace(lines[i])
+			if trimmed == "" || startsAdmonition(trimmed) {
+				break
 			}
-
-			result = append(result, "====")
-		} else {
 			result = append(result, lines[i])
 			i++
 		}
+		result = append(result, "====")
 	}
 
 	return strings.Join(result, "\n")
+}
+
+// admonitionMarker returns the admonition type when line is exactly a bold
+// marker such as "**NOTE**", or "" when it is not one.
+func admonitionMarker(line string) string {
+	for _, aType := range admonitionNames() {
+		if line == "**"+aType+"**" {
+			return aType
+		}
+	}
+	return ""
+}
+
+// startsAdmonition reports whether line opens a new admonition, either as a
+// bare marker or as "**NOTE**: text".
+func startsAdmonition(line string) bool {
+	for _, aType := range admonitionNames() {
+		if line == "**"+aType+"**" || strings.HasPrefix(line, "**"+aType+"**:") {
+			return true
+		}
+	}
+	return false
 }
 
 // ConvertArgumentsPatterns converts .Arguments: and **Arguments:** patterns to AsciiDoc format

@@ -10,6 +10,18 @@ import (
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/config"
 )
 
+// Section names reported in the metrics tables.
+const (
+	sectionQueries       = "Queries"
+	sectionMutations     = "Mutations"
+	sectionSubscriptions = "Subscriptions"
+	sectionTypes         = "Types"
+	sectionEnums         = "Enums"
+	sectionInputs        = "Inputs"
+	sectionDirectives    = "Directives"
+	sectionScalars       = "Scalars"
+)
+
 // SectionMetrics holds timing and count data for a processing section
 type SectionMetrics struct {
 	Name      string
@@ -108,14 +120,14 @@ func (m *Metrics) LogInputParameters() {
 	t.AppendSeparator()
 
 	// Sections to process
-	t.AppendRow(table.Row{"Queries", formatEnabled(m.config.IncludeQueries)})
-	t.AppendRow(table.Row{"Mutations", formatEnabled(m.config.IncludeMutations)})
-	t.AppendRow(table.Row{"Subscriptions", formatEnabled(m.config.IncludeSubscriptions)})
-	t.AppendRow(table.Row{"Types", formatEnabled(m.config.IncludeTypes)})
-	t.AppendRow(table.Row{"Enums", formatEnabled(m.config.IncludeEnums)})
-	t.AppendRow(table.Row{"Inputs", formatEnabled(m.config.IncludeInputs)})
-	t.AppendRow(table.Row{"Directives", formatEnabled(m.config.IncludeDirectives)})
-	t.AppendRow(table.Row{"Scalars", formatEnabled(m.config.IncludeScalars)})
+	t.AppendRow(table.Row{sectionQueries, formatEnabled(m.config.IncludeQueries)})
+	t.AppendRow(table.Row{sectionMutations, formatEnabled(m.config.IncludeMutations)})
+	t.AppendRow(table.Row{sectionSubscriptions, formatEnabled(m.config.IncludeSubscriptions)})
+	t.AppendRow(table.Row{sectionTypes, formatEnabled(m.config.IncludeTypes)})
+	t.AppendRow(table.Row{sectionEnums, formatEnabled(m.config.IncludeEnums)})
+	t.AppendRow(table.Row{sectionInputs, formatEnabled(m.config.IncludeInputs)})
+	t.AppendRow(table.Row{sectionDirectives, formatEnabled(m.config.IncludeDirectives)})
+	t.AppendRow(table.Row{sectionScalars, formatEnabled(m.config.IncludeScalars)})
 
 	// Render the table
 	t.Render()
@@ -137,8 +149,8 @@ func (m *Metrics) LogMetricsTable() {
 
 	// Define the order of sections for consistent display
 	sectionOrder := []string{
-		"Queries", "Mutations", "Subscriptions",
-		"Types", "Enums", "Inputs", "Directives", "Scalars",
+		sectionQueries, sectionMutations, sectionSubscriptions,
+		sectionTypes, sectionEnums, sectionInputs, sectionDirectives, sectionScalars,
 	}
 
 	var totalProcessed int
