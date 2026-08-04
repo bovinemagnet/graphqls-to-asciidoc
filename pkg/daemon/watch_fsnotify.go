@@ -50,18 +50,27 @@ func NewFSNotifyWatcher(cfg *config.Config) (Watcher, error) {
 
 	// A pattern that matches nothing at start-up is an error here, the same as
 	// it is for the polling backend; the caller reports it rather than watching
-	// an empty set for ever.
+	// an empty set for ever. Checking before anything is watched keeps that
+	// message ahead of any notification-interface error.
+	if _, err := build.ResolveFiles(cfg); err != nil {
+		_ = inner.Close()
+		return nil, err
+	}
+
+	// Watch first, list second — the order rescan uses, and for the same
+	// reason: a file created after the listing but before its directory is
+	// watched would be missed by both.
+	if err := w.refreshWatches(); err != nil {
+		_ = inner.Close()
+		return nil, err
+	}
+
 	files, err := build.ResolveFiles(cfg)
 	if err != nil {
 		_ = inner.Close()
 		return nil, err
 	}
 	w.known = knownFiles(files)
-
-	if err := w.refreshWatches(files); err != nil {
-		_ = inner.Close()
-		return nil, err
-	}
 
 	go w.loop()
 	return w, nil
@@ -110,32 +119,48 @@ func patternRootDir(pattern string) string {
 	}
 }
 
-// watchTargets lists the directories to watch: the parent of every matched
-// file, plus the pattern's static root so that an empty or brand new
-// subdirectory is covered too. A '**' pattern matches at any depth, so the
-// whole tree below the root is included for those.
-func (w *fsWatcher) watchTargets(files []string) []string {
-	dirs := make(map[string]struct{}, len(files)+1)
-	for _, f := range files {
-		dirs[filepath.Dir(absolutePath(f))] = struct{}{}
-	}
+// patternSpansSubdirectories reports whether a pattern can match below its own
+// root, which it can whenever the directory part carries a wildcard — '**'
+// most obviously, but 'schemas/*/api.graphqls' just as much.
+func patternSpansSubdirectories(pattern string) bool {
+	normalised := filepath.ToSlash(pattern)
 
-	if w.cfg.SchemaPattern != "" {
-		root := absolutePath(patternRootDir(w.cfg.SchemaPattern))
-		dirs[root] = struct{}{}
-		if strings.Contains(w.cfg.SchemaPattern, "**") {
-			for _, sub := range subdirectories(root) {
-				dirs[sub] = struct{}{}
-			}
-		}
+	slash := strings.LastIndex(normalised, "/")
+	if slash < 0 {
+		return false
 	}
+	return strings.ContainsAny(normalised[:slash], "*?[{")
+}
 
-	names := make([]string, 0, len(dirs))
-	for dir := range dirs {
-		names = append(names, dir)
+// watchRoot is the one directory that must be watched. Everything the
+// configuration can match lives at or below it, so losing it means noticing
+// nothing at all.
+func (w *fsWatcher) watchRoot() string {
+	if w.cfg.SchemaPattern == "" {
+		return filepath.Dir(absolutePath(w.cfg.SchemaFile))
 	}
-	sort.Strings(names)
-	return names
+	return absolutePath(patternRootDir(w.cfg.SchemaPattern))
+}
+
+// watchTargets lists the directories to watch. It is derived from the
+// configuration alone, never from a listing of matched files, so that the watch
+// set can be widened before any listing is taken: the parent of a file that is
+// about to be created has to be watched before the file appears, and a listing
+// can only report what already exists.
+//
+// That means the root, so an empty or brand new subdirectory is covered, and
+// the whole tree below it whenever the pattern can match at depth. A pattern
+// that cannot match below its root needs neither the walk nor the extra
+// watches.
+func (w *fsWatcher) watchTargets() []string {
+	root := w.watchRoot()
+	dirs := []string{root}
+
+	if w.cfg.SchemaPattern != "" && patternSpansSubdirectories(w.cfg.SchemaPattern) {
+		dirs = append(dirs, subdirectories(root)...)
+	}
+	sort.Strings(dirs)
+	return dirs
 }
 
 // subdirectories lists every directory below root. Unreadable branches are
@@ -157,30 +182,50 @@ func subdirectories(root string) []string {
 
 // refreshWatches brings the watched directory set up to date. Add is
 // idempotent, so it can be re-run whenever the tree may have grown.
-func (w *fsWatcher) refreshWatches(files []string) error {
-	for _, dir := range w.watchTargets(files) {
-		if err := w.inner.Add(dir); err != nil {
-			return err
+//
+// Only the root's failure is reported. Everything below it is best effort: a
+// single directory that has vanished, or that this process cannot read, must
+// not cost the watches on all the others. Stopping at the first failure would
+// do exactly that — the list is sorted, so one bad directory silently drops
+// every directory after it, leaving a tree that produces no events at all and
+// so nothing to prompt the retry.
+func (w *fsWatcher) refreshWatches() error {
+	root := w.watchRoot()
+	rootErr := w.inner.Add(root)
+
+	for _, dir := range w.watchTargets() {
+		if dir != root {
+			_ = w.inner.Add(dir)
 		}
 	}
-	return nil
+
+	return rootErr
 }
 
-// rescan re-expands the pattern, updates the watched directories and returns
+// rescan widens the watched directory set, re-expands the pattern and returns
 // the files that have appeared since the last expansion. Those appearances
 // matter because a file can be created inside a directory before the watch on
 // that directory exists, in which case no event for the file itself arrives.
+//
+// The order is the point. Listing first and widening afterwards leaves a window
+// in which a file created inside a directory that is about to be watched is
+// invisible to both — too late for the listing, too early for the watch — and
+// nothing later mentions it, so it stays out of the document until some
+// unrelated change happens along. Widening first closes it: a file created from
+// then on either lands in a directory that is already watched, and is reported
+// as an event, or arrives before the listing that follows and is reported as an
+// appearance.
 func (w *fsWatcher) rescan() []string {
+	// A failure to watch one directory is not fatal: it may have gone again
+	// already, and the others are watched regardless.
+	_ = w.refreshWatches()
+
 	files, err := build.ResolveFiles(w.cfg)
 	if err != nil {
 		// The pattern may match nothing for the moment; the next event tries
 		// again, and the known set still identifies what was there before.
 		return nil
 	}
-
-	// A failure to watch a directory is not fatal: the directory may have gone
-	// again already, and the next event retries.
-	_ = w.refreshWatches(files)
 
 	current := knownFiles(files)
 	var appeared []string
@@ -197,23 +242,26 @@ func (w *fsWatcher) rescan() []string {
 
 // matches reports whether a notified path is one of the schema files we care
 // about. Comparison is on the absolute path so that relative configuration and
-// absolute notifications agree. A path that has left the expansion but was in
-// the previous one is a removal, and counts.
+// absolute notifications agree. A path that has left the expansion but is still
+// in the last rescan's view is a removal, and counts.
+//
+// It deliberately does not update that view. Folding a fresh expansion into
+// w.known here would quietly adopt files that have appeared without reporting
+// them, and the rescan that would otherwise have announced them would then find
+// nothing new to announce. Only rescan, which emits what it finds, may move
+// that boundary.
 func (w *fsWatcher) matches(path string) (string, bool) {
 	notified := absolutePath(path)
 
-	previous := w.known
 	if files, err := build.ResolveFiles(w.cfg); err == nil {
-		w.known = knownFiles(files)
+		if configured, ok := knownFiles(files)[notified]; ok {
+			return configured, true
+		}
 	}
 
-	if configured, ok := w.known[notified]; ok {
-		return configured, true
-	}
-
-	// Absent now but present a moment ago: the file has been removed or renamed
-	// away, which changes the document and must be published.
-	configured, ok := previous[notified]
+	// Absent now but present at the last rescan: the file has been removed or
+	// renamed away, which changes the document and must be published.
+	configured, ok := w.known[notified]
 	return configured, ok
 }
 
