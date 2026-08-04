@@ -1,19 +1,16 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
-	"github.com/vektah/gqlparser/v2/ast"
-	"github.com/vektah/gqlparser/v2/parser"
-
+	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/build"
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/config"
-	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/generator"
-	schemaParser "github.com/bovinemagnet/graphqls-to-asciidoc/pkg/parser"
+	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/daemon"
 )
-
-// schemaSourceName labels the combined schema passed to the GraphQL parser.
-const schemaSourceName = "GraphQL schema"
 
 var (
 	Version   = "development"
@@ -26,101 +23,49 @@ func init() {
 	config.BuildTime = BuildTime
 }
 
-// readSchemaContent loads the schema named by the configuration, combining
-// several files when a pattern was given. Any failure is fatal.
-func readSchemaContent(cfg *config.Config) string {
-	if cfg.SchemaPattern == "" {
-		// #nosec G304 -- the path is the user's own -schema argument, already
-		// checked by Validate; reading it is what this tool is for.
-		schemaBytes, err := os.ReadFile(cfg.SchemaFile)
-		if err != nil {
-			log.Fatalf("Failed to read schema file %s: %v", cfg.SchemaFile, err)
-		}
-		return string(schemaBytes)
-	}
-
-	files, err := schemaParser.FindSchemaFiles(cfg.SchemaPattern)
-	if err != nil {
-		log.Fatalf("Failed to find schema files with pattern '%s': %v", cfg.SchemaPattern, err)
-	}
-
-	if err := schemaParser.ValidateSchemaFiles(files); err != nil {
-		log.Fatalf("Schema file validation failed: %v", err)
-	}
-
-	schemaContent, err := schemaParser.CombineSchemaFiles(files)
-	if err != nil {
-		log.Fatalf("Failed to combine schema files: %v", err)
-	}
-
-	if cfg.Verbose {
-		log.Printf("Combined %d schema files: %v", len(files), files)
-	}
-	return schemaContent
-}
-
 func main() {
-	// Parse configuration
 	cfg := config.ParseFlags()
 
-	// Handle version flag
 	if cfg.HandleVersion() {
 		os.Exit(0)
 	}
 
-	// Handle help flag
 	if cfg.HandleHelp() {
 		os.Exit(0)
 	}
 
-	// Validate configuration
 	if err := cfg.Validate(); err != nil {
 		config.PrintError(err.Error())
 		os.Exit(1)
 	}
 
-	schemaContent := readSchemaContent(cfg)
-
-	// Remove fragments from schema content before parsing
-	// Fragments are client-side constructs and don't belong in schema files
-	cleanedSchema := schemaParser.RemoveFragments(schemaContent)
-
-	if cfg.Verbose && cleanedSchema != schemaContent {
-		log.Printf("Removed fragment definitions from schema")
+	if cfg.Daemon {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		err := daemon.Run(ctx, cfg)
+		stop()
+		if err != nil {
+			log.Fatalf("daemon failed: %v", err)
+		}
+		return
 	}
 
-	// Parse GraphQL schema directly - code blocks in descriptions are safe
-	// because they're inside triple-quoted strings
-	source := &ast.Source{
-		Name:  schemaSourceName,
-		Input: cleanedSchema,
+	result, err := build.Run(cfg)
+	if err != nil {
+		log.Fatalf("%v", err)
 	}
 
-	doc, gqlErr := parser.ParseSchema(source)
-	if gqlErr != nil {
-		log.Fatalf("Failed to parse GraphQL schema: %v", gqlErr)
-	}
-
-	// Convert document to schema, merging any `extend type` extensions into
-	// their base definitions.
-	schema := schemaParser.BuildSchema(doc)
-
-	// Get output writer
 	outputWriter, shouldClose, err := cfg.GetOutputWriter()
 	if err != nil {
 		log.Fatalf("Failed to setup output: %v", err)
 	}
-	// Generate AsciiDoc documentation
-	gen := generator.New(cfg, schema, outputWriter)
-	err = gen.Generate()
+
+	if _, err := outputWriter.Write(result.Content); err != nil {
+		log.Fatalf("Failed to write output: %v", err)
+	}
 
 	if shouldClose {
 		if closeErr := outputWriter.Close(); closeErr != nil {
 			log.Fatalf("Failed to close output file: %v", closeErr)
 		}
-	}
-
-	if err != nil {
-		log.Fatalf("Failed to generate documentation: %v", err)
 	}
 }

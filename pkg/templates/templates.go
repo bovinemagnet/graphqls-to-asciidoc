@@ -272,6 +272,10 @@ const CatalogueTemplate = `{{- if .SubTitle -}}
 :toc: left
 :revdate: {{.RevDate}}
 :commandline: {{.CommandLine}}
+{{- if .KrokiServerURL}}
+:kroki-server-url: {{.KrokiServerURL}}
+:kroki-fetch-diagram:
+{{- end}}
 :reproducible:
 :page-partial:
 :sect-anchors:

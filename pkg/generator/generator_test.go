@@ -2025,3 +2025,32 @@ func TestInputFieldsTableWithDefaultValues(t *testing.T) {
 		t.Errorf("Table should show _none_ for name without default. Output:\n%s", table)
 	}
 }
+
+func TestPrintHeaderEmitsKrokiAttributes(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.SchemaFile = "schema.graphql"
+	cfg.KrokiURL = "https://kroki.io"
+
+	var out bytes.Buffer
+	New(cfg, &ast.Schema{}, &out).printHeader()
+
+	got := out.String()
+	if !strings.Contains(got, ":kroki-server-url: https://kroki.io") {
+		t.Errorf("expected the kroki-server-url attribute, got:\n%s", got)
+	}
+	if !strings.Contains(got, ":kroki-fetch-diagram:") {
+		t.Errorf("expected the kroki-fetch-diagram attribute, got:\n%s", got)
+	}
+}
+
+func TestPrintHeaderOmitsKrokiWhenUnset(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.SchemaFile = "schema.graphql"
+
+	var out bytes.Buffer
+	New(cfg, &ast.Schema{}, &out).printHeader()
+
+	if strings.Contains(out.String(), "kroki") {
+		t.Errorf("expected no kroki attributes, got:\n%s", out.String())
+	}
+}

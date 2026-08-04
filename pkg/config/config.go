@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
+	"time"
 )
 
 var (
@@ -38,7 +40,49 @@ type Config struct {
 	Catalogue            bool
 	SubTitle             string
 	IncludeChangelog     bool
+	Daemon               bool
+	DaemonAddr           string
+	Debounce             time.Duration
+	WatchMode            string
+	PollInterval         time.Duration
+	KrokiURL             string
+	// SetFlags records which flags were explicitly given on the command line,
+	// so that daemon-only flags can be rejected outside daemon mode.
+	SetFlags map[string]bool
 }
+
+// Watch backends selectable with --watch-mode.
+const (
+	WatchModeAuto     = "auto"
+	WatchModeFSNotify = "fsnotify"
+	WatchModePoll     = "poll"
+)
+
+// Names of the daemon flag group, shared by the registrations and the
+// validation that rejects them outside daemon mode.
+const (
+	flagDaemonAddr   = "daemon-addr"
+	flagDebounce     = "debounce"
+	flagWatchMode    = "watch-mode"
+	flagPollInterval = "poll-interval"
+	flagKrokiURL     = "kroki-url"
+)
+
+// Defaults for the daemon flag group.
+const (
+	// defaultDaemonAddr keeps the dashboard on the loopback interface; exposing
+	// it more widely is the operator's explicit choice.
+	defaultDaemonAddr = "127.0.0.1:8088"
+	// defaultDebounce is the quiet period that must pass after the last change
+	// before a rebuild starts.
+	defaultDebounce = 5 * time.Second
+	// defaultPollInterval is how often the polling backend rescans the tree.
+	defaultPollInterval = time.Second
+)
+
+// daemonOnlyFlags are rejected unless --daemon is also given. --kroki-url is
+// deliberately absent: it also affects one-shot output.
+var daemonOnlyFlags = []string{flagDaemonAddr, flagDebounce, flagWatchMode, flagPollInterval}
 
 // NewConfig creates a new Config with default values
 func NewConfig() *Config {
@@ -51,6 +95,11 @@ func NewConfig() *Config {
 		IncludeEnums:         true,
 		IncludeInputs:        true,
 		IncludeScalars:       true,
+		DaemonAddr:           defaultDaemonAddr,
+		Debounce:             defaultDebounce,
+		WatchMode:            WatchModeAuto,
+		PollInterval:         defaultPollInterval,
+		SetFlags:             map[string]bool{},
 	}
 }
 
@@ -92,7 +141,37 @@ func ParseFlags() *Config {
 	flag.BoolVar(&config.Catalogue, "catalogue", false, "Generate a catalogue table with query/mutation names and first sentence descriptions")
 	flag.StringVar(&config.SubTitle, "sub-title", "", "Optional subtitle for catalogue (e.g., 'Activities')")
 
-	// Section inclusion flags
+	registerDaemonFlags(config)
+	registerSectionFlags(config)
+
+	// Custom usage function
+	flag.Usage = PrintUsage
+
+	flag.Parse()
+
+	flag.Visit(func(f *flag.Flag) {
+		config.SetFlags[f.Name] = true
+	})
+
+	return config
+}
+
+// registerDaemonFlags declares the daemon flag group. It is separate from
+// ParseFlags so that the flag registrations stay grouped and readable.
+func registerDaemonFlags(config *Config) {
+	flag.BoolVar(&config.Daemon, "daemon", false, "Watch the schema files and serve a dashboard, rebuilding on change")
+	flag.StringVar(&config.DaemonAddr, flagDaemonAddr, config.DaemonAddr, "Address the daemon dashboard listens on")
+	//nolint:lll // flag usage text
+	flag.DurationVar(&config.Debounce, flagDebounce, config.Debounce, "Quiet period that must pass after the last change before a rebuild")
+	flag.StringVar(&config.WatchMode, flagWatchMode, config.WatchMode, "Watch backend: auto, fsnotify or poll")
+	//nolint:lll // flag usage text
+	flag.DurationVar(&config.PollInterval, flagPollInterval, config.PollInterval, "Filesystem scan interval used by the polling backend")
+	flag.StringVar(&config.KrokiURL, flagKrokiURL, "", "Kroki server used to render diagrams, e.g. https://kroki.io")
+}
+
+// registerSectionFlags declares the section inclusion group, which decides
+// which GraphQL constructs reach the output.
+func registerSectionFlags(config *Config) {
 	flag.BoolVar(&config.IncludeQueries, "queries", true, "Include queries in the output")
 	flag.BoolVar(&config.IncludeQueries, "q", true, "Include queries in the output (shorthand)")
 	flag.BoolVar(&config.IncludeMutations, "mutations", true, "Include mutations in the output")
@@ -107,13 +186,6 @@ func ParseFlags() *Config {
 	flag.BoolVar(&config.IncludeDirectives, "directives", true, "Include directives in the output")
 	flag.BoolVar(&config.IncludeDirectives, "d", true, "Include directives in the output (shorthand)")
 	flag.BoolVar(&config.IncludeScalars, "scalars", true, "Include scalars in the output")
-
-	// Custom usage function
-	flag.Usage = PrintUsage
-
-	flag.Parse()
-
-	return config
 }
 
 // HandleVersion handles the version flag display
@@ -165,7 +237,57 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	if err := c.validateDaemon(); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+// validateDaemon checks the daemon flag group. Daemon-only flags are rejected
+// outside daemon mode rather than silently ignored.
+func (c *Config) validateDaemon() error {
+	if !c.Daemon {
+		for _, name := range daemonOnlyFlags {
+			if c.SetFlags[name] {
+				return fmt.Errorf("--%s requires --daemon", name)
+			}
+		}
+		return nil
+	}
+
+	if c.OutputFile == "" {
+		return fmt.Errorf("--daemon requires -o/--output; there is nothing to serve otherwise")
+	}
+
+	switch c.WatchMode {
+	case WatchModeAuto, WatchModeFSNotify, WatchModePoll:
+	default:
+		return fmt.Errorf("--watch-mode must be one of auto, fsnotify or poll, got '%s'", c.WatchMode)
+	}
+
+	if c.Debounce <= 0 {
+		return fmt.Errorf("--debounce must be greater than zero")
+	}
+
+	if c.PollInterval <= 0 {
+		return fmt.Errorf("--poll-interval must be greater than zero")
+	}
+
+	return nil
+}
+
+// KrokiDocumentURL is the value written into the generated document's
+// :kroki-server-url: attribute. In daemon mode it points at the daemon's own
+// proxy so the browser-side renderer makes same-origin requests.
+func (c *Config) KrokiDocumentURL() string {
+	if c.KrokiURL == "" {
+		return ""
+	}
+	if c.Daemon {
+		return "http://" + c.DaemonAddr + "/kroki"
+	}
+	return strings.TrimSuffix(c.KrokiURL, "/")
 }
 
 // usageText is the help screen shown by -h/--help.
@@ -197,6 +319,15 @@ OPTIONS:
         --verbose           Enable verbose logging with processing metrics
         --catalogue         Generate a catalogue table with query/mutation names and descriptions
         --sub-title TEXT    Optional subtitle for catalogue (e.g., 'Activities')
+        --kroki-url URL     Kroki server used to render diagrams, e.g. https://kroki.io
+
+DAEMON MODE:
+        --daemon            Watch the schema files and serve a dashboard, rebuilding on change
+                            (requires -o/--output)
+        --daemon-addr ADDR  Dashboard listen address (default: 127.0.0.1:8088)
+        --debounce DUR      Quiet period after the last change before rebuilding (default: 5s)
+        --watch-mode MODE   Watch backend: auto, fsnotify or poll (default: auto)
+        --poll-interval DUR Filesystem scan interval for the polling backend (default: 1s)
 
 SECTION CONTROL:
     -q, --queries           Include queries in the output (default: true)
@@ -238,6 +369,13 @@ EXAMPLES:
 
     # Generate a catalogue with a subtitle
     graphqls-to-asciidoc -s schema.graphql --catalogue --sub-title "Activities" -o catalogue.adoc
+
+    # Watch a schema and serve the dashboard on http://127.0.0.1:8088
+    graphqls-to-asciidoc -s schema.graphql -o docs.adoc --daemon
+
+    # Watch a tree of schemas with a two second debounce and a Kroki server
+    graphqls-to-asciidoc -p "schemas/**/*.graphqls" -o docs.adoc --daemon \
+        --debounce 2s --kroki-url https://kroki.io
 
 FEATURES:
     ✓ Admonition blocks (NOTE, WARNING, TIP, etc.)

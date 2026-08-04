@@ -3,6 +3,7 @@ module github.com/bovinemagnet/graphqls-to-asciidoc
 go 1.25.0
 
 require (
+	github.com/fsnotify/fsnotify v1.10.1
 	github.com/jedib0t/go-pretty/v6 v6.8.3
 	github.com/vektah/gqlparser/v2 v2.5.36
 )
