@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -77,6 +78,46 @@ func TestRunBuildsOnceAndServesTheDashboard(t *testing.T) {
 		}
 	case <-time.After(10 * time.Second):
 		t.Fatal("Run did not shut down when the context was cancelled")
+	}
+}
+
+// TestRunReportsABindFailureWithKroki guards the daemon's exit path. The Kroki
+// prober only stops when its context ends, so a listener that never starts must
+// still release it: without that, a port clash hangs the daemon for ever
+// instead of reporting the address it could not bind.
+func TestRunReportsABindFailureWithKroki(t *testing.T) {
+	kroki := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer kroki.Close()
+
+	var lc net.ListenConfig
+	occupied, err := lc.Listen(context.Background(), "tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = occupied.Close() }()
+
+	cfg := daemonTestConfig(t, "type Query { a: String }")
+	cfg.DaemonAddr = occupied.Addr().String()
+	cfg.KrokiURL = kroki.URL
+	cfg.WatchMode = config.WatchModePoll
+	cfg.PollInterval = 20 * time.Millisecond
+	cfg.Debounce = 100 * time.Millisecond
+
+	done := make(chan error, 1)
+	go func() { done <- Run(context.Background(), cfg) }()
+
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatal("expected a bind error, got nil")
+		}
+		if !strings.Contains(err.Error(), cfg.DaemonAddr) {
+			t.Fatalf("expected the address in the error, got %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("Run did not return after the listener failed to bind")
 	}
 }
 
