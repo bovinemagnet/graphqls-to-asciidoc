@@ -250,15 +250,25 @@ func (g *Generator) generateDirective(directive *ast.DirectiveDefinition) {
 	fmt.Fprintf(g.writer, "=== @%s\n", directive.Name)
 	fmt.Fprintln(g.writer)
 
-	// Process description
+	// Process description and extract changelog
+	processedDesc, changelogText := changelog.ProcessWithChangelog(directive.Description, parser.ProcessDescription)
 	if directive.Description != "" {
-		processedDesc := parser.ProcessDescription(directive.Description)
 		fmt.Fprintf(g.writer, "// tag::directive-description-%s[]\n", directive.Name)
 		fmt.Fprint(g.writer, processedDesc)
 		fmt.Fprintln(g.writer)
 		fmt.Fprintf(g.writer, "// end::directive-description-%s[]\n", directive.Name)
 		fmt.Fprintln(g.writer)
 	}
+
+	// The changelog tag pair is emitted even when empty, so a downstream
+	// include of directive-changelog-<name> always resolves.
+	fmt.Fprintf(g.writer, "// tag::directive-changelog-%s[]\n", directive.Name)
+	if changelogText != "" {
+		fmt.Fprint(g.writer, changelogText)
+		fmt.Fprintln(g.writer)
+	}
+	fmt.Fprintf(g.writer, "// end::directive-changelog-%s[]\n", directive.Name)
+	fmt.Fprintln(g.writer)
 
 	// Generate directive signature
 	fmt.Fprintf(g.writer, "// tag::directive-signature-%s[]\n", directive.Name)
@@ -361,11 +371,12 @@ func (g *Generator) generateScalars(sortedDefs []*ast.Definition) int {
 	for _, def := range sortedDefs {
 		if def.Kind == ast.Scalar && !isBuiltInScalar(def.Name) {
 			// Process description and extract changelog
-			processedDesc, _ := changelog.ProcessWithChangelog(def.Description, parser.ProcessDescription)
+			processedDesc, changelogText := changelog.ProcessWithChangelog(def.Description, parser.ProcessDescription)
 
 			scalarInfo := ScalarInfo{
 				Name:        def.Name,
 				Description: processedDesc,
+				Changelog:   changelogText,
 			}
 			scalarInfos = append(scalarInfos, scalarInfo)
 			count++

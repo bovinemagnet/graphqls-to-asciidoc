@@ -138,6 +138,9 @@ Paginate a list field.
 Applies a default page size and an optional cursor.
 // end::directive-description-paginate[]
 
+// tag::directive-changelog-paginate[]
+// end::directive-changelog-paginate[]
+
 // tag::directive-signature-paginate[]
 .Directive Signature
 [source, graphql]

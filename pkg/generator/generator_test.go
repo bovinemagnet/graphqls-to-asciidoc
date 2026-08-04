@@ -1375,6 +1375,51 @@ func TestGenerateEnumValueChangelog(t *testing.T) {
 	}
 }
 
+func TestGenerateScalarAndDirectiveChangelog(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{
+			"Date": {
+				Kind:        ast.Scalar,
+				Name:        "Date",
+				Description: "An ISO-8601 date.\n\nadd.version: 1.0.0",
+			},
+		},
+		Directives: map[string]*ast.DirectiveDefinition{
+			"size": {
+				Name:        "size",
+				Description: "Constrains the size of a value.\n\nadd.version: 1.1.0",
+			},
+		},
+	}
+	var buf bytes.Buffer
+	gen := New(cfg, schema, &buf)
+
+	var sortedDefs []*ast.Definition
+	for _, def := range gen.schema.Types {
+		sortedDefs = append(sortedDefs, def)
+	}
+	gen.generateScalars(sortedDefs)
+	gen.generateDirectives()
+
+	output := buf.String()
+	for _, expected := range []string{
+		"// tag::scalar-changelog-Date[]",
+		"* add: 1.0.0",
+		"// end::scalar-changelog-Date[]",
+		"// tag::directive-changelog-size[]",
+		"* add: 1.1.0",
+		"// end::directive-changelog-size[]",
+	} {
+		if !strings.Contains(output, expected) {
+			t.Errorf("Output should contain %q, but doesn't.\nGot:\n%s", expected, output)
+		}
+	}
+	if strings.Contains(output, "add.version:") {
+		t.Errorf("Raw version annotation should not survive into the description.\nGot:\n%s", output)
+	}
+}
+
 func TestGetSubscriptionDetailsChangelog(t *testing.T) {
 	cfg := config.NewConfig()
 	schema := &ast.Schema{

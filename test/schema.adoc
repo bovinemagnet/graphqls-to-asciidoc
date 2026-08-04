@@ -1,7 +1,7 @@
 = GraphQL Documentation
 :toc: left
-:revdate: Tue, 04 Aug 2026 10:07:31 AEST
-:commandline: /tmp/go-build237474068/b001/exe/main -schema test/schema.graphql
+:revdate: Tue, 04 Aug 2026 10:08:54 AEST
+:commandline: /tmp/go-build1103114264/b001/exe/main -schema test/schema.graphql
 :sourceFile: test/schema.graphql
 :reproducible:
 :page-partial:
@@ -1640,6 +1640,9 @@ Directive to specify the size constraints on arguments and input fields.
 * `message`: the validation message, default is "graphql.validation.Size.message"
 // end::directive-description-Size[]
 
+// tag::directive-changelog-Size[]
+// end::directive-changelog-Size[]
+
 // tag::directive-signature-Size[]
 .Directive Signature
 [source, graphql]
@@ -1681,6 +1684,9 @@ Directive to specify the length constraints on arguments and input fields.
 * `max`: the maximum length allowed, default is 2147483647
 * `message`: the validation message, default is "graphql.validation.Size.message"
 // end::directive-description-length[]
+
+// tag::directive-changelog-length[]
+// end::directive-changelog-length[]
 
 // tag::directive-signature-length[]
 .Directive Signature
@@ -1730,6 +1736,9 @@ A date string scalar
 // end::scalar-description-Date[]
 
 
+// tag::scalar-changelog-Date[]
+// end::scalar-changelog-Date[]
+
 // end::scalar-Date[]
 
 
@@ -1749,6 +1758,9 @@ Internally, this should map to something like java.time.OffsetDateTime
 // end::scalar-description-ISO8601DateTime[]
 
 
+// tag::scalar-changelog-ISO8601DateTime[]
+// end::scalar-changelog-ISO8601DateTime[]
+
 // end::scalar-ISO8601DateTime[]
 
 
@@ -1762,6 +1774,9 @@ A URL string scalar
 // end::SCALAR_URL_DES[]
 // end::scalar-description-Url[]
 
+
+// tag::scalar-changelog-Url[]
+// end::scalar-changelog-Url[]
 
 // end::scalar-Url[]
 

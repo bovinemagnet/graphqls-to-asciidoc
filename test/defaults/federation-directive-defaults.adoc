@@ -163,6 +163,9 @@ No input types exist in this schema.
 Field owned by another subgraph; satisfied via a resolver elsewhere.
 // end::directive-description-external[]
 
+// tag::directive-changelog-external[]
+// end::directive-changelog-external[]
+
 // tag::directive-signature-external[]
 .Directive Signature
 [source, graphql]
@@ -186,6 +189,9 @@ directive @external on FIELD_DEFINITION
 // tag::directive-description-key[]
 Primary entity key. Declared inline for parseability pre-#51.
 // end::directive-description-key[]
+
+// tag::directive-changelog-key[]
+// end::directive-changelog-key[]
 
 // tag::directive-signature-key[]
 .Directive Signature
@@ -224,6 +230,9 @@ NOTE: This directive is repeatable and can be used multiple times on the same el
 // tag::directive-description-shareable[]
 Field resolvable by multiple subgraphs (federation v2).
 // end::directive-description-shareable[]
+
+// tag::directive-changelog-shareable[]
+// end::directive-changelog-shareable[]
 
 // tag::directive-signature-shareable[]
 .Directive Signature

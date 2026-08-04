@@ -174,11 +174,11 @@ func TestScalarTemplateExecution(t *testing.T) {
 			data: struct {
 				ScalarTag    string
 				FoundScalars bool
-				Scalars      []struct{ Name, Description string }
+				Scalars      []struct{ Name, Description, Changelog string }
 			}{
 				ScalarTag:    "== Scalars",
 				FoundScalars: true,
-				Scalars: []struct{ Name, Description string }{
+				Scalars: []struct{ Name, Description, Changelog string }{
 					{Name: "DateTime", Description: "A date-time string"},
 					{Name: "JSON", Description: "A JSON scalar"},
 				},

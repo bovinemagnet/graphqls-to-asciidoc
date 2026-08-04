@@ -190,6 +190,8 @@ func TestChangelogTagsAlwaysPresent(t *testing.T) {
 		"input-changelog-MessageInput",
 		"enum-changelog-Sentiment",
 		"subscription-changelog-commentAdded",
+		"scalar-changelog-Date",
+		"directive-changelog-Size",
 	}
 	for _, tag := range empty {
 		want := "// tag::" + tag + "[]\n// end::" + tag + "[]\n"

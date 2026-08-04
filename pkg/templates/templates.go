@@ -47,6 +47,12 @@ The following custom scalar types are defined in this schema:
 // end::scalar-description-{{.Name}}[]
 
 {{ end }}
+// tag::scalar-changelog-{{.Name}}[]
+{{- if .Changelog }}
+{{ .Changelog }}
+{{- end }}
+// end::scalar-changelog-{{.Name}}[]
+
 // end::scalar-{{.Name}}[]
 
 {{ end }}
