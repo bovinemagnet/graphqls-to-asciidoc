@@ -193,6 +193,19 @@ graphqls-to-asciidoc -p "/absolute/path/**/*.graphql"
 | `--directives` | `-d` | Include directives section | true |
 | `--scalars` | - | Include scalars section | true |
 
+#### Daemon Options
+
+See [Daemon mode](#daemon-mode) for a full description of watch-and-serve behaviour.
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--daemon` | Watch the schema files and serve a dashboard, rebuilding on change (requires `-o`/`--output`) | false |
+| `--daemon-addr` | Dashboard listen address | `127.0.0.1:8088` |
+| `--debounce` | Quiet period after the last change before rebuilding | `5s` |
+| `--watch-mode` | Watch backend: `auto`, `fsnotify` or `poll` | `auto` |
+| `--poll-interval` | Filesystem scan interval used by the polling backend | `1s` |
+| `--kroki-url` | Kroki server used to render diagrams, e.g. `https://kroki.io` | - |
+
 ## GraphQL Schema Enhancements
 
 The tool supports rich markup within GraphQL descriptions:
@@ -336,6 +349,62 @@ For input types, defaults appear in a dedicated *Default* column alongside
 each field's type and description. See `test/defaults/` for worked fixtures
 covering every supported shape (scalar, enum, list, null, nested input,
 directive argument, and input-field defaults).
+
+## Daemon mode
+
+`--daemon` watches the schema files, republishes the document when editing
+settles, and serves a small dashboard.
+
+```bash
+graphqls-to-asciidoc -s schema.graphqls -o docs.adoc --daemon
+```
+
+Open http://127.0.0.1:8088 for the dashboard, or
+http://127.0.0.1:8088/docs.adoc for the generated document. The document keeps
+its `.adoc` extension so a browser preview extension recognises it.
+
+### When a rebuild happens
+
+Two conditions must both hold before the daemon republishes:
+
+- the debounce interval has elapsed since the last change, and
+- the same interval has elapsed since the last build.
+
+Saving repeatedly keeps resetting the first condition, so nothing is published
+while you are still typing. The **Rebuild now** button on the dashboard ignores
+both conditions.
+
+A build that fails leaves the previous document in place and shows the parse
+error on the dashboard. The daemon keeps running.
+
+### Daemon flags
+
+| Flag | Default | Purpose |
+|---|---|---|
+| `--daemon` | `false` | Watch and serve. Requires `-o`/`--output`. |
+| `--daemon-addr` | `127.0.0.1:8088` | Dashboard listen address. |
+| `--debounce` | `5s` | Quiet period before a rebuild. |
+| `--watch-mode` | `auto` | `auto`, `fsnotify` or `poll`. |
+| `--poll-interval` | `1s` | Scan interval for the polling backend. |
+
+`auto` uses filesystem notifications and falls back to polling if they are
+unavailable, which is the usual outcome on some network and container mounts.
+The backend in use is logged at startup and shown on the dashboard.
+
+### Diagrams with Kroki
+
+`--kroki-url` writes `:kroki-server-url:` and `:kroki-fetch-diagram:` into the
+generated document, so an Asciidoctor toolchain with the Kroki extension can
+render diagrams:
+
+```bash
+graphqls-to-asciidoc -s schema.graphqls -o docs.adoc --daemon --kroki-url https://kroki.io
+```
+
+In daemon mode the attribute points at the daemon's own `/kroki` path, which
+proxies to the configured server so the browser makes same-origin requests. The
+dashboard shows whether the server is reachable. The tool does not generate
+diagrams itself; it only tells the renderer where Kroki lives.
 
 ## Output Format
 
