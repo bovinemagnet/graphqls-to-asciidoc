@@ -391,7 +391,7 @@ func (dp *DescriptionParser) parseExamples(description string, structure *Descri
 	for _, match := range exampleMatches {
 		if len(match) > 1 && strings.TrimSpace(match[1]) != "" {
 			structure.Examples = append(structure.Examples, Example{
-				Title:    "Example",
+				Title:    defaultExampleTitle,
 				Code:     strings.TrimSpace(match[1]),
 				Language: langGraphQL,
 			})

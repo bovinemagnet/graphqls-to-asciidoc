@@ -14,14 +14,14 @@ var (
 	// Markdown code block pattern
 	reMarkdownCodeBlock = regexp.MustCompile("(?s)```(\\w*)\n(.*?)\n```")
 
-	// Callout legend lines: the entries listed under a code block that explain
-	// each callout, written in comment style. An optional separator between the
-	// number and the text is consumed. Text after the number is required, so a
-	// bare "# 1" stays a header and a "(1)" mid-sentence is left alone.
 	// AsciiDoc include tag written as a hash comment inside a description:
 	// "# tag::NAME[]" / "# end::NAME[]".
 	reHashIncludeTag = regexp.MustCompile(`^#\s*((?:tag|end)::\S*\[\])\s*$`)
 
+	// Callout legend lines: the entries listed under a code block that explain
+	// each callout, written in comment style. An optional separator between the
+	// number and the text is consumed. Text after the number is required, so a
+	// bare "# 1" stays a header and a "(1)" mid-sentence is left alone.
 	reCalloutLegends = []*regexp.Regexp{
 		regexp.MustCompile(`^#\s*(\d+)\s*[-*.):]?\s+(\S.*)$`),        // # 1 - text
 		regexp.MustCompile(`^\((\d+)\)\s*[-*.:]?\s+(\S.*)$`),         // (1) text
@@ -42,7 +42,7 @@ var (
 
 func init() {
 	// Pre-compile admonition patterns for each type
-	admonitionTypes := []string{"NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"}
+	admonitionTypes := admonitionNames()
 	for _, admonType := range admonitionTypes {
 		reAdmonitionBold[admonType] = regexp.MustCompile(fmt.Sprintf(`\*\*%s\*\*:\s*(.+)`, admonType))
 		reAdmonitionPlain[admonType] = regexp.MustCompile(fmt.Sprintf(`(?m)^%s:\s*(.+)$`, admonType))
@@ -273,7 +273,7 @@ func parseTableRow(row string) []string {
 // ConvertAdmonitionBlocks converts admonition patterns to AsciiDoc admonition blocks
 func ConvertAdmonitionBlocks(description string) string {
 	// Define supported admonition types
-	admonitionTypes := []string{"NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"}
+	admonitionTypes := admonitionNames()
 
 	for _, admonType := range admonitionTypes {
 		// Pattern 1: **ADMONITION**: content (single line)

@@ -15,6 +15,15 @@ import (
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/templates"
 )
 
+// Mutation catalogue group names, derived from the mutation name prefix.
+const (
+	groupAdds    = "Adds"
+	groupUpdates = "Updates"
+	groupDeletes = "Deletes"
+	groupSaves   = "Saves"
+	groupGeneral = "General"
+)
+
 // collectCatalogueEntries collects catalogue entries from a schema definition's fields
 func (g *Generator) collectCatalogueEntries(def *ast.Definition) []CatalogueEntry {
 	if def == nil {
@@ -242,7 +251,7 @@ func (g *Generator) generateCatalogue() error {
 
 // groupMutationsByType groups mutations by their naming prefix (add, update, delete, save, general)
 func groupMutationsByType(mutations []CatalogueEntry) []MutationGroup {
-	groupOrder := []string{"Adds", "Updates", "Deletes", "Saves", "General"}
+	groupOrder := []string{groupAdds, groupUpdates, groupDeletes, groupSaves, groupGeneral}
 	groupMap := make(map[string][]CatalogueEntry)
 
 	for _, mutation := range mutations {
@@ -268,17 +277,17 @@ func getMutationGroupName(mutationName string) string {
 	lowerName := strings.ToLower(mutationName)
 
 	if strings.HasPrefix(lowerName, "add") {
-		return "Adds"
+		return groupAdds
 	}
 	if strings.HasPrefix(lowerName, "update") {
-		return "Updates"
+		return groupUpdates
 	}
 	if strings.HasPrefix(lowerName, "delete") {
-		return "Deletes"
+		return groupDeletes
 	}
 	if strings.HasPrefix(lowerName, "save") {
-		return "Saves"
+		return groupSaves
 	}
 
-	return "General"
+	return groupGeneral
 }

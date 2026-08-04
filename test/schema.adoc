@@ -1,7 +1,7 @@
 = GraphQL Documentation
 :toc: left
-:revdate: Tue, 04 Aug 2026 10:08:54 AEST
-:commandline: /tmp/go-build1103114264/b001/exe/main -schema test/schema.graphql
+:revdate: Tue, 04 Aug 2026 10:14:28 AEST
+:commandline: /tmp/go-build2814097522/b001/exe/main -schema test/schema.graphql
 :sourceFile: test/schema.graphql
 :reproducible:
 :page-partial:

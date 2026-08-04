@@ -92,17 +92,29 @@ func checkForConflicts(content, filename string, definedTypes map[string]string)
 	return nil
 }
 
+// Built-in GraphQL type names, shared by the built-in type checks below.
+const (
+	typeString       = "String"
+	typeInt          = "Int"
+	typeFloat        = "Float"
+	typeBoolean      = "Boolean"
+	typeID           = "ID"
+	typeQuery        = "Query"
+	typeMutation     = "Mutation"
+	typeSubscription = "Subscription"
+)
+
 // isBuiltInType checks if a type name is a built-in GraphQL type
 func isBuiltInType(typeName string) bool {
 	builtInTypes := map[string]bool{
-		"String":       true,
-		"Int":          true,
-		"Float":        true,
-		"Boolean":      true,
-		"ID":           true,
-		"Query":        false, // Allow Query to be redefined across files
-		"Mutation":     false, // Allow Mutation to be redefined across files
-		"Subscription": false, // Allow Subscription to be redefined across files
+		typeString:       true,
+		typeInt:          true,
+		typeFloat:        true,
+		typeBoolean:      true,
+		typeID:           true,
+		typeQuery:        false, // Allow Query to be redefined across files
+		typeMutation:     false, // Allow Mutation to be redefined across files
+		typeSubscription: false, // Allow Subscription to be redefined across files
 	}
 
 	allowed, exists := builtInTypes[typeName]
@@ -113,8 +125,8 @@ func isBuiltInType(typeName string) bool {
 // (scalars + root operation types). Used by generator to filter out built-in types.
 func IsBuiltInGraphQLType(typeName string) bool {
 	switch typeName {
-	case "String", "Int", "Float", "Boolean", "ID",
-		"Query", "Mutation", "Subscription":
+	case typeString, typeInt, typeFloat, typeBoolean, typeID,
+		typeQuery, typeMutation, typeSubscription:
 		return true
 	default:
 		return false

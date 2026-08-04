@@ -16,6 +16,10 @@ import (
 
 const errFieldsTable = "[ERROR generating fields table]"
 
+// scalarsSectionHeading is the heading for the scalars section; the anchor
+// itself lives in ScalarTemplate.
+const scalarsSectionHeading = "== Scalars"
+
 func (g *Generator) generateTypes(sortedDefs []*ast.Definition, definitionsMap map[string]*ast.Definition) int {
 	g.metrics.LogProgress("Types", "Starting types generation")
 
@@ -385,7 +389,7 @@ func (g *Generator) generateScalars(sortedDefs []*ast.Definition) int {
 
 	// Prepare data for template
 	data := ScalarData{
-		ScalarTag:    "== Scalars",
+		ScalarTag:    scalarsSectionHeading,
 		FoundScalars: len(scalarInfos) > 0,
 		Scalars:      scalarInfos,
 	}

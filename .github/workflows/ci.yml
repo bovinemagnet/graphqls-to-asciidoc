@@ -75,10 +75,10 @@ jobs:
       with:
         go-version: '1.22'
 
-    # -no-fail keeps the step green so the SARIF upload below always runs;
-    # findings surface in the Security tab rather than as an opaque failure.
-    # With -fmt sarif the report goes to the file, so a bare failure prints
-    # nothing about what was found.
+    # -no-fail defers the pass/fail decision to the gate step below, so the
+    # SARIF report is always produced and uploaded first. With -fmt sarif the
+    # findings go to the file rather than stdout, so failing here would abort
+    # the job without saying — or recording — what was found.
     - name: Run Gosec Security Scanner
       uses: securego/gosec@v2.27.1
       with:
@@ -88,6 +88,21 @@ jobs:
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: results.sarif
+
+    # The build still fails on any finding; it just fails after the report has
+    # been uploaded, and prints what gosec found.
+    - name: Fail on gosec findings
+      run: |
+        count=$(jq '[.runs[].results[]] | length' results.sarif)
+        if [ "$count" -gt 0 ]; then
+          jq -r '.runs[].results[]
+            | "\(.ruleId) \(.level): \(.message.text) "
+            + "[\(.locations[0].physicalLocation.artifactLocation.uri)"
+            + ":\(.locations[0].physicalLocation.region.startLine)]"' results.sarif
+          echo "::error::gosec reported $count finding(s); see the Security tab"
+          exit 1
+        fi
+        echo "gosec reported no findings"
 
   build:
     name: Build

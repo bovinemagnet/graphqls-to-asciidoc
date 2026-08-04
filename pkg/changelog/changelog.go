@@ -6,6 +6,14 @@ import (
 	"strings"
 )
 
+// Changelog action names recognised in version annotations.
+const (
+	actionAdd        = "add"
+	actionUpdate     = "update"
+	actionDeprecated = "deprecated"
+	actionRemoved    = "removed"
+)
+
 // Extract extracts version annotations and formats them as AsciiDoc changelog
 func Extract(description string) string {
 	// Regex to match version annotations: action.version: version_number
@@ -18,10 +26,10 @@ func Extract(description string) string {
 
 	// Group versions by action type
 	changelog := map[string][]string{
-		"add":        {},
-		"update":     {},
-		"deprecated": {},
-		"removed":    {},
+		actionAdd:        {},
+		actionUpdate:     {},
+		actionDeprecated: {},
+		actionRemoved:    {},
 	}
 
 	for _, match := range matches {

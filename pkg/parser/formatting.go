@@ -21,6 +21,12 @@ var (
 	reLinkPattern   = regexp.MustCompile(`\{link:([a-zA-Z0-9_-]+)\|([^}]+)\}`)
 )
 
+// admonitionNames returns the AsciiDoc admonition labels recognised in
+// descriptions.
+func admonitionNames() []string {
+	return []string{"NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"}
+}
+
 // ProcessCallouts converts various callout patterns to AsciiDoc callout syntax
 func ProcessCallouts(content string) string {
 	// Pattern 1: (1), (2), etc. -> <1>, <2>, etc.
@@ -58,7 +64,7 @@ func ProcessAnchorsAndLabels(content string) string {
 		if len(submatches) > 1 {
 			label := submatches[1]
 			// Check if this is an admonition block
-			admonitions := []string{"NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"}
+			admonitions := admonitionNames()
 			for _, admon := range admonitions {
 				if label == admon {
 					// Don't convert admonition blocks

@@ -14,6 +14,11 @@ import (
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/templates"
 )
 
+// mutationSectionHeading is the anchored heading for the mutation detail
+// section. The anchor is explicit so the id does not depend on the
+// idprefix/idseparator attributes of the rendering toolchain.
+const mutationSectionHeading = "[[mutation]]\n== Mutation"
+
 // generateMutations generates the mutations section
 func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition) int {
 	g.metrics.LogProgress("Mutations", "Starting mutations generation")
@@ -28,7 +33,7 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 				FoundMutations            bool
 				Mutations                 []MutationInfo
 			}{
-				MutationTag:               "[[mutation]]\n== Mutation",
+				MutationTag:               mutationSectionHeading,
 				MutationObjectDescription: "",
 				FoundMutations:            false,
 				Mutations:                 nil,
@@ -36,7 +41,7 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 				fmt.Fprintf(os.Stderr, "Warning: template execution error for empty mutations: %v\n", execErr)
 			}
 		} else {
-			fmt.Fprintln(g.writer, "[[mutation]]\n== Mutation")
+			fmt.Fprintln(g.writer, mutationSectionHeading)
 			fmt.Fprintln(g.writer)
 			fmt.Fprintln(g.writer, "[NOTE]")
 			fmt.Fprintln(g.writer, "====")
@@ -98,7 +103,7 @@ func (g *Generator) generateMutations(definitionsMap map[string]*ast.Definition)
 		FoundMutations            bool
 		Mutations                 []MutationInfo
 	}{
-		MutationTag:               "[[mutation]]\n== Mutation",
+		MutationTag:               mutationSectionHeading,
 		MutationObjectDescription: mutationObjectDescription,
 		FoundMutations:            len(mutationInfos) > 0,
 		Mutations:                 mutationInfos,

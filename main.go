@@ -12,6 +12,9 @@ import (
 	schemaParser "github.com/bovinemagnet/graphqls-to-asciidoc/pkg/parser"
 )
 
+// schemaSourceName labels the combined schema passed to the GraphQL parser.
+const schemaSourceName = "GraphQL schema"
+
 var (
 	Version   = "development"
 	BuildTime = "unknown"
@@ -86,7 +89,7 @@ func main() {
 	// Parse GraphQL schema directly - code blocks in descriptions are safe
 	// because they're inside triple-quoted strings
 	source := &ast.Source{
-		Name:  "GraphQL schema",
+		Name:  schemaSourceName,
 		Input: cleanedSchema,
 	}
 
