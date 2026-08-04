@@ -58,9 +58,31 @@ const (
 	WatchModePoll     = "poll"
 )
 
+// Names of the daemon flag group, shared by the registrations and the
+// validation that rejects them outside daemon mode.
+const (
+	flagDaemonAddr   = "daemon-addr"
+	flagDebounce     = "debounce"
+	flagWatchMode    = "watch-mode"
+	flagPollInterval = "poll-interval"
+	flagKrokiURL     = "kroki-url"
+)
+
+// Defaults for the daemon flag group.
+const (
+	// defaultDaemonAddr keeps the dashboard on the loopback interface; exposing
+	// it more widely is the operator's explicit choice.
+	defaultDaemonAddr = "127.0.0.1:8088"
+	// defaultDebounce is the quiet period that must pass after the last change
+	// before a rebuild starts.
+	defaultDebounce = 5 * time.Second
+	// defaultPollInterval is how often the polling backend rescans the tree.
+	defaultPollInterval = time.Second
+)
+
 // daemonOnlyFlags are rejected unless --daemon is also given. --kroki-url is
 // deliberately absent: it also affects one-shot output.
-var daemonOnlyFlags = []string{"daemon-addr", "debounce", "watch-mode", "poll-interval"}
+var daemonOnlyFlags = []string{flagDaemonAddr, flagDebounce, flagWatchMode, flagPollInterval}
 
 // NewConfig creates a new Config with default values
 func NewConfig() *Config {
@@ -73,10 +95,10 @@ func NewConfig() *Config {
 		IncludeEnums:         true,
 		IncludeInputs:        true,
 		IncludeScalars:       true,
-		DaemonAddr:           "127.0.0.1:8088",
-		Debounce:             5 * time.Second,
+		DaemonAddr:           defaultDaemonAddr,
+		Debounce:             defaultDebounce,
 		WatchMode:            WatchModeAuto,
-		PollInterval:         time.Second,
+		PollInterval:         defaultPollInterval,
 		SetFlags:             map[string]bool{},
 	}
 }
@@ -119,19 +141,37 @@ func ParseFlags() *Config {
 	flag.BoolVar(&config.Catalogue, "catalogue", false, "Generate a catalogue table with query/mutation names and first sentence descriptions")
 	flag.StringVar(&config.SubTitle, "sub-title", "", "Optional subtitle for catalogue (e.g., 'Activities')")
 
-	// Daemon flags
-	flag.BoolVar(&config.Daemon, "daemon", false, "Watch the schema files and serve a dashboard, rebuilding on change")
-	flag.StringVar(&config.DaemonAddr, "daemon-addr", config.DaemonAddr, "Address the daemon dashboard listens on")
-	//nolint:lll // flag usage text
-	flag.DurationVar(&config.Debounce, "debounce", config.Debounce, "Quiet period that must pass after the last change before a rebuild")
-	//nolint:lll // flag usage text
-	flag.StringVar(&config.WatchMode, "watch-mode", config.WatchMode, "Watch backend: auto, fsnotify or poll")
-	//nolint:lll // flag usage text
-	flag.DurationVar(&config.PollInterval, "poll-interval", config.PollInterval, "Filesystem scan interval used by the polling backend")
-	//nolint:lll // flag usage text
-	flag.StringVar(&config.KrokiURL, "kroki-url", "", "Kroki server used to render diagrams, e.g. https://kroki.io")
+	registerDaemonFlags(config)
+	registerSectionFlags(config)
 
-	// Section inclusion flags
+	// Custom usage function
+	flag.Usage = PrintUsage
+
+	flag.Parse()
+
+	flag.Visit(func(f *flag.Flag) {
+		config.SetFlags[f.Name] = true
+	})
+
+	return config
+}
+
+// registerDaemonFlags declares the daemon flag group. It is separate from
+// ParseFlags so that the flag registrations stay grouped and readable.
+func registerDaemonFlags(config *Config) {
+	flag.BoolVar(&config.Daemon, "daemon", false, "Watch the schema files and serve a dashboard, rebuilding on change")
+	flag.StringVar(&config.DaemonAddr, flagDaemonAddr, config.DaemonAddr, "Address the daemon dashboard listens on")
+	//nolint:lll // flag usage text
+	flag.DurationVar(&config.Debounce, flagDebounce, config.Debounce, "Quiet period that must pass after the last change before a rebuild")
+	flag.StringVar(&config.WatchMode, flagWatchMode, config.WatchMode, "Watch backend: auto, fsnotify or poll")
+	//nolint:lll // flag usage text
+	flag.DurationVar(&config.PollInterval, flagPollInterval, config.PollInterval, "Filesystem scan interval used by the polling backend")
+	flag.StringVar(&config.KrokiURL, flagKrokiURL, "", "Kroki server used to render diagrams, e.g. https://kroki.io")
+}
+
+// registerSectionFlags declares the section inclusion group, which decides
+// which GraphQL constructs reach the output.
+func registerSectionFlags(config *Config) {
 	flag.BoolVar(&config.IncludeQueries, "queries", true, "Include queries in the output")
 	flag.BoolVar(&config.IncludeQueries, "q", true, "Include queries in the output (shorthand)")
 	flag.BoolVar(&config.IncludeMutations, "mutations", true, "Include mutations in the output")
@@ -146,17 +186,6 @@ func ParseFlags() *Config {
 	flag.BoolVar(&config.IncludeDirectives, "directives", true, "Include directives in the output")
 	flag.BoolVar(&config.IncludeDirectives, "d", true, "Include directives in the output (shorthand)")
 	flag.BoolVar(&config.IncludeScalars, "scalars", true, "Include scalars in the output")
-
-	// Custom usage function
-	flag.Usage = PrintUsage
-
-	flag.Parse()
-
-	flag.Visit(func(f *flag.Flag) {
-		config.SetFlags[f.Name] = true
-	})
-
-	return config
 }
 
 // HandleVersion handles the version flag display
