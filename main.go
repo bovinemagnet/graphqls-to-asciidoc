@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/build"
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/config"
+	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/daemon"
 )
 
 var (
@@ -33,6 +37,16 @@ func main() {
 	if err := cfg.Validate(); err != nil {
 		config.PrintError(err.Error())
 		os.Exit(1)
+	}
+
+	if cfg.Daemon {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		err := daemon.Run(ctx, cfg)
+		stop()
+		if err != nil {
+			log.Fatalf("daemon failed: %v", err)
+		}
+		return
 	}
 
 	result, err := build.Run(cfg)
