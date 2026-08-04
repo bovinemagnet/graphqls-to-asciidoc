@@ -1,0 +1,65 @@
+{{define "status"}}
+<div class="status-grid">
+  <div class="tile">
+    <span class="label">State</span>
+    <span class="value mode-{{.Mode}}">{{.Mode}}</span>
+  </div>
+  <div class="tile">
+    <span class="label">Watch backend</span>
+    <span class="value">{{.Backend}}</span>
+  </div>
+  <div class="tile">
+    <span class="label">Files watched</span>
+    <span class="value">{{.Watching}}</span>
+  </div>
+  <div class="tile">
+    <span class="label">Last build</span>
+    <span class="value">{{.LastBuildText}}</span>
+  </div>
+  {{if .Kroki.Enabled}}
+  <div class="tile">
+    <span class="label">Kroki</span>
+    <span class="value {{if .Kroki.Reachable}}ok{{else}}bad{{end}}">
+      {{if .Kroki.Reachable}}reachable{{else}}unreachable{{end}} &middot; {{.Kroki.URL}}
+    </span>
+  </div>
+  {{end}}
+</div>
+
+{{if .LastError}}
+<div class="error">
+  <h2>Last build failed</h2>
+  <pre>{{.LastError}}</pre>
+</div>
+{{end}}
+
+<h2>Recent builds</h2>
+{{if .History}}
+<table class="history">
+  <thead>
+    <tr><th>Started</th><th>Duration</th><th>Size</th><th>Result</th></tr>
+  </thead>
+  <tbody>
+    {{range .History}}
+    <tr class="{{if .Succeeded}}ok{{else}}bad{{end}}">
+      <td>{{.Started.Format "15:04:05"}}</td>
+      <td>{{.Duration}}</td>
+      <td>{{if .Succeeded}}{{.Bytes}} bytes{{else}}&mdash;{{end}}</td>
+      <td>{{if .Succeeded}}built{{else}}failed{{end}}</td>
+    </tr>
+    {{end}}
+  </tbody>
+</table>
+{{else}}
+<p class="muted">No builds yet.</p>
+{{end}}
+
+<h2>Watched files</h2>
+{{if .Watched}}
+<ul class="files">
+  {{range .Watched}}<li>{{.}}</li>{{end}}
+</ul>
+{{else}}
+<p class="muted">No files matched yet.</p>
+{{end}}
+{{end}}

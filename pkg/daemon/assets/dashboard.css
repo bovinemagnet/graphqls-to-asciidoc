@@ -1,0 +1,107 @@
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --fg: #1b1b1b;
+  --muted: #6a6a6a;
+  --line: #d8d8d8;
+  --ok: #1a7f37;
+  --bad: #c0392b;
+  --panel: #f6f6f6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16181d;
+    --fg: #e6e6e6;
+    --muted: #9a9a9a;
+    --line: #333842;
+    --ok: #4ac26b;
+    --bad: #ff7b72;
+    --panel: #1e2128;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0 1.5rem 3rem;
+  background: var(--bg);
+  color: var(--fg);
+  font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+header h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+nav { display: flex; gap: 1rem; align-items: center; }
+nav a { color: inherit; }
+
+button {
+  font: inherit;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: inherit;
+  cursor: pointer;
+}
+
+button:hover { border-color: var(--fg); }
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.value { font-size: 1.05rem; font-weight: 600; overflow-wrap: anywhere; }
+.value.ok, tr.ok td:last-child { color: var(--ok); }
+.value.bad, tr.bad td:last-child { color: var(--bad); }
+.mode-building { color: var(--ok); }
+
+h2 { font-size: 0.95rem; margin: 1.75rem 0 0.6rem; }
+
+.error pre {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--bad);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--bad);
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+table.history { border-collapse: collapse; width: 100%; }
+table.history th, table.history td {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+table.history th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+
+ul.files { margin: 0; padding-left: 1.2rem; }
+ul.files li { overflow-wrap: anywhere; }
+.muted { color: var(--muted); }

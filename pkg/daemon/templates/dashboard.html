@@ -1,0 +1,24 @@
+{{define "dashboard"}}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>graphqls-to-asciidoc daemon</title>
+  <link rel="stylesheet" href="/static/dashboard.css">
+  <script src="/static/htmx.min.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>graphqls-to-asciidoc</h1>
+    <nav>
+      <a href="{{.DocumentPath}}">{{.DocumentPath}}</a>
+      <button hx-post="/rebuild" hx-target="#status" hx-swap="innerHTML">Rebuild now</button>
+    </nav>
+  </header>
+
+  <main id="status" hx-get="/fragments/status" hx-trigger="every 2s" hx-swap="innerHTML">
+    {{template "status" .}}
+  </main>
+</body>
+</html>
+{{end}}
