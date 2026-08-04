@@ -95,7 +95,7 @@ func (g *Generator) getSubscriptionDetails(f *ast.FieldDefinition, definitionsMa
 	// Generate subscription signature
 	fmt.Fprintf(&b, "// tag::subscription-%s[]\n", f.Name)
 	fmt.Fprintln(&b)
-	fmt.Fprintf(&b, "[[subscription_%s]]\n", strings.ToLower(f.Name))
+	fmt.Fprintf(&b, "[[subscription_%s]]\n", parser.CamelToSnake(f.Name))
 	fmt.Fprintf(&b, "=== %s\n", f.Name)
 	fmt.Fprintln(&b)
 	fmt.Fprintln(&b)

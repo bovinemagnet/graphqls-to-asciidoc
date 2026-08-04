@@ -37,7 +37,7 @@ The following table provides a quick reference to all available queries in the G
 
 // tag::query-findPerson[]
 
-[[query_findperson]]
+[[query_find_person]]
 === findPerson
 
 

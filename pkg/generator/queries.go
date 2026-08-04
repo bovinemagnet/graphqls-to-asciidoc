@@ -54,7 +54,7 @@ func (g *Generator) generateQueries(definitionsMap map[string]*ast.Definition) i
 func (g *Generator) generateQueryField(field *ast.FieldDefinition, definitionsMap map[string]*ast.Definition) {
 	fmt.Fprintf(g.writer, "// tag::query-%s[]\n", field.Name)
 	fmt.Fprintln(g.writer)
-	fmt.Fprintf(g.writer, "[[query_%s]]\n", strings.ToLower(field.Name))
+	fmt.Fprintf(g.writer, "[[query_%s]]\n", parser.CamelToSnake(field.Name))
 	fmt.Fprintf(g.writer, "=== %s\n", field.Name)
 	fmt.Fprintln(g.writer)
 	fmt.Fprintln(g.writer)

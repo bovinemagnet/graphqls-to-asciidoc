@@ -1,7 +1,7 @@
 = GraphQL Documentation
 :toc: left
-:revdate: Tue, 04 Aug 2026 10:02:05 AEST
-:commandline: /tmp/go-build2233850231/b001/exe/main -schema test/schema.graphql
+:revdate: Tue, 04 Aug 2026 10:04:32 AEST
+:commandline: /tmp/go-build952340262/b001/exe/main -schema test/schema.graphql
 :sourceFile: test/schema.graphql
 :reproducible:
 :page-partial:
@@ -76,7 +76,7 @@ The following table provides a quick reference to all available mutations in the
 The root query
 // tag::query-FeaturedTweets[]
 
-[[query_featuredtweets]]
+[[query_featured_tweets]]
 === FeaturedTweets
 
 
@@ -168,7 +168,7 @@ Notifications(
 
 // tag::query-NotificationsMeta[]
 
-[[query_notificationsmeta]]
+[[query_notifications_meta]]
 === NotificationsMeta
 
 
@@ -249,7 +249,7 @@ Tweet(
 
 // tag::query-TweetSentiment[]
 
-[[query_tweetsentiment]]
+[[query_tweet_sentiment]]
 === TweetSentiment
 
 
@@ -290,7 +290,7 @@ TweetSentiment(
 
 // tag::query-TweetSentiments1[]
 
-[[query_tweetsentiments1]]
+[[query_tweet_sentiments1]]
 === TweetSentiments1
 
 
@@ -331,7 +331,7 @@ TweetSentiments1(
 
 // tag::query-TweetSentiments2[]
 
-[[query_tweetsentiments2]]
+[[query_tweet_sentiments2]]
 === TweetSentiments2
 
 
@@ -372,7 +372,7 @@ TweetSentiments2(
 
 // tag::query-TweetSentiments3[]
 
-[[query_tweetsentiments3]]
+[[query_tweet_sentiments3]]
 === TweetSentiments3
 
 
@@ -413,7 +413,7 @@ TweetSentiments3(
 
 // tag::query-TweetSentiments4[]
 
-[[query_tweetsentiments4]]
+[[query_tweet_sentiments4]]
 === TweetSentiments4
 
 
@@ -512,7 +512,7 @@ Tweets(
 
 // tag::query-TweetsFour[]
 
-[[query_tweetsfour]]
+[[query_tweets_four]]
 === TweetsFour
 
 
@@ -574,7 +574,7 @@ TweetsFour(
 
 // tag::query-TweetsMeta[]
 
-[[query_tweetsmeta]]
+[[query_tweets_meta]]
 === TweetsMeta
 
 
@@ -612,7 +612,7 @@ TweetsMeta(
 
 // tag::query-TweetsThree[]
 
-[[query_tweetsthree]]
+[[query_tweets_three]]
 === TweetsThree
 
 
@@ -668,7 +668,7 @@ TweetsThree(
 
 // tag::query-TweetsTwo[]
 
-[[query_tweetstwo]]
+[[query_tweets_two]]
 === TweetsTwo
 
 
@@ -761,7 +761,7 @@ User(
 
 // tag::query-getConfig[]
 
-[[query_getconfig]]
+[[query_get_config]]
 === getConfig
 
 
@@ -811,7 +811,7 @@ getConfig(
 
 // tag::query-multiCalloutExample[]
 
-[[query_multicalloutexample]]
+[[query_multi_callout_example]]
 === multiCalloutExample
 
 
@@ -882,7 +882,7 @@ multiCalloutExample(
 
 // tag::query-searchTweets[]
 
-[[query_searchtweets]]
+[[query_search_tweets]]
 === searchTweets
 
 

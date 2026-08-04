@@ -780,7 +780,7 @@ func TestGenerateSubscriptions(t *testing.T) {
 		"userUpdates",
 		"Subscribe to user updates",
 		"// tag::subscription-userUpdates[]",
-		"[[subscription_userupdates]]",
+		"[[subscription_user_updates]]",
 		"=== userUpdates",
 		".subscription: userUpdates",
 		"*Subscription Name:* _userUpdates_",
@@ -851,7 +851,7 @@ func TestGetSubscriptionDetails(t *testing.T) {
 
 	expectedContent := []string{
 		"// tag::subscription-testSubscription[]",
-		"[[subscription_testsubscription]]",
+		"[[subscription_test_subscription]]",
 		"=== testSubscription",
 		".subscription: testSubscription",
 		"*Subscription Name:* _testSubscription_",
