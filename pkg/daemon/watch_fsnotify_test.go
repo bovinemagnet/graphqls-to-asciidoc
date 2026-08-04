@@ -41,6 +41,90 @@ func TestFSNotifyWatcherEmitsOnModification(t *testing.T) {
 	}
 }
 
+// TestFSNotifyWatcherEmitsOnDeletion covers a removed schema file. A deletion
+// changes the document just as much as an edit does — a file removed to clear a
+// duplicate definition must republish — so the fsnotify backend has to report
+// it, exactly as the polling backend does.
+func TestFSNotifyWatcherEmitsOnDeletion(t *testing.T) {
+	dir := t.TempDir()
+	kept := filepath.Join(dir, "a.graphqls")
+	doomed := filepath.Join(dir, "b.graphqls")
+	if err := os.WriteFile(kept, []byte("type Query { a: String }"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(doomed, []byte("type Tweet { id: ID }"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.NewConfig()
+	cfg.SchemaPattern = filepath.Join(dir, "*.graphqls")
+
+	w, err := NewFSNotifyWatcher(cfg)
+	if err != nil {
+		t.Skipf("fsnotify is unavailable in this environment: %v", err)
+	}
+	defer func() { _ = w.Close() }()
+
+	time.Sleep(50 * time.Millisecond)
+	if err := os.Remove(doomed); err != nil {
+		t.Fatal(err)
+	}
+
+	select {
+	case ev := <-w.Events():
+		if ev.Path != doomed {
+			t.Fatalf("expected an event for %s, got %s", doomed, ev.Path)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for a deletion event")
+	}
+}
+
+// TestFSNotifyWatcherNoticesANewSubdirectory covers a schema file created in a
+// directory that did not exist when the watcher started. A '**' pattern matches
+// at any depth, so the watch set has to grow with the tree.
+func TestFSNotifyWatcherNoticesANewSubdirectory(t *testing.T) {
+	dir := t.TempDir()
+	root := filepath.Join(dir, "schemas")
+	if err := os.MkdirAll(root, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "a.graphqls"), []byte("type Query { a: String }"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.NewConfig()
+	cfg.SchemaPattern = filepath.Join(root, "**", "*.graphqls")
+
+	w, err := NewFSNotifyWatcher(cfg)
+	if err != nil {
+		t.Skipf("fsnotify is unavailable in this environment: %v", err)
+	}
+	defer func() { _ = w.Close() }()
+
+	time.Sleep(50 * time.Millisecond)
+	nested := filepath.Join(root, "deep", "deeper")
+	if err := os.MkdirAll(nested, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	created := filepath.Join(nested, "c.graphqls")
+	if err := os.WriteFile(created, []byte("type Tweet { id: ID }"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	deadline := time.After(3 * time.Second)
+	for {
+		select {
+		case ev := <-w.Events():
+			if ev.Path == created {
+				return
+			}
+		case <-deadline:
+			t.Fatalf("timed out waiting for an event for %s", created)
+		}
+	}
+}
+
 func TestFSNotifyWatcherIgnoresUnrelatedFiles(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "schema.graphqls")
