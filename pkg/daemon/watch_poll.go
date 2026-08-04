@@ -3,6 +3,7 @@ package daemon
 import (
 	"os"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/bovinemagnet/graphqls-to-asciidoc/pkg/build"
@@ -58,9 +59,10 @@ func diffSnapshots(before, after map[string]fileState) []string {
 // file metadata. It works identically everywhere, including on network and
 // container filesystems where change notifications are unreliable.
 type pollWatcher struct {
-	cfg    *config.Config
-	events chan Event
-	done   chan struct{}
+	cfg       *config.Config
+	events    chan Event
+	done      chan struct{}
+	closeOnce sync.Once
 }
 
 // NewPollWatcher starts a polling watcher for the configured schema files.
@@ -112,10 +114,6 @@ func (w *pollWatcher) loop(previous map[string]fileState) {
 func (w *pollWatcher) Events() <-chan Event { return w.events }
 
 func (w *pollWatcher) Close() error {
-	select {
-	case <-w.done:
-	default:
-		close(w.done)
-	}
+	w.closeOnce.Do(func() { close(w.done) })
 	return nil
 }

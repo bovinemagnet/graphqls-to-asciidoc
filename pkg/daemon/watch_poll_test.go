@@ -3,6 +3,7 @@ package daemon
 import (
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -104,5 +105,43 @@ func TestPollWatcherSilentWhenNothingChanges(t *testing.T) {
 	case ev := <-w.Events():
 		t.Fatalf("expected no events for an untouched file, got %v", ev)
 	case <-time.After(200 * time.Millisecond):
+	}
+}
+
+// TestPollWatcherCloseIsConcurrencySafe guards against a double close of the
+// done channel when Close is called from several goroutines at once. Against
+// a non-blocking select guard, a single trial of 200 goroutines only panics
+// with "close of closed channel" around half the time; 200 trials of a fresh
+// watcher each make the panic reliable rather than a matter of luck.
+func TestPollWatcherCloseIsConcurrencySafe(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "schema.graphqls")
+	if err := os.WriteFile(path, []byte("type Query { a: String }"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.NewConfig()
+	cfg.SchemaFile = path
+	cfg.PollInterval = 20 * time.Millisecond
+
+	const trials = 200
+	const goroutines = 200
+	for trial := 0; trial < trials; trial++ {
+		w, err := NewPollWatcher(cfg)
+		if err != nil {
+			t.Fatalf("NewPollWatcher: %v", err)
+		}
+
+		var wg sync.WaitGroup
+		wg.Add(goroutines)
+		for i := 0; i < goroutines; i++ {
+			go func() {
+				defer wg.Done()
+				if err := w.Close(); err != nil {
+					t.Errorf("Close: %v", err)
+				}
+			}()
+		}
+		wg.Wait()
 	}
 }
