@@ -278,6 +278,17 @@ func (c *Config) validateDaemon() error {
 }
 
 // KrokiDocumentURL is the value written into the generated document's
+// SchemaSource names where the schema was read from, for the generated
+// document header. Validate guarantees exactly one of SchemaFile and
+// SchemaPattern is set, so in pattern mode the pattern is the only truthful
+// answer; returning SchemaFile alone left the header naming no source at all.
+func (c *Config) SchemaSource() string {
+	if c.SchemaFile != "" {
+		return c.SchemaFile
+	}
+	return c.SchemaPattern
+}
+
 // :kroki-server-url: attribute. In daemon mode it points at the daemon's own
 // proxy so the browser-side renderer makes same-origin requests.
 func (c *Config) KrokiDocumentURL() string {

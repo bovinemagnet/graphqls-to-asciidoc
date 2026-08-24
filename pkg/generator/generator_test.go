@@ -2054,3 +2054,38 @@ func TestPrintHeaderOmitsKrokiWhenUnset(t *testing.T) {
 		t.Errorf("expected no kroki attributes, got:\n%s", out.String())
 	}
 }
+
+func TestPrintHeaderNamesThePatternWhenNoSchemaFile(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.SchemaPattern = "schemas/**/*.graphqls"
+
+	var out bytes.Buffer
+	New(cfg, &ast.Schema{}, &out).printHeader()
+
+	got := out.String()
+	if !strings.Contains(got, ":sourceFile: schemas/**/*.graphqls") {
+		t.Errorf("expected sourceFile to name the pattern, got:\n%s", got)
+	}
+	if strings.Contains(got, ":sourceFile: \n") {
+		t.Errorf("sourceFile was emitted with an empty value, got:\n%s", got)
+	}
+	if strings.Contains(got, "schema file ``") {
+		t.Errorf("the generated-from notice named no source, got:\n%s", got)
+	}
+}
+
+func TestPrintHeaderStillNamesTheSchemaFile(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.SchemaFile = "test/schema.graphql"
+
+	var out bytes.Buffer
+	New(cfg, &ast.Schema{}, &out).printHeader()
+
+	got := out.String()
+	if !strings.Contains(got, ":sourceFile: test/schema.graphql") {
+		t.Errorf("expected sourceFile to name the schema file, got:\n%s", got)
+	}
+	if !strings.Contains(got, "schema file `test/schema.graphql`") {
+		t.Errorf("expected the notice to name the schema file, got:\n%s", got)
+	}
+}
