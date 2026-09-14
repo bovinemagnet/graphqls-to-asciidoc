@@ -31,8 +31,6 @@ The following table provides a quick reference to all available queries in the G
 |===
 | Name | Description
 | findPerson | Look up a person by given name and optional explicit-null middle name.
-
-`findPerson(givenName: String!, middleName: String = null, familyName: String!): Person`
 |===
 
 [[query]]

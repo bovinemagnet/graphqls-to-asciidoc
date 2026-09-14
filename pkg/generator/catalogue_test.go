@@ -158,11 +158,28 @@ type User { id: ID! }
 	}
 }
 
+func TestCatalogueTableOmitsSignatureByDefault(t *testing.T) {
+	var out bytes.Buffer
+	cfg := config.NewConfig()
+	cfg.SchemaFile = "test.graphql"
+	cfg.Catalogue = true
+	if err := New(cfg, parseTestSchema(t, catalogueSharedSDL), &out).Generate(); err != nil {
+		t.Fatalf("Generate() error: %v", err)
+	}
+	if strings.Contains(out.String(), "`user(id: ID!): User`") {
+		t.Error("catalogue should not contain the signature without --inc-signature")
+	}
+	if !strings.Contains(out.String(), "| user | Fetch a user.\n| users |") {
+		t.Errorf("rows should follow one another directly without the signature line:\n%s", out.String())
+	}
+}
+
 func TestCatalogueTableShowsSignature(t *testing.T) {
 	var out bytes.Buffer
 	cfg := config.NewConfig()
 	cfg.SchemaFile = "test.graphql"
 	cfg.Catalogue = true
+	cfg.IncludeSignature = true
 	if err := New(cfg, parseTestSchema(t, catalogueSharedSDL), &out).Generate(); err != nil {
 		t.Fatalf("Generate() error: %v", err)
 	}
@@ -225,6 +242,7 @@ func TestCatalogueTableShowsStatusBadges(t *testing.T) {
 	cfg := config.NewConfig()
 	cfg.SchemaFile = "test.graphql"
 	cfg.Catalogue = true
+	cfg.IncludeSignature = true
 	cfg.IncludeDeprecated = true
 	cfg.IncludePreview = true
 	if err := New(cfg, parseTestSchema(t, catalogueStatusSDL), &out).Generate(); err != nil {

@@ -31,8 +31,6 @@ The following table provides a quick reference to all available queries in the G
 |===
 | Name | Description
 | articles | A list field annotated with @paginate to show it applied in practice.
-
-`articles: [Article!]!`
 |===
 
 [[query]]

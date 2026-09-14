@@ -118,12 +118,13 @@ type MutationGroup struct {
 
 // CatalogueData represents the data for catalogue template rendering
 type CatalogueData struct {
-	SubTitle       string
-	RevDate        string
-	CommandLine    string
-	KrokiServerURL string
-	Queries        []CatalogueEntry
-	Mutations      []CatalogueEntry // Keep for backward compatibility
-	MutationGroups []MutationGroup  // Grouped mutations
-	Subscriptions  []CatalogueEntry
+	SubTitle         string
+	IncludeSignature bool
+	RevDate          string
+	CommandLine      string
+	KrokiServerURL   string
+	Queries          []CatalogueEntry
+	Mutations        []CatalogueEntry // Keep for backward compatibility
+	MutationGroups   []MutationGroup  // Grouped mutations
+	Subscriptions    []CatalogueEntry
 }

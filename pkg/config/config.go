@@ -40,6 +40,7 @@ type Config struct {
 	Catalogue            bool
 	SubTitle             string
 	IncludeChangelog     bool
+	IncludeSignature     bool
 	Daemon               bool
 	DaemonAddr           string
 	Debounce             time.Duration
@@ -132,6 +133,7 @@ func ParseFlags() *Config {
 	flag.BoolVar(&config.IncludeZeroVersion, "inc-zero", false, "Include items with version 0.0.0 or 0.0.0.0 (by default, items marked with @version: 0.0.0 or @version: 0.0.0.0 are excluded)")
 	//nolint:lll // flag usage text
 	flag.BoolVar(&config.IncludeChangelog, "inc-changelog", false, "Include changelog information in catalogue descriptions (version annotations)")
+	flag.BoolVar(&config.IncludeSignature, "inc-signature", false, "Include the full operation signature in catalogue descriptions")
 	flag.BoolVar(&config.ShowVersion, "version", false, "Show program version and build information")
 	flag.BoolVar(&config.ShowVersion, "v", false, "Show program version and build information (shorthand)")
 	flag.BoolVar(&config.ShowHelp, "help", false, "Show detailed help information")
@@ -327,6 +329,8 @@ OPTIONS:
                             marked with @version: 0.0.0 or @version: 0.0.0.0 are excluded)
         --inc-changelog     Include changelog information in catalogue descriptions
                             (extracts version annotations like add.version: 1.0.0)
+        --inc-signature     Include the full operation signature (arguments, defaults
+                            and return type) in catalogue descriptions
         --verbose           Enable verbose logging with processing metrics
         --catalogue         Generate a catalogue table with query/mutation names and descriptions
         --sub-title TEXT    Optional subtitle for catalogue (e.g., 'Activities')

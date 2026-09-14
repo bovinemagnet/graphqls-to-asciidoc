@@ -1,6 +1,7 @@
 package config
 
 import (
+	"flag"
 	"os"
 	"strings"
 	"testing"
@@ -362,5 +363,23 @@ func TestKrokiDocumentURL(t *testing.T) {
 				t.Fatalf("KrokiDocumentURL() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestParseFlagsIncSignature(t *testing.T) {
+	origArgs, origFlags := os.Args, flag.CommandLine
+	defer func() { os.Args, flag.CommandLine = origArgs, origFlags }()
+	flag.CommandLine = flag.NewFlagSet(origArgs[0], flag.ContinueOnError)
+	os.Args = []string{origArgs[0], "-schema", "x.graphql", "-catalogue", "--inc-signature"}
+
+	cfg := ParseFlags()
+	if !cfg.IncludeSignature {
+		t.Error("--inc-signature should set IncludeSignature")
+	}
+}
+
+func TestIncludeSignatureDefaultsOff(t *testing.T) {
+	if NewConfig().IncludeSignature {
+		t.Error("IncludeSignature should default to false")
 	}
 }

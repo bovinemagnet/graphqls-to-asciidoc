@@ -31,8 +31,6 @@ The following table provides a quick reference to all available queries in the G
 |===
 | Name | Description
 | listItems | List items with an enum-default sort argument.
-
-`listItems(sort: SortOrder = ASC): [Item!]!`
 |===
 
 [[query]]

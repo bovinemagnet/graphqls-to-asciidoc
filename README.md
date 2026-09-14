@@ -96,7 +96,7 @@ graphqls-to-asciidoc -s schema.graphql --catalogue --exclude-internal -o public-
 
 The catalogue output includes:
 - **Introduction**: Brief overview of GraphQL and its key concepts
-- **Queries table**: Quick reference to all available queries with descriptions, each followed by the full signature (arguments, defaults and return type)
+- **Queries table**: Quick reference to all available queries with descriptions; add `--inc-signature` to append each operation's full signature (arguments, defaults and return type)
 - **Mutations table**: Summary of all mutations for data modification, grouped by `add`/`update`/`delete`/`save` prefix
 - **Subscriptions section**: Real-time subscription endpoints (or note if none exist)
 - **Status badges**: Items admitted by `--inc-deprecated`, `--inc-preview`, `--inc-legacy` or `--inc-internal` are marked `*DEPRECATED*`, `*PREVIEW*`, `*LEGACY*` or `*INTERNAL*` at the start of their description
@@ -186,6 +186,7 @@ graphqls-to-asciidoc -p "/absolute/path/**/*.graphql"
 | `--inc-legacy` | Include legacy queries/mutations (those marked as LEGACY) | false |
 | `--inc-zero` | Include items with version 0.0.0 or 0.0.0.0 | false |
 | `--inc-changelog` | Include changelog information in catalogue descriptions | false |
+| `--inc-signature` | Include the full operation signature in catalogue descriptions | false |
 
 #### Section Control
 | Flag | Short | Description | Default |

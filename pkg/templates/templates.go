@@ -315,9 +315,9 @@ The following table provides a quick reference to all available queries in the G
 | Name | Description
 {{- range .Queries }}
 | {{.Name}} | {{range .Status}}*{{.}}* {{end}}{{.Description}}{{if .Changelog}}
-{{.Changelog}}{{end}}
+{{.Changelog}}{{end}}{{if $.IncludeSignature}}
 
-` + "`{{.Signature}}`" + `
+` + "`{{.Signature}}`" + `{{end}}
 {{- end }}
 |===
 {{- else }}
@@ -350,9 +350,9 @@ The following table provides a quick reference to all available mutations in the
 2+^h| {{.GroupName}}
 {{- range .Mutations }}
 | {{.Name}} | {{range .Status}}*{{.}}* {{end}}{{.Description}}{{if .Changelog}}
-{{.Changelog}}{{end}}
+{{.Changelog}}{{end}}{{if $.IncludeSignature}}
 
-` + "`{{.Signature}}`" + `
+` + "`{{.Signature}}`" + `{{end}}
 {{- end }}
 {{- end }}
 |===
@@ -381,9 +381,9 @@ The following table provides a quick reference to all available subscriptions in
 | Name | Description
 {{- range .Subscriptions }}
 | {{.Name}} | {{range .Status}}*{{.}}* {{end}}{{.Description}}{{if .Changelog}}
-{{.Changelog}}{{end}}
+{{.Changelog}}{{end}}{{if $.IncludeSignature}}
 
-` + "`{{.Signature}}`" + `
+` + "`{{.Signature}}`" + `{{end}}
 {{- end }}
 |===
 {{- else }}
