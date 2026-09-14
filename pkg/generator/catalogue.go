@@ -48,6 +48,7 @@ func (g *Generator) collectCatalogueEntries(def *ast.Definition) []CatalogueEntr
 		entries = append(entries, CatalogueEntry{
 			Name:        field.Name,
 			Signature:   fieldSignature(field),
+			Status:      fieldStatus(field.Name, field.Description, field.Directives),
 			Description: description,
 			Changelog:   changelogText,
 		})

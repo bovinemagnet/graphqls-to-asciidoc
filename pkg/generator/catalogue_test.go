@@ -176,3 +176,67 @@ func TestCatalogueTableShowsSignature(t *testing.T) {
 		}
 	}
 }
+
+const catalogueStatusSDL = `
+type Query {
+  "Fetch."
+  user(id: ID!): User
+  "Old way. DEPRECATED, use user instead."
+  oldUser(id: ID!): User @deprecated(reason: "use user")
+  "PREVIEW: experimental search."
+  search(term: String!): [User!]!
+  "LEGACY lookup."
+  legacyLookup: User
+  "Internal health probe."
+  internalPing: Boolean
+}
+type User { id: ID! }
+`
+
+func TestCatalogueEntryStatus(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.SchemaFile = "test.graphql"
+	cfg.IncludeDeprecated = true
+	cfg.IncludePreview = true
+	cfg.IncludeLegacy = true
+	cfg.IncludeInternal = true
+	g := New(cfg, parseTestSchema(t, catalogueStatusSDL), &bytes.Buffer{})
+
+	got := map[string][]string{}
+	for _, e := range g.collectCatalogueData().Queries {
+		got[e.Name] = e.Status
+	}
+	want := map[string][]string{
+		"user":         nil,
+		"oldUser":      {"DEPRECATED"},
+		"search":       {"PREVIEW"},
+		"legacyLookup": {"LEGACY"},
+		"internalPing": {"INTERNAL"},
+	}
+	for name, status := range want {
+		if strings.Join(got[name], ",") != strings.Join(status, ",") {
+			t.Errorf("status for %s = %v, want %v", name, got[name], status)
+		}
+	}
+}
+
+func TestCatalogueTableShowsStatusBadges(t *testing.T) {
+	var out bytes.Buffer
+	cfg := config.NewConfig()
+	cfg.SchemaFile = "test.graphql"
+	cfg.Catalogue = true
+	cfg.IncludeDeprecated = true
+	cfg.IncludePreview = true
+	if err := New(cfg, parseTestSchema(t, catalogueStatusSDL), &out).Generate(); err != nil {
+		t.Fatalf("Generate() error: %v", err)
+	}
+	for _, row := range []string{
+		"| user(id: ID!): User | Fetch.",
+		"| oldUser(id: ID!): User | *DEPRECATED* Old way.",
+		"| search(term: String!): [User!]! | *PREVIEW* PREVIEW: experimental search.",
+	} {
+		if !strings.Contains(out.String(), row) {
+			t.Errorf("catalogue should contain row %q\n%s", row, out.String())
+		}
+	}
+}
