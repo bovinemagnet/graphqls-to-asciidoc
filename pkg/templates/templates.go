@@ -264,7 +264,9 @@ const InputSectionTemplate = `
 {{end}}
 `
 
-const CatalogueTemplate = `{{- if .SubTitle -}}
+// CatalogueHeader is the document header and introduction for standalone
+// catalogue mode.
+const CatalogueHeader = `{{- if .SubTitle -}}
 = GraphQL API Catalogue: {{.SubTitle}}
 {{- else -}}
 = GraphQL API Catalogue
@@ -292,9 +294,13 @@ to request data from servers compared to traditional REST APIs.
 Instead of having multiple endpoints returning fixed data (like in REST).
 GraphQL exposes a *single endpoint* where clients can *ask for exactly the data they need and nothing more.*
 
+`
 
-{{ if .Queries }}
-[[queries]]
+// Catalogue table sections shared by standalone catalogue mode and the
+// summary at the top of a full document. Each declares an explicit anchor so
+// its id does not depend on the idprefix/idseparator attributes of the
+// rendering toolchain.
+const CatalogueQueriesSection = `[[queries]]
 == Queries
 
 *Queries* are how clients *read or fetch data* in GraphQL.
@@ -302,18 +308,27 @@ They describe _what_ data the client wants, not _how_ to get it.
 
 The following table provides a quick reference to all available queries in the GraphQL API.
 
+{{- if .Queries }}
+
 [options="header",cols="2m,5a"]
 |===
 | Name | Description
 {{- range .Queries }}
 | {{.Name}} | {{.Description}}{{if .Changelog}}
-
 {{.Changelog}}{{end}}
 {{- end }}
 |===
-{{ end }}
+{{- else }}
 
-{{ if .MutationGroups }}
+[NOTE]
+====
+No queries exist in this schema.
+====
+{{- end }}
+
+`
+
+const CatalogueMutationsSection = `
 [[mutations]]
 == Mutations
 
@@ -324,6 +339,8 @@ A mutation looks similar to a query, but it describes an action that changes dat
 
 The following table provides a quick reference to all available mutations in the GraphQL API.
 
+{{- if .MutationGroups }}
+
 [options="header",cols="2m,5a"]
 |===
 | Name | Description
@@ -331,14 +348,21 @@ The following table provides a quick reference to all available mutations in the
 2+^h| {{.GroupName}}
 {{- range .Mutations }}
 | {{.Name}} | {{.Description}}{{if .Changelog}}
-
 {{.Changelog}}{{end}}
 {{- end }}
 {{- end }}
 |===
-{{ end }}
+{{- else }}
 
-[[subscriptions]]
+[NOTE]
+====
+No mutations exist in this schema.
+====
+{{- end }}
+
+`
+
+const CatalogueSubscriptionsSection = `[[subscriptions]]
 == Subscriptions
 
 {{- if .Subscriptions }}
@@ -353,7 +377,6 @@ The following table provides a quick reference to all available subscriptions in
 | Name | Description
 {{- range .Subscriptions }}
 | {{.Name}} | {{.Description}}{{if .Changelog}}
-
 {{.Changelog}}{{end}}
 {{- end }}
 |===
@@ -365,3 +388,6 @@ No subscriptions exist in this schema.
 ====
 {{- end }}
 `
+
+// CatalogueTemplate is the complete standalone catalogue document.
+const CatalogueTemplate = CatalogueHeader + CatalogueQueriesSection + CatalogueMutationsSection + CatalogueSubscriptionsSection
