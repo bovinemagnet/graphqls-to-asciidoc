@@ -167,9 +167,9 @@ func TestCatalogueTableShowsSignature(t *testing.T) {
 		t.Fatalf("Generate() error: %v", err)
 	}
 	for _, row := range []string{
-		"| user(id: ID!): User | Fetch a user.",
-		"| addUser(name: String!): User | Add a user.",
-		"| userChanged: User | Emits when a user changes.",
+		"| user | Fetch a user.\n\n`user(id: ID!): User`\n",
+		"| addUser | Add a user.\n\n`addUser(name: String!): User`\n",
+		"| userChanged | Emits when a user changes.\n\n`userChanged: User`\n",
 	} {
 		if !strings.Contains(out.String(), row) {
 			t.Errorf("catalogue should contain row %q", row)
@@ -231,9 +231,9 @@ func TestCatalogueTableShowsStatusBadges(t *testing.T) {
 		t.Fatalf("Generate() error: %v", err)
 	}
 	for _, row := range []string{
-		"| user(id: ID!): User | Fetch.",
-		"| oldUser(id: ID!): User | *DEPRECATED* Old way.",
-		"| search(term: String!): [User!]! | *PREVIEW* PREVIEW: experimental search.",
+		"| user | Fetch.\n\n`user(id: ID!): User`\n",
+		"| oldUser | *DEPRECATED* Old way.\n\n`oldUser(id: ID!): User`\n",
+		"| search | *PREVIEW* PREVIEW: experimental search.\n\n`search(term: String!): [User!]!`\n",
 	} {
 		if !strings.Contains(out.String(), row) {
 			t.Errorf("catalogue should contain row %q\n%s", row, out.String())

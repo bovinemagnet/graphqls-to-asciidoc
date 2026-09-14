@@ -34,7 +34,9 @@ The following table provides a quick reference to all available mutations in the
 |===
 | Name | Description
 2+^h| Updates
-| updateUser(id: ID!, input: UpdateUserInput!): User | Update a user using an input type whose fields carry defaults.
+| updateUser | Update a user using an input type whose fields carry defaults.
+
+`updateUser(id: ID!, input: UpdateUserInput!): User`
 |===
 
 

@@ -30,7 +30,9 @@ The following table provides a quick reference to all available queries in the G
 [options="header",cols="2m,5a"]
 |===
 | Name | Description
-| findRecords(filter: FilterInput = {status:PUBLISHED,page:{size:10,offset:0}}): [Record!]! | Find records using a filter that itself carries nested defaults.
+| findRecords | Find records using a filter that itself carries nested defaults.
+
+`findRecords(filter: FilterInput = {status:PUBLISHED,page:{size:10,offset:0}}): [Record!]!`
 |===
 
 [[query]]

@@ -30,7 +30,9 @@ The following table provides a quick reference to all available queries in the G
 [options="header",cols="2m,5a"]
 |===
 | Name | Description
-| product(id: ID!, status: ProductStatus = ACTIVE): Product | Look up a product by id with a list-default filter.
+| product | Look up a product by id with a list-default filter.
+
+`product(id: ID!, status: ProductStatus = ACTIVE): Product`
 |===
 
 [[query]]
