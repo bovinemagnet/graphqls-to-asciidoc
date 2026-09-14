@@ -30,7 +30,7 @@ The following table provides a quick reference to all available queries in the G
 [options="header",cols="2m,5a"]
 |===
 | Name | Description
-| listItems | List items with an enum-default sort argument.
+| listItems(sort: SortOrder = ASC): [Item!]! | List items with an enum-default sort argument.
 |===
 
 [[query]]

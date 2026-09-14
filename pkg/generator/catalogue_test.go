@@ -127,3 +127,52 @@ func TestCatalogueStandaloneShowsNoteWhenNoQueries(t *testing.T) {
 		t.Error("standalone catalogue should note when no queries exist")
 	}
 }
+
+func TestCatalogueEntrySignature(t *testing.T) {
+	sdl := `
+type Query {
+  "Fetch."
+  user(id: ID!, includeDeleted: Boolean = false, tags: [String!]): User
+  "Ping."
+  ping: String!
+}
+type User { id: ID! }
+`
+	cfg := config.NewConfig()
+	cfg.SchemaFile = "test.graphql"
+	g := New(cfg, parseTestSchema(t, sdl), &bytes.Buffer{})
+
+	data := g.collectCatalogueData()
+	got := map[string]string{}
+	for _, e := range data.Queries {
+		got[e.Name] = e.Signature
+	}
+	want := map[string]string{
+		"user": "user(id: ID!, includeDeleted: Boolean = false, tags: [String!]): User",
+		"ping": "ping: String!",
+	}
+	for name, sig := range want {
+		if got[name] != sig {
+			t.Errorf("signature for %s = %q, want %q", name, got[name], sig)
+		}
+	}
+}
+
+func TestCatalogueTableShowsSignature(t *testing.T) {
+	var out bytes.Buffer
+	cfg := config.NewConfig()
+	cfg.SchemaFile = "test.graphql"
+	cfg.Catalogue = true
+	if err := New(cfg, parseTestSchema(t, catalogueSharedSDL), &out).Generate(); err != nil {
+		t.Fatalf("Generate() error: %v", err)
+	}
+	for _, row := range []string{
+		"| user(id: ID!): User | Fetch a user.",
+		"| addUser(name: String!): User | Add a user.",
+		"| userChanged: User | Emits when a user changes.",
+	} {
+		if !strings.Contains(out.String(), row) {
+			t.Errorf("catalogue should contain row %q", row)
+		}
+	}
+}

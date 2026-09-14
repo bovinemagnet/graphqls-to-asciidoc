@@ -47,11 +47,35 @@ func (g *Generator) collectCatalogueEntries(def *ast.Definition) []CatalogueEntr
 
 		entries = append(entries, CatalogueEntry{
 			Name:        field.Name,
+			Signature:   fieldSignature(field),
 			Description: description,
 			Changelog:   changelogText,
 		})
 	}
 	return entries
+}
+
+// fieldSignature renders a field as a one-line GraphQL signature, e.g.
+// user(id: ID!, includeDeleted: Boolean = false): User
+func fieldSignature(field *ast.FieldDefinition) string {
+	var b strings.Builder
+	b.WriteString(field.Name)
+	if len(field.Arguments) > 0 {
+		b.WriteString("(")
+		for i, arg := range field.Arguments {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			b.WriteString(arg.Name)
+			b.WriteString(": ")
+			b.WriteString(arg.Type.String())
+			b.WriteString(formatDefaultValue(arg.DefaultValue))
+		}
+		b.WriteString(")")
+	}
+	b.WriteString(": ")
+	b.WriteString(field.Type.String())
+	return b.String()
 }
 
 // collectCatalogueData collects and organises catalogue data for queries, mutations, and subscriptions

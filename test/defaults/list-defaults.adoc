@@ -30,7 +30,7 @@ The following table provides a quick reference to all available queries in the G
 [options="header",cols="2m,5a"]
 |===
 | Name | Description
-| searchArticles | Search articles with list-typed default arguments.
+| searchArticles(tags: [String!] = ["draft","preview"], scores: [Int] = [1,null,3], selected: [ID!] = []): [Article!]! | Search articles with list-typed default arguments.
 |===
 
 [[query]]

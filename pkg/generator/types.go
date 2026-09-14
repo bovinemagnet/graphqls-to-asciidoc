@@ -104,6 +104,7 @@ type DirectiveInfo struct {
 // CatalogueEntry represents a single entry in the catalogue table
 type CatalogueEntry struct {
 	Name        string
+	Signature   string // e.g. user(id: ID!): User
 	Description string
 	Changelog   string
 }
