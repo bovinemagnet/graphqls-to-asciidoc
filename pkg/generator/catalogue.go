@@ -47,11 +47,36 @@ func (g *Generator) collectCatalogueEntries(def *ast.Definition) []CatalogueEntr
 
 		entries = append(entries, CatalogueEntry{
 			Name:        field.Name,
+			Signature:   fieldSignature(field),
+			Status:      fieldStatus(field.Name, field.Description, field.Directives),
 			Description: description,
 			Changelog:   changelogText,
 		})
 	}
 	return entries
+}
+
+// fieldSignature renders a field as a one-line GraphQL signature, e.g.
+// user(id: ID!, includeDeleted: Boolean = false): User
+func fieldSignature(field *ast.FieldDefinition) string {
+	var b strings.Builder
+	b.WriteString(field.Name)
+	if len(field.Arguments) > 0 {
+		b.WriteString("(")
+		for i, arg := range field.Arguments {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			b.WriteString(arg.Name)
+			b.WriteString(": ")
+			b.WriteString(arg.Type.String())
+			b.WriteString(formatDefaultValue(arg.DefaultValue))
+		}
+		b.WriteString(")")
+	}
+	b.WriteString(": ")
+	b.WriteString(field.Type.String())
+	return b.String()
 }
 
 // collectCatalogueData collects and organises catalogue data for queries, mutations, and subscriptions
@@ -79,116 +104,17 @@ func (g *Generator) collectCatalogueData() CatalogueData {
 	})
 
 	return CatalogueData{
-		SubTitle:       g.config.SubTitle,
-		RevDate:        time.Now().Format("Mon, 02 Jan 2006 15:04:05 MST"),
-		CommandLine:    strings.Join(os.Args, " "),
-		KrokiServerURL: g.config.KrokiDocumentURL(),
-		Queries:        queries,
-		Mutations:      mutations,
-		MutationGroups: mutationGroups,
-		Subscriptions:  subscriptions,
+		SubTitle:         g.config.SubTitle,
+		IncludeSignature: g.config.IncludeSignature,
+		RevDate:          time.Now().Format("Mon, 02 Jan 2006 15:04:05 MST"),
+		CommandLine:      strings.Join(os.Args, " "),
+		KrokiServerURL:   g.config.KrokiDocumentURL(),
+		Queries:          queries,
+		Mutations:        mutations,
+		MutationGroups:   mutationGroups,
+		Subscriptions:    subscriptions,
 	}
 }
-
-// Catalogue table templates for the summary section at the top of a full
-// document. Each declares an explicit anchor so its id does not depend on the
-// idprefix/idseparator attributes of the rendering toolchain.
-const catalogueQueriesSection = `[[queries]]
-== Queries
-
-*Queries* are how clients *read or fetch data* in GraphQL.
-They describe _what_ data the client wants, not _how_ to get it.
-
-The following table provides a quick reference to all available queries in the GraphQL API.
-
-{{- if .Queries }}
-
-[options="header",cols="2m,5a"]
-|===
-| Name | Description
-{{- range .Queries }}
-| {{.Name}} | {{.Description}}{{if .Changelog}}
-{{.Changelog}}{{end}}
-{{- end }}
-|===
-{{- else }}
-
-[NOTE]
-====
-No queries exist in this schema.
-====
-{{- end }}
-
-`
-
-const catalogueMutationsSection = `
-[[mutations]]
-== Mutations
-
-
-*Mutations* are how clients *write or modify data* for example, creating, updating, or deleting records.
-
-A mutation looks similar to a query, but it describes an action that changes data.
-
-The following table provides a quick reference to all available mutations in the GraphQL API.
-
-{{- if .MutationGroups }}
-
-[options="header",cols="2m,5a"]
-|===
-| Name | Description
-{{- range .MutationGroups }}
-2+^h| {{.GroupName}}
-{{- range .Mutations }}
-| {{.Name}} | {{.Description}}{{if .Changelog}}
-{{.Changelog}}{{end}}
-{{- end }}
-{{- end }}
-|===
-{{- else if .Mutations }}
-
-[options="header",cols="2m,5a"]
-|===
-| Name | Description
-{{- range .Mutations }}
-| {{.Name}} | {{.Description}}{{if .Changelog}}
-{{.Changelog}}{{end}}
-{{- end }}
-|===
-{{- else }}
-
-[NOTE]
-====
-No mutations exist in this schema.
-====
-{{- end }}
-
-`
-
-const catalogueSubscriptionsSection = `[[subscriptions]]
-== Subscriptions
-
-{{- if .Subscriptions }}
-
-The following table provides a quick reference to all available subscriptions in the GraphQL API.
-
-[options="header",cols="2m,5a"]
-|===
-| Name | Description
-{{- range .Subscriptions }}
-| {{.Name}} | {{.Description}}{{if .Changelog}}
-{{.Changelog}}{{end}}
-{{- end }}
-|===
-{{- else }}
-
-[NOTE]
-====
-No subscriptions exist in this schema.
-====
-{{- end }}
-
-`
 
 // writeCatalogueSection writes the catalogue tables section to the output.
 // This is used in standard documentation mode to include catalogue at the top.
@@ -205,17 +131,17 @@ func (g *Generator) writeCatalogueSection() error {
 
 	// Add queries section if enabled and schema defines queries
 	if g.config.IncludeQueries && g.schema.Query != nil {
-		templateParts = append(templateParts, catalogueQueriesSection)
+		templateParts = append(templateParts, templates.CatalogueQueriesSection)
 	}
 
 	// Add mutations section if enabled and schema defines mutations
 	if g.config.IncludeMutations && g.schema.Mutation != nil {
-		templateParts = append(templateParts, catalogueMutationsSection)
+		templateParts = append(templateParts, templates.CatalogueMutationsSection)
 	}
 
 	// Add subscriptions section if enabled and schema defines subscriptions
 	if g.config.IncludeSubscriptions && g.schema.Subscription != nil {
-		templateParts = append(templateParts, catalogueSubscriptionsSection)
+		templateParts = append(templateParts, templates.CatalogueSubscriptionsSection)
 	}
 
 	// Combine all enabled sections

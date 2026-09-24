@@ -125,6 +125,7 @@ The following flags control which items are included in the output:
 - `--inc-legacy`: Include legacy queries/mutations (those marked as LEGACY)
 - `--inc-zero`: Include items with version 0.0.0 or 0.0.0.0
 - `--inc-changelog`: Include changelog information in catalogue descriptions
+- `--inc-signature`: Include the full operation signature in catalogue descriptions
 
 **Note:** `-schema` and `-pattern` flags are mutually exclusive. Use `-schema` for single file mode or `-pattern` for multiple file mode.
 

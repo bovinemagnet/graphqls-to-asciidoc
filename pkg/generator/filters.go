@@ -104,6 +104,25 @@ func isZeroVersion(description string) bool {
 	return false
 }
 
+// fieldStatus returns the status markers that apply to a field, in a fixed
+// order, so callers can badge items that the --inc-* flags have let through.
+func fieldStatus(name, description string, directives ast.DirectiveList) []string {
+	var status []string
+	if isDeprecated(description, directives) {
+		status = append(status, "DEPRECATED")
+	}
+	if isPreview(description) {
+		status = append(status, "PREVIEW")
+	}
+	if isLegacy(description) {
+		status = append(status, "LEGACY")
+	}
+	if isInternal(name, description) {
+		status = append(status, "INTERNAL")
+	}
+	return status
+}
+
 // shouldIncludeField checks if a field should be included based on the configuration settings.
 // This consolidates the filtering logic for queries, mutations, and subscriptions.
 func (g *Generator) shouldIncludeField(name, description string, directives ast.DirectiveList) bool {
